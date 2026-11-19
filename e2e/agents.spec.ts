@@ -60,7 +60,9 @@ test('the MCP server lists its tools and checks code', async ({ request }) => {
   expect(JSON.stringify(check.result)).toContain('palette-color');
 });
 
-test('the AI catalog and robots are published', async ({ request }) => {
-  expect((await request.get('/.well-known/ai-catalog.json')).ok()).toBe(true);
+test('the ARD manifest and robots are published', async ({ request }) => {
+  const ard = await request.get('/.well-known/ard.json');
+  expect(ard.ok()).toBe(true);
+  expect((await ard.json()).entries.length).toBeGreaterThan(0);
   expect(await (await request.get('/robots.txt')).text()).toContain('Sitemap:');
 });
