@@ -1,0 +1,10 @@
+/*
+ * dtheo/ui styles. In your app's global CSS:
+ *   @import "tailwindcss";
+ *   @import "@dtheo/ui/styles/index.css";
+ * Components copied by the CLI live in your project, so Tailwind scans them automatically.
+ */
+@import './theme.css';
+@import './tokens.css';
+@import './base.css';
+@import './components.css';

@@ -1,0 +1,116 @@
+/* dtheo/ui base layer: the few global defaults every product needs. Scoped to elements we own, no resets of other libraries. */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+    font-synthesis-weight: none;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    letter-spacing: var(--text-body--letter-spacing);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: var(--selection);
+  }
+
+  /* Numbers that line up in columns and readouts */
+  table,
+  [data-tabular] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* iOS zooms into inputs under 16px; keep 16px on touch screens only. */
+  @media (pointer: coarse) {
+    input,
+    textarea,
+    select {
+      font-size: max(16px, 1em);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Matched icon weight: Lucide's default 2px stroke reads heavier than 13px medium text. */
+svg.lucide {
+  stroke-width: 1.75;
+}
+
+@keyframes dtheo-spoke {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.18;
+  }
+}
+
+@keyframes dtheo-indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+/*
+ * Focus. One ring for every control: a crisp 1.5px line in the ring color, 1px out, over a soft halo. The line alone
+ * clears 3:1 against every surface; the halo gives it presence without weight.
+ *
+ * This block sits outside the cascade layers on purpose, so no component shadow utility can hide the ring.
+ * - Fields (inputs, select triggers, number fields) draw focus on their own border and opt out with data-focus.
+ * - Menus, listboxes, dialogs and their items show focus as the highlighted row, so they opt out by role.
+ * - `.focus-within-ring` puts the ring on a parent when the focused element is hidden (a slider's input) or tiny
+ *   (the checkbox inside a selectable card); that element opts out with data-focus="none".
+ * - Move the ring with --focus-offset (negative to draw inside a clipped container).
+ */
+:focus-visible:not(
+  [data-focus],
+  [role='menu'],
+  [role='menuitem'],
+  [role='menuitemcheckbox'],
+  [role='menuitemradio'],
+  [role='listbox'],
+  [role='option'],
+  [role='dialog'],
+  [role='alertdialog']
+),
+.focus-within-ring:has(:focus-visible) {
+  outline: 1.5px solid var(--ring);
+  outline-offset: var(--focus-offset, 1px);
+  box-shadow: 0 0 0 calc(var(--focus-offset, 1px) + 3px) color-mix(in oklch, var(--ring) 24%, transparent);
+}
+
+/* A focused element with nothing of its own to draw. */
+[data-focus='none']:focus-visible,
+[role='menu']:focus-visible,
+[role='listbox']:focus-visible,
+[role='dialog']:focus-visible,
+[role='alertdialog']:focus-visible {
+  outline: none;
+}
