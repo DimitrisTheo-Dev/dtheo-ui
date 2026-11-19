@@ -7,7 +7,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { converter, formatHex, toGamut, wcagContrast, type Rgb } from 'culori';
+import { converter, formatHex, parse, toGamut, wcagContrast, type Oklch, type Rgb } from 'culori';
 import { colorRoles, contrastPairs, foundation, presets, type ColorScheme, type Mode } from '../src/index';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -216,21 +216,38 @@ const hex = (v: string) => {
         .padStart(2, '0')}`
     : h;
 };
+/**
+ * A DTCG color value (Design Tokens Format 2025.10): the OKLCH components as authored, plus the sRGB hex fallback
+ * the format defines for tools that cannot read OKLCH.
+ */
+const dtcgColor = (v: string) => {
+  const c = parse(v) as Oklch | undefined;
+  if (c?.mode !== 'oklch') throw new Error(`Token ${v} is not OKLCH.`);
+  return {
+    colorSpace: 'oklch',
+    components: [c.l, c.c, c.h ?? 'none'],
+    alpha: c.alpha ?? 1,
+    hex: formatHex(rgba(v)),
+  };
+};
 const dtcg: Record<string, unknown> = {
   $description: 'dtheo/ui design tokens (DTCG format). Generated; source is packages/tokens/src/index.ts.',
 };
 const native: Record<string, Record<string, Record<string, string>>> = {};
+const nativeOklch: Record<string, Record<string, Record<string, string>>> = {};
 for (const preset of presets) {
   native[preset.id] = {};
+  nativeOklch[preset.id] = {};
   const group: Record<string, unknown> = {};
   for (const [mode, scheme] of Object.entries(preset.modes) as [Mode, ColorScheme][]) {
     group[mode] = Object.fromEntries(
       colorRoles.map((r) => [
         r,
-        { $type: 'color', $value: scheme[r], $extensions: { 'dev.dtheo.hex': hex(scheme[r]) } },
+        { $type: 'color', $value: dtcgColor(scheme[r]) },
       ]),
     );
     native[preset.id]![mode] = Object.fromEntries(colorRoles.map((r) => [r, hex(scheme[r])]));
+    nativeOklch[preset.id]![mode] = Object.fromEntries(colorRoles.map((r) => [r, scheme[r]]));
   }
   group.geometry = Object.fromEntries(
     Object.entries(preset.geometry).map(([k, v]) => [k, { $type: 'dimension', $value: v }]),
@@ -240,6 +257,7 @@ for (const preset of presets) {
 dtcg.foundation = foundation;
 const json = JSON.stringify(dtcg, null, 2) + '\n';
 const nativeColors = JSON.stringify(native, null, 2);
+const nativeOklchColors = JSON.stringify(nativeOklch, null, 2);
 const nativeRadii = JSON.stringify(
   Object.fromEntries(
     presets.map((p) => [
@@ -254,11 +272,14 @@ const nativeRadii = JSON.stringify(
   null,
   2,
 );
-const nativeDoc = `${header.replace('/*', '/**')}\n/** Hex values (gamut-mapped from OKLCH) for React Native / Expo, where CSS variables do not exist. */\n`;
+const nativeDoc = `${header.replace('/*', '/**')}\n/** Color roles for code that cannot read CSS variables: React Native, Expo, canvas, image renderers. */\n`;
+const colorsDoc =
+  '/** sRGB hex, gamut-mapped from OKLCH (8 digits when translucent). React Native StyleSheet cannot parse oklch(). */\n';
+const oklchDoc = '/** The authored OKLCH values, for anything that reads CSS Color 4: web, Skia, Expo DOM components. */\n';
 // The workspace imports the TypeScript; the published package ships plain JS with matching declarations.
-const nativeTs = `${nativeDoc}export const colors = ${nativeColors} as const;\n\nexport const radii = ${nativeRadii} as const;\n`;
-const nativeJs = `${nativeDoc}export const colors = ${nativeColors};\n\nexport const radii = ${nativeRadii};\n`;
-const nativeDts = `${nativeDoc}export declare const colors: ${nativeColors};\n\nexport declare const radii: ${nativeRadii};\n`;
+const nativeTs = `${nativeDoc}${colorsDoc}export const colors = ${nativeColors} as const;\n\n${oklchDoc}export const oklch = ${nativeOklchColors} as const;\n\nexport const radii = ${nativeRadii} as const;\n`;
+const nativeJs = `${nativeDoc}${colorsDoc}export const colors = ${nativeColors};\n\n${oklchDoc}export const oklch = ${nativeOklchColors};\n\nexport const radii = ${nativeRadii};\n`;
+const nativeDts = `${nativeDoc}${colorsDoc}export declare const colors: ${nativeColors};\n\n${oklchDoc}export declare const oklch: ${nativeOklchColors};\n\nexport declare const radii: ${nativeRadii};\n`;
 const report =
   JSON.stringify(
     rows.map((r) => ({ ...r, ratio: Number(r.ratio.toFixed(2)) })),

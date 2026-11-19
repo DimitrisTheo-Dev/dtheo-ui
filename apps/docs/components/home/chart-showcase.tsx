@@ -56,7 +56,7 @@ function LivePreview() {
           { channel: 'torque', label: 'Torque', unit: 'N·m', digits: 2 },
         ]}
         limits={[{ value: 13.2, label: 'Limit 13.2 N·m', channel: 'torque' }]}
-        height={190}
+        height={330}
         ariaLabel="Torque against a 12 N·m step command. Each step overshoots past the 13.2 N·m limit, drawn in red."
       />
     </div>

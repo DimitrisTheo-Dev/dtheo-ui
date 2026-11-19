@@ -6,6 +6,8 @@ test('⌘K search finds a component and opens it', async ({ page }) => {
   await page.keyboard.press('ControlOrMeta+k');
   const search = page.getByRole('combobox', { name: 'Search commands' });
   await expect(search).toBeFocused();
+  // One field in its own window: the caret shows focus, so the input draws no ring.
+  await expect(search).toHaveCSS('outline-style', 'none');
   await search.fill('number field');
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/docs\/components\/number-field$/);
@@ -112,4 +114,24 @@ test('get started turns two choices into one command', async ({ page }) => {
   await expect(main.locator('pre').first()).toContainText('claude mcp add');
   await expect(main.getByText(/^Build a data table with the dtheo\/ui design system\./)).toBeVisible();
   await expect(main.getByRole('link', { name: 'Data table pattern' })).toBeVisible();
+});
+
+test('a card pressed at its very edge still selects', async ({ page }) => {
+  await page.goto('/docs');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const card = page.getByRole('list', { name: 'Pick one or more' }).getByRole('listitem').first();
+  const box = (await card.boundingBox())!;
+  // Hold long enough for the press animation to finish, then release 1 px inside the edge.
+  await page.mouse.move(box.x + box.width - 1, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(250);
+  await page.mouse.up();
+  await expect(card.getByRole('checkbox')).toBeChecked();
+});
+
+test('a link styled as a button is still a link', async ({ page }) => {
+  await page.goto('/');
+  const start = page.getByRole('main').getByRole('link', { name: 'Get started' });
+  await expect(start).toBeVisible();
+  await expect(start).not.toHaveAttribute('role', 'button');
 });

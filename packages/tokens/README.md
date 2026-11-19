@@ -6,13 +6,15 @@ checked against WCAG AA when it builds.
 For React Native and Expo, where CSS variables do not exist:
 
 ```ts
-import { colors, radii } from '@dtheo/tokens/native';
+import { colors, oklch, radii } from '@dtheo/tokens/native';
 
-const card = colors.graphite.dark.card; // hex, gamut-mapped from OKLCH
+const card = colors.graphite.dark.card; // hex for StyleSheet, which cannot parse oklch()
+const accent = oklch.graphite.dark.primary; // the authored OKLCH, for Skia or the web
 const corner = radii.graphite.card; // 10
 ```
 
-Also included: `@dtheo/tokens/tokens.json` (DTCG) and `@dtheo/tokens/contrast.json` (the measured contrast report).
+Also included: `@dtheo/tokens/tokens.json` (DTCG 2025.10: OKLCH components with the format's hex fallback) and
+`@dtheo/tokens/contrast.json` (the measured contrast report).
 On the web, `npx dtheo init` adds the CSS.
 
 Presets: `graphite` (light and dark), `flight-deck` and `deep-space` (dark). MIT

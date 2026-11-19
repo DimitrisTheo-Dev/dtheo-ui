@@ -296,28 +296,32 @@ export function Onboarding() {
             const on = picked.includes(b.id);
             return (
               <li key={b.id}>
-                <label
-                  className={`group focus-within-ring relative flex h-full cursor-pointer flex-col gap-3 rounded-card border bg-card p-3 transition-[border-color,background-color,scale] duration-150 ease-out select-none active:scale-[0.98] ${on ? 'border-primary bg-primary/6' : 'border-border hover:border-border-strong'}`}
-                >
-                  <div
-                    aria-hidden="true"
-                    className="h-20 rounded-popover border border-border bg-background/70 p-2.5 transition-transform duration-200 ease-out group-hover:-translate-y-0.5"
+                {/* The label is the hit area and never moves; only the surface inside it scales on press, so a
+                    click at the very edge still lands on the card. */}
+                <label className="group block h-full cursor-pointer select-none">
+                  <span
+                    className={`focus-within-ring relative flex h-full flex-col gap-3 rounded-card border bg-card p-3 transition-[border-color,background-color,scale] duration-150 ease-out group-active:scale-[0.98] ${on ? 'border-primary bg-primary/6' : 'border-border group-hover:border-border-strong'}`}
                   >
-                    <Art />
-                  </div>
-                  <span className="flex items-start justify-between gap-2 px-0.5">
-                    <span className="flex flex-col">
-                      <span className="text-headline">{b.title}</span>
-                      <span className="text-label font-normal text-muted-foreground">{b.text}</span>
+                    <span
+                      aria-hidden="true"
+                      className="block h-20 rounded-popover border border-border bg-background/70 p-2.5 transition-transform duration-200 ease-out group-hover:-translate-y-0.5"
+                    >
+                      <Art />
                     </span>
-                    <Checkbox
-                      data-focus="none"
-                      className="mt-0.5"
-                      checked={on}
-                      onCheckedChange={(c) =>
-                        setPicked((p) => (c ? [...p, b.id] : p.filter((id) => id !== b.id)))
-                      }
-                    />
+                    <span className="flex items-start justify-between gap-2 px-0.5">
+                      <span className="flex flex-col">
+                        <span className="text-headline">{b.title}</span>
+                        <span className="text-label font-normal text-muted-foreground">{b.text}</span>
+                      </span>
+                      <Checkbox
+                        data-focus="none"
+                        className="mt-0.5"
+                        checked={on}
+                        onCheckedChange={(c) =>
+                          setPicked((p) => (c ? [...p, b.id] : p.filter((id) => id !== b.id)))
+                        }
+                      />
+                    </span>
                   </span>
                 </label>
               </li>
@@ -336,21 +340,22 @@ export function Onboarding() {
           {writers.map((w) => {
             const on = who === w.id;
             return (
-              <label
-                key={w.id}
-                className={`focus-within-ring flex cursor-pointer items-center gap-3 rounded-card border bg-card p-3 transition-[border-color,background-color,scale] duration-150 ease-out select-none active:scale-[0.98] ${on ? 'border-primary bg-primary/6' : 'border-border hover:border-border-strong'}`}
-              >
+              <label key={w.id} className="group block cursor-pointer select-none">
                 <span
-                  aria-hidden="true"
-                  className={`grid size-9 shrink-0 place-items-center rounded-control transition-[background-color,color] duration-150 ${on ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'}`}
+                  className={`focus-within-ring flex items-center gap-3 rounded-card border bg-card p-3 transition-[border-color,background-color,scale] duration-150 ease-out group-active:scale-[0.98] ${on ? 'border-primary bg-primary/6' : 'border-border group-hover:border-border-strong'}`}
                 >
-                  <w.icon className="size-4.5" />
+                  <span
+                    aria-hidden="true"
+                    className={`grid size-9 shrink-0 place-items-center rounded-control transition-[background-color,color] duration-150 ${on ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'}`}
+                  >
+                    <w.icon className="size-4.5" />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className="text-headline">{w.title}</span>
+                    <span className="truncate text-label font-normal text-muted-foreground">{w.text}</span>
+                  </span>
+                  <Radio value={w.id} data-focus="none" />
                 </span>
-                <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-headline">{w.title}</span>
-                  <span className="truncate text-label font-normal text-muted-foreground">{w.text}</span>
-                </span>
-                <Radio value={w.id} data-focus="none" />
               </label>
             );
           })}
@@ -371,7 +376,7 @@ export function Onboarding() {
                 <Link
                   key={s.href}
                   href={s.href}
-                  className="group inline-flex h-9 items-center gap-1.5 rounded-control bg-primary px-3.5 text-body font-medium text-primary-foreground shadow-raised transition-[background-color,scale] duration-150 ease-out hover:bg-primary-hover active:scale-[0.97]"
+                  className="group relative inline-flex h-9 items-center gap-1.5 rounded-control bg-primary px-3.5 text-body font-medium text-primary-foreground shadow-raised transition-[background-color,scale] duration-150 ease-out after:absolute after:inset-0 hover:bg-primary-hover active:scale-[0.97] active:after:-inset-2"
                 >
                   {s.title}
                   <ArrowRightIcon

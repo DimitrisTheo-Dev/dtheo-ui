@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Button as ButtonPrimitive } from '@base-ui/react/button';
+import { useRender } from '@base-ui/react/use-render';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '../lib/utils';
 import { Spinner } from './spinner';
@@ -11,6 +12,8 @@ export const buttonVariants = cva(
     'relative inline-flex shrink-0 cursor-default items-center justify-center gap-1.5 whitespace-nowrap rounded-control',
     'text-body font-medium select-none',
     'transition-[transform,background-color,box-shadow,color] duration-150 ease-out active:scale-97',
+    // Pressing scales the button down; this keeps a release at its original edge on the button, so it still clicks.
+    'after:absolute after:inset-0 active:after:-inset-2',
     'disabled:pointer-events-none disabled:opacity-45 data-disabled:pointer-events-none data-disabled:opacity-45',
     '[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
   ],
@@ -60,18 +63,23 @@ export function Button({
   render,
   ...props
 }: ButtonProps) {
-  // Rendering as a link (or a router Link) keeps link semantics; Base UI only adds button behavior to real buttons.
-  const nativeButton = !render || (React.isValidElement(render) && render.type === 'button');
+  const classes = cn(buttonVariants({ variant, size }), className);
+  const isButton = !render || (React.isValidElement(render) && render.type === 'button');
+  if (!isButton)
+    return (
+      <ButtonLink render={render!} className={classes} data-variant={variant ?? 'secondary'} {...props}>
+        {children}
+      </ButtonLink>
+    );
   return (
     <ButtonPrimitive
       data-slot="button"
       data-variant={variant ?? 'secondary'}
-      className={cn(buttonVariants({ variant, size }), className)}
+      className={classes}
       disabled={disabled || loading}
       focusableWhenDisabled={loading}
       aria-busy={loading || undefined}
       render={render}
-      nativeButton={nativeButton}
       {...props}
     >
       {loading ? (
@@ -86,4 +94,20 @@ export function Button({
       )}
     </ButtonPrimitive>
   );
+}
+
+/**
+ * A link that looks like a button stays a link: no button role and no Space-key activation, which Base UI's Button
+ * would add to any element that is not a <button>. Screen readers announce it as a link, as navigation should be.
+ */
+function ButtonLink({
+  render,
+  children,
+  ...props
+}: Omit<ButtonProps, 'variant' | 'size' | 'loading'> & { render: NonNullable<ButtonProps['render']> }) {
+  return useRender({
+    render,
+    state: { disabled: false },
+    props: { 'data-slot': 'button', ...props, children },
+  });
 }

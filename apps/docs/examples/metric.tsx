@@ -46,7 +46,8 @@ export default function MetricExample() {
           limitLabel="Limit 90 °C"
         />
         <Metric
-          label="Steady-state error"
+          label="Static error"
+          hint="Steady-state error"
           value="0.4"
           unit="%"
           status="pass"

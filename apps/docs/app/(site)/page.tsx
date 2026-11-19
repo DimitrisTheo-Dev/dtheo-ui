@@ -56,7 +56,8 @@ const faqs: Array<[string, React.ReactNode]> = [
   [
     'Does it work with React Native?',
     <>
-      The tokens do: import hex values from <code className="inline-code">@dtheo/tokens/native</code>.
+      The tokens do. <code className="inline-code">@dtheo/tokens/native</code> has every color role in OKLCH,
+      plus hex for <code className="inline-code">StyleSheet</code>, which cannot read OKLCH yet.
     </>,
   ],
 ];
@@ -108,16 +109,9 @@ export default function Home() {
         <div
           className={`relative mx-auto flex max-w-5xl flex-col items-center gap-6 pt-16 text-center sm:pt-24 ${gutter}`}
         >
-          <Link
-            href="/docs/agents"
-            className="inline-flex h-7 items-center gap-2 rounded-full border border-border bg-background/60 pr-2.5 pl-3 text-label font-normal text-muted-foreground backdrop-blur-material transition-colors duration-150 hover:text-foreground"
-          >
-            <span aria-hidden="true" className="size-1.5 rounded-full bg-success-foreground" />
-            MCP server for your agent
-            <ArrowRightIcon className="size-3.5" aria-hidden="true" />
-          </Link>
-          <h1 className="max-w-4xl text-hero text-balance">
-            Pixel-perfect UI, <span className="text-muted-foreground">even when your agent writes it.</span>
+          {/* Two lines on wider screens, broken where the sentence turns, so the muted half is never split. */}
+          <h1 className="max-w-5xl text-hero text-balance">
+            Pixel-perfect UI, <span className="text-muted-foreground sm:block">even when your agent writes it.</span>
           </h1>
           <p className="max-w-xl text-prose text-muted-foreground text-pretty">
             Components and engineering charts for data-heavy React apps, with an MCP server and a design
