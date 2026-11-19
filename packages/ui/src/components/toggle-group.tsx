@@ -11,8 +11,8 @@ export function Toggle({ className, ...props }: React.ComponentProps<typeof Togg
     <TogglePrimitive
       data-slot="toggle"
       className={cn(
-        'inline-flex h-control-md cursor-default items-center justify-center gap-1.5 rounded-control px-2.5 text-body font-medium select-none',
-        'text-muted-foreground transition-[background-color,color,transform] duration-150 ease-out active:scale-97',
+        'relative inline-flex h-control-md cursor-default items-center justify-center gap-1.5 rounded-control px-2.5 text-body font-medium select-none',
+        'text-muted-foreground transition-[background-color,color,transform] duration-150 ease-out active:scale-97 after:absolute after:inset-0 active:after:-inset-2',
         'hover:bg-accent hover:text-foreground data-pressed:bg-secondary data-pressed:text-foreground',
         'data-disabled:opacity-45 [&_svg:not([class*=size-])]:size-4',
         className,

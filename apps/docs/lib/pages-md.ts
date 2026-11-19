@@ -1,4 +1,4 @@
-// dtheo-check-disable-file transition-all, scale-zero, ease-in -- documentation that quotes the rules.
+// dtheo-check-disable-file raw-color, transition-all, scale-zero, ease-in -- documentation that quotes the rules and token values; no UI styling here.
 import { site } from './site';
 import { agentsMarkdown } from './agents';
 
@@ -138,12 +138,13 @@ Colors use the shadcn role names (\`background\`, \`foreground\`, \`card\`, \`pr
 
 ## React Native and Expo
 
-Native apps cannot read CSS variables. Import the generated hex values instead:
+Native apps cannot read CSS variables. Import the generated values instead: \`oklch\` has every role as authored, \`colors\` has the same roles as hex for React Native's \`StyleSheet\`, which cannot parse \`oklch()\`.
 
 \`\`\`ts
-import { colors, radii } from "@dtheo/tokens/native";
+import { colors, oklch, radii } from "@dtheo/tokens/native";
 
-const card = colors.graphite.dark.card;
+const card = colors.graphite.dark.card; // "#1e1f20", for StyleSheet
+const accent = oklch.graphite.dark.primary; // "oklch(…)", for Skia or the web
 \`\`\`
 `,
 

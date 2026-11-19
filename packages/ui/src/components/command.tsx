@@ -71,7 +71,9 @@ export function CommandDialog({
             <Autocomplete.Root open inline items={groups} autoHighlight="always" keepHighlight>
               <Autocomplete.InputGroup className="flex items-center gap-2.5 border-b border-border px-3.5">
                 <SearchIcon className="size-4 shrink-0 text-subtle-foreground" aria-hidden="true" />
+                {/* The palette is one field in its own window: the caret shows focus, as in Spotlight, so no ring. */}
                 <Autocomplete.Input
+                  data-focus="none"
                   aria-label="Search commands"
                   aria-describedby={hintId}
                   placeholder={placeholder}

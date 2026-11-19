@@ -27,6 +27,8 @@ const catId = (cat: string) => `cat-${cat.toLowerCase().replace(/[^a-z0-9]+/g, '
 
 const href = (c: ComponentMeta) => `/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}`;
 
+const firstSentence = (text: string) => text.split(/(?<=\.)\s/)[0]!;
+
 /**
  * One live tile per component: the component's first example, running, above its name. The preview stays
  * interactive (flip a switch, open a menu); the name below links to the page. Tiles grow to fit their example
@@ -52,7 +54,10 @@ function Tile({ meta, height = 240 }: { meta: ComponentMeta; height?: number }) 
       >
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="text-body font-medium">{meta.title}</span>
-          <span className="truncate text-label font-normal text-muted-foreground">{meta.description}</span>
+          {/* The first sentence only, never cut mid-word: the page has the rest. */}
+          <span className="line-clamp-2 text-label font-normal text-pretty text-muted-foreground">
+            {firstSentence(meta.description)}
+          </span>
         </span>
         <ArrowUpRightIcon
           aria-hidden="true"
