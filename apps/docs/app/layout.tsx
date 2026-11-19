@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { colors } from '@dtheo/tokens/native';
 import { TooltipProvider } from '@dtheo/ui/components/tooltip';
 import { Toaster } from '@dtheo/ui/components/toast';
+import { HydrationMarker } from '@/components/hydration-marker';
 import { site } from '@/lib/site';
 import './globals.css';
 
@@ -50,6 +51,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <TooltipProvider>
           <Toaster>{children}</Toaster>
         </TooltipProvider>
+        <HydrationMarker />
       </body>
     </html>
   );

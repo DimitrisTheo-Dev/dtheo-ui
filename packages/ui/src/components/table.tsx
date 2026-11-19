@@ -1,13 +1,48 @@
+'use client';
+
 import * as React from 'react';
 import { cn } from '../lib/utils';
 
 /**
+ * Whether the container scrolls sideways right now, and what to call it. A region that scrolls must be reachable
+ * by keyboard, so it becomes a focusable, named region only while its table is wider than the space it has.
+ */
+function useScrollRegion(ref: React.RefObject<HTMLDivElement | null>) {
+  const [label, setLabel] = React.useState<string | null>(null);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => {
+      const scrolls = el.scrollWidth > el.clientWidth + 1;
+      const caption = el.querySelector('caption')?.textContent?.trim().replace(/[\s.]+$/, '');
+      setLabel(scrolls ? `${caption || 'Table'}, scrolls sideways` : null);
+    };
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    const table = el.querySelector('table');
+    if (table) ro.observe(table);
+    return () => ro.disconnect();
+  }, [ref]);
+  return label;
+}
+
+/**
  * A plain, semantic data table. Numbers right-align with tabular figures (`numeric` on cells and heads).
- * Wide tables scroll inside their own container, never the page.
+ * Wide tables scroll inside their own container, never the page, and that container joins the tab order only
+ * while it scrolls.
  */
 export function Table({ className, ...props }: React.ComponentProps<'table'>) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const scrollLabel = useScrollRegion(ref);
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div
+      ref={ref}
+      data-slot="table-container"
+      role={scrollLabel ? 'region' : undefined}
+      aria-label={scrollLabel ?? undefined}
+      tabIndex={scrollLabel ? 0 : undefined}
+      className="relative w-full overflow-x-auto [--focus-offset:-2px]"
+    >
       <table
         data-slot="table"
         className={cn('w-full caption-bottom border-collapse text-body', className)}
