@@ -1,10 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { categories, components } from '@dtheo/ui/meta';
 import { registryItem, registryNames } from '@/lib/registry';
 import { llmsTxt } from '@/lib/markdown';
+import { exampleSource } from '@/lib/source';
 import { pageUsage, usedIn } from '@/lib/usage';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
@@ -66,6 +67,17 @@ describe('registry', () => {
         for (const m of file.content!.matchAll(/from '\.\/([\w-]+)'/g))
           expect(shipped, where).toContain(m[1]);
       }
+    }
+  });
+
+  it('shows examples whose imports resolve after `dtheo add`', () => {
+    const installed = new Set(
+      registryNames().flatMap((n) => registryItem(n)!.files.map((f) => f.target.replace(/\.tsx?$/, ''))),
+    );
+    for (const file of readdirSync(examples).filter((f) => f.endsWith('.tsx'))) {
+      const source = exampleSource(file.replace(/\.tsx$/, ''));
+      expect(source, file).not.toMatch(/@dtheo\//);
+      for (const [, path] of source.matchAll(/from '@\/([\w/-]+)'/g)) expect(installed, file).toContain(path);
     }
   });
 
