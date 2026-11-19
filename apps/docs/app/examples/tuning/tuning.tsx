@@ -61,7 +61,7 @@ function LiveBench() {
     <Card>
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
-          <CardTitle>Live bench</CardTitle>
+          <CardTitle level={2}>Live bench</CardTitle>
           <CardDescription>A 12 N·m step every 1.5 s, sampled at 1 kHz</CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export function Tuning() {
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-0.5">
-                <CardTitle>Frequency response</CardTitle>
+                <CardTitle level={2}>Frequency response</CardTitle>
                 <CardDescription>Open loop, R-0412 against the R-0409 reference</CardDescription>
               </div>
             </CardHeader>
@@ -241,7 +241,7 @@ export function Tuning() {
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-0.5">
-                <CardTitle>Vibration</CardTitle>
+                <CardTitle level={2}>Vibration</CardTitle>
                 <CardDescription>Output flange, 2 s capture during R-0412</CardDescription>
               </div>
             </CardHeader>
@@ -264,7 +264,7 @@ export function Tuning() {
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-0.5">
-                <CardTitle>Gain against overshoot</CardTitle>
+                <CardTitle level={2}>Gain against overshoot</CardTitle>
                 <CardDescription>Every step test on RA-14 since firmware 4.16</CardDescription>
               </div>
             </CardHeader>
@@ -291,7 +291,7 @@ export function Tuning() {
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-0.5">
-                <CardTitle>Overshoot across runs</CardTitle>
+                <CardTitle level={2}>Overshoot across runs</CardTitle>
                 <CardDescription>Against the 10 % limit and the 5 % target</CardDescription>
               </div>
             </CardHeader>

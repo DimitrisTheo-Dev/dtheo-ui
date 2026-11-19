@@ -178,7 +178,7 @@ export function Assistant() {
           </div>
         </AppToolbar>
 
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6">
+        <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6">
           <div
             role="log"
             aria-live="polite"
@@ -262,7 +262,7 @@ export function Assistant() {
               </div>
             </form>
           </div>
-        </div>
+        </main>
       </AppShell>
     </ThemeScope>
   );

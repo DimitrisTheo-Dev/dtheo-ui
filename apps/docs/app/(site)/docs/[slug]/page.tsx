@@ -30,7 +30,7 @@ export default async function GuidePage({ params }: { params: Promise<{ slug: st
   const md = pagesMarkdown[slug];
   if (!md) notFound();
   return (
-    <MarkdownPage md={md} markdownHref={`/docs/${slug}.md`} eyebrow="Get started">
+    <MarkdownPage md={md} markdownHref={`/docs/${slug}.md`} eyebrow="Get started" demoTitle="Every layer">
       {slug === 'atomic-design' ? <AtomicGraph /> : null}
     </MarkdownPage>
   );

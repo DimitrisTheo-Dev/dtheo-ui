@@ -31,12 +31,17 @@ export function CardHeader({ className, ...props }: React.ComponentProps<'div'>)
   );
 }
 
-export function CardTitle({ className, children, ...props }: React.ComponentProps<'h3'>) {
-  return (
-    <h3 data-slot="card-title" className={cn('text-headline', className)} {...props}>
-      {children}
-    </h3>
-  );
+/**
+ * The card's heading. It is an h3 by default, which fits cards inside a section with an h2. Cards that sit
+ * directly under the page's h1 (a dashboard grid) take `level={2}` so the outline never skips a level.
+ */
+export function CardTitle({
+  level = 3,
+  className,
+  ...props
+}: React.ComponentProps<'h3'> & { level?: 2 | 3 | 4 }) {
+  const Heading = `h${level}` as const;
+  return <Heading data-slot="card-title" className={cn('text-headline', className)} {...props} />;
 }
 
 export function CardDescription({ className, ...props }: React.ComponentProps<'p'>) {

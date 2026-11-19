@@ -48,3 +48,22 @@ for (const theme of ['dark', 'light'] as const) {
     });
   }
 }
+
+// Screen-reader users move by headings and landmarks, so every page in the sitemap keeps one h1, one main and an
+// outline that never skips a level (axe files these under best practices, which the WCAG run above leaves out).
+test('every page has a whole outline', async ({ page, request }) => {
+  test.setTimeout(240_000);
+  const sitemap = await (await request.get('/sitemap.xml')).text();
+  const paths = [...sitemap.matchAll(/<loc>https?:\/\/[^/<]+(\/[^<]*)?<\/loc>/g)].map((m) => m[1] || '/');
+  expect(paths.length).toBeGreaterThan(20);
+  const problems: string[] = [];
+  for (const path of paths) {
+    await page.goto(path);
+    await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+    const { violations } = await new AxeBuilder({ page })
+      .withRules(['heading-order', 'page-has-heading-one', 'landmark-one-main', 'empty-heading'])
+      .analyze();
+    for (const v of violations) problems.push(`${path} ${v.id}: ${v.nodes[0]?.html.slice(0, 120)}`);
+  }
+  expect(problems).toEqual([]);
+});

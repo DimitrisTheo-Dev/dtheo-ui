@@ -136,17 +136,27 @@ export async function MarkdownPage({
   md,
   markdownHref,
   eyebrow,
+  demoTitle = 'Live example',
   children,
 }: {
   md: string;
   markdownHref: string;
   eyebrow?: string;
+  /** Names the demo for screen readers. It is an h2, so headings inside the demo can be h3s. */
+  demoTitle?: string;
   children?: React.ReactNode;
 }) {
   const { title, description, blocks } = parseMarkdown(md);
   return (
     <DocPage eyebrow={eyebrow} title={title} description={description} markdownHref={markdownHref}>
-      {children}
+      {children ? (
+        <section aria-labelledby="demo-heading">
+          <h2 id="demo-heading" className="sr-only">
+            {demoTitle}
+          </h2>
+          {children}
+        </section>
+      ) : null}
       <MarkdownBlocks blocks={blocks} />
     </DocPage>
   );
