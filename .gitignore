@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Secrets: never commit. Keep placeholders in .env.example only.
+.env*
+!.env.example
+*.pem
+*.key
+
+# Build and test output
+dist/
+# Token outputs are generated but tracked, like the CSS: the docs import them and `pnpm tokens:check` keeps them in sync.
+!packages/tokens/dist/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Tool caches and local state
+.impeccable/hook.cache.json
+.vercel/
+.turbo/
+.DS_Store

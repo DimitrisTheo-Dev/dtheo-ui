@@ -1,0 +1,9 @@
+packages:
+  - packages/*
+  - apps/*
+
+# Supply-chain hygiene: refuse versions published in the last 14 days.
+minimumReleaseAge: 20160
+
+allowBuilds:
+  esbuild: true
