@@ -1,0 +1,56 @@
+{
+  "name": "@dtheo/tokens",
+  "version": "0.1.0",
+  "description": "Design tokens for dtheo/ui: one OKLCH source for web CSS, JSON (DTCG), React Native and Figma variables.",
+  "keywords": [
+    "design-system",
+    "design-tokens",
+    "dtcg",
+    "expo",
+    "oklch",
+    "react-native"
+  ],
+  "homepage": "https://ui.dtheo.dev",
+  "bugs": {
+    "url": "https://github.com/DimitrisTheo-Dev/dtheo-ui/issues"
+  },
+  "license": "MIT",
+  "author": "Dimitris Theodoropoulos",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DimitrisTheo-Dev/dtheo-ui.git",
+    "directory": "packages/tokens"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.json": "./dist/tokens.json",
+    "./contrast.json": "./dist/contrast.json",
+    "./native": "./dist/native.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      "./native": {
+        "types": "./dist/native.d.ts",
+        "default": "./dist/native.js"
+      },
+      "./tokens.json": "./dist/tokens.json",
+      "./contrast.json": "./dist/contrast.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsx scripts/build.ts",
+    "check": "tsx scripts/build.ts --check",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/culori": "4.0.1",
+    "culori": "4.0.2",
+    "tsx": "4.23.15"
+  }
+}

@@ -1,0 +1,410 @@
+// dtheo-check-disable-file raw-color -- this file is where the color values are defined.
+/**
+ * dtheo/ui design tokens. This file is the single source of truth.
+ * `pnpm tokens` turns it into CSS custom properties, DTCG JSON, React Native values and Figma variables,
+ * and refuses to build when a declared text/background pair misses WCAG AA.
+ *
+ * Color roles follow the shadcn/ui vocabulary (agents already know `bg-background`, `text-muted-foreground`),
+ * extended with status roles, a third text tier, chart roles and selection.
+ */
+
+export type Mode = 'light' | 'dark';
+
+export const colorRoles = [
+  'background',
+  'foreground',
+  'card',
+  'card-foreground',
+  'popover',
+  'popover-foreground',
+  'primary',
+  'primary-foreground',
+  'primary-hover',
+  'link',
+  'secondary',
+  'secondary-foreground',
+  'muted',
+  'muted-foreground',
+  'subtle-foreground',
+  'accent',
+  'accent-foreground',
+  'selection',
+  'destructive',
+  'destructive-foreground',
+  'success',
+  'success-foreground',
+  'warning',
+  'warning-foreground',
+  'info',
+  'info-foreground',
+  'border',
+  'border-strong',
+  'input',
+  'ring',
+  'overlay',
+  'sidebar',
+  'sidebar-foreground',
+  'sidebar-accent',
+  'sidebar-border',
+  'chart-1',
+  'chart-2',
+  'chart-3',
+  'chart-4',
+  'chart-5',
+  'chart-muted',
+  'chart-grid',
+  'chart-axis',
+] as const;
+
+export type ColorRole = (typeof colorRoles)[number];
+export type ColorScheme = Record<ColorRole, string>;
+
+export interface Geometry {
+  /** Buttons, inputs, menu items */
+  'radius-control': string;
+  /** Popovers, menus, small surfaces */
+  'radius-popover': string;
+  /** Cards, panels, grouped boxes */
+  'radius-card': string;
+  /** Dialogs, sheets, windows */
+  'radius-dialog': string;
+  /** Backdrop blur for translucent materials (sidebar, popovers). `0px` disables glass. */
+  'material-blur': string;
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  description: string;
+  modes: Partial<Record<Mode, ColorScheme>>;
+  geometry: Geometry;
+}
+
+const graphiteDark: ColorScheme = {
+  background: 'oklch(0.205 0.003 265)',
+  foreground: 'oklch(0.955 0.002 265)',
+  card: 'oklch(0.238 0.003 265)',
+  'card-foreground': 'oklch(0.955 0.002 265)',
+  popover: 'oklch(0.268 0.004 265)',
+  'popover-foreground': 'oklch(0.955 0.002 265)',
+  primary: 'oklch(0.555 0.205 257)',
+  'primary-foreground': 'oklch(1 0 0)',
+  'primary-hover': 'oklch(0.595 0.2 257)',
+  // Primary as text: lighter than the fill so it reads on dark surfaces.
+  link: 'oklch(0.74 0.14 252)',
+  secondary: 'oklch(1 0 0 / 0.1)',
+  'secondary-foreground': 'oklch(0.955 0.002 265)',
+  muted: 'oklch(1 0 0 / 0.055)',
+  'muted-foreground': 'oklch(0.76 0.004 265)',
+  'subtle-foreground': 'oklch(0.7 0.005 265)',
+  accent: 'oklch(1 0 0 / 0.075)',
+  'accent-foreground': 'oklch(0.955 0.002 265)',
+  selection: 'oklch(0.62 0.17 257 / 0.26)',
+  destructive: 'oklch(0.58 0.2 25)',
+  'destructive-foreground': 'oklch(0.76 0.15 22)',
+  success: 'oklch(0.74 0.18 148)',
+  'success-foreground': 'oklch(0.8 0.17 148)',
+  warning: 'oklch(0.8 0.15 72)',
+  'warning-foreground': 'oklch(0.83 0.14 75)',
+  info: 'oklch(0.7 0.13 245)',
+  'info-foreground': 'oklch(0.78 0.11 245)',
+  border: 'oklch(1 0 0 / 0.085)',
+  'border-strong': 'oklch(1 0 0 / 0.15)',
+  input: 'oklch(1 0 0 / 0.36)',
+  ring: 'oklch(0.66 0.17 257)',
+  overlay: 'oklch(0 0 0 / 0.5)',
+  sidebar: 'oklch(0.235 0.004 265 / 0.78)',
+  'sidebar-foreground': 'oklch(0.955 0.002 265)',
+  'sidebar-accent': 'oklch(1 0 0 / 0.1)',
+  'sidebar-border': 'oklch(0 0 0 / 0.5)',
+  'chart-1': 'oklch(0.68 0.16 252)',
+  'chart-2': 'oklch(0.74 0.15 55)',
+  'chart-3': 'oklch(0.72 0.12 180)',
+  'chart-4': 'oklch(0.68 0.16 305)',
+  'chart-5': 'oklch(0.75 0.14 120)',
+  'chart-muted': 'oklch(0.6 0.004 265)',
+  'chart-grid': 'oklch(1 0 0 / 0.06)',
+  'chart-axis': 'oklch(1 0 0 / 0.16)',
+};
+
+const graphiteLight: ColorScheme = {
+  background: 'oklch(0.975 0.002 265)',
+  foreground: 'oklch(0.215 0.005 265)',
+  card: 'oklch(1 0 0)',
+  'card-foreground': 'oklch(0.215 0.005 265)',
+  popover: 'oklch(0.995 0.001 265)',
+  'popover-foreground': 'oklch(0.215 0.005 265)',
+  primary: 'oklch(0.555 0.205 257)',
+  'primary-foreground': 'oklch(1 0 0)',
+  'primary-hover': 'oklch(0.515 0.2 257)',
+  link: 'oklch(0.52 0.2 257)',
+  secondary: 'oklch(0 0 0 / 0.055)',
+  'secondary-foreground': 'oklch(0.215 0.005 265)',
+  muted: 'oklch(0 0 0 / 0.035)',
+  'muted-foreground': 'oklch(0.43 0.008 265)',
+  'subtle-foreground': 'oklch(0.49 0.008 265)',
+  accent: 'oklch(0 0 0 / 0.05)',
+  'accent-foreground': 'oklch(0.215 0.005 265)',
+  selection: 'oklch(0.6 0.17 257 / 0.16)',
+  destructive: 'oklch(0.56 0.21 27)',
+  'destructive-foreground': 'oklch(0.48 0.19 27)',
+  success: 'oklch(0.62 0.17 148)',
+  'success-foreground': 'oklch(0.46 0.12 150)',
+  warning: 'oklch(0.75 0.16 70)',
+  'warning-foreground': 'oklch(0.49 0.12 60)',
+  info: 'oklch(0.6 0.15 250)',
+  'info-foreground': 'oklch(0.47 0.15 255)',
+  border: 'oklch(0 0 0 / 0.09)',
+  'border-strong': 'oklch(0 0 0 / 0.15)',
+  input: 'oklch(0 0 0 / 0.43)',
+  ring: 'oklch(0.58 0.19 257)',
+  overlay: 'oklch(0 0 0 / 0.25)',
+  sidebar: 'oklch(0.945 0.003 265 / 0.8)',
+  'sidebar-foreground': 'oklch(0.215 0.005 265)',
+  'sidebar-accent': 'oklch(0 0 0 / 0.07)',
+  'sidebar-border': 'oklch(0 0 0 / 0.1)',
+  'chart-1': 'oklch(0.55 0.19 255)',
+  'chart-2': 'oklch(0.66 0.17 50)',
+  'chart-3': 'oklch(0.6 0.12 185)',
+  'chart-4': 'oklch(0.55 0.2 305)',
+  'chart-5': 'oklch(0.62 0.15 130)',
+  'chart-muted': 'oklch(0.62 0.006 265)',
+  'chart-grid': 'oklch(0 0 0 / 0.07)',
+  'chart-axis': 'oklch(0 0 0 / 0.2)',
+};
+
+const flightDeckDark: ColorScheme = {
+  ...graphiteDark,
+  background: 'oklch(0.165 0.012 256)',
+  card: 'oklch(0.198 0.013 256)',
+  popover: 'oklch(0.245 0.015 256)',
+  foreground: 'oklch(0.965 0.004 256)',
+  'card-foreground': 'oklch(0.965 0.004 256)',
+  'popover-foreground': 'oklch(0.965 0.004 256)',
+  'secondary-foreground': 'oklch(0.965 0.004 256)',
+  'accent-foreground': 'oklch(0.965 0.004 256)',
+  'muted-foreground': 'oklch(0.79 0.012 256)',
+  'subtle-foreground': 'oklch(0.67 0.014 256)',
+  primary: 'oklch(0.81 0.105 222)',
+  'primary-foreground': 'oklch(0.21 0.04 240)',
+  'primary-hover': 'oklch(0.86 0.09 222)',
+  link: 'oklch(0.81 0.105 222)',
+  ring: 'oklch(0.81 0.105 222)',
+  selection: 'oklch(0.81 0.105 222 / 0.14)',
+  sidebar: 'oklch(0.148 0.011 256)',
+  'sidebar-border': 'oklch(1 0 0 / 0.075)',
+  'sidebar-accent': 'oklch(0.81 0.105 222 / 0.12)',
+  'chart-1': 'oklch(0.81 0.105 222)',
+  'chart-muted': 'oklch(0.64 0.012 256)',
+  'chart-grid': 'oklch(1 0 0 / 0.055)',
+};
+
+const deepSpaceDark: ColorScheme = {
+  ...graphiteDark,
+  background: 'oklch(0.13 0.02 275)',
+  card: 'oklch(0.2 0.03 282 / 0.55)',
+  popover: 'oklch(0.24 0.04 284 / 0.9)',
+  foreground: 'oklch(0.975 0.006 285)',
+  'card-foreground': 'oklch(0.975 0.006 285)',
+  'popover-foreground': 'oklch(0.975 0.006 285)',
+  'secondary-foreground': 'oklch(0.975 0.006 285)',
+  'accent-foreground': 'oklch(0.975 0.006 285)',
+  'muted-foreground': 'oklch(0.82 0.02 285)',
+  'subtle-foreground': 'oklch(0.7 0.028 285)',
+  secondary: 'oklch(0.9 0.06 290 / 0.1)',
+  muted: 'oklch(0.9 0.06 290 / 0.06)',
+  accent: 'oklch(0.9 0.06 290 / 0.08)',
+  border: 'oklch(0.88 0.05 290 / 0.1)',
+  'border-strong': 'oklch(0.88 0.05 290 / 0.17)',
+  primary: 'oklch(0.77 0.15 292)',
+  'primary-foreground': 'oklch(0.18 0.05 290)',
+  'primary-hover': 'oklch(0.83 0.13 292)',
+  link: 'oklch(0.8 0.13 292)',
+  ring: 'oklch(0.8 0.14 292)',
+  selection: 'oklch(0.76 0.15 292 / 0.18)',
+  sidebar: 'oklch(0.13 0.02 278 / 0.55)',
+  'sidebar-border': 'oklch(0.88 0.05 290 / 0.1)',
+  'sidebar-accent': 'oklch(0.76 0.15 292 / 0.16)',
+  'chart-1': 'oklch(0.82 0.13 292)',
+  'chart-muted': 'oklch(0.66 0.03 275)',
+  'chart-grid': 'oklch(0.9 0.05 290 / 0.06)',
+  'chart-axis': 'oklch(0.9 0.05 290 / 0.18)',
+};
+
+export const presets: Preset[] = [
+  {
+    id: 'graphite',
+    name: 'Graphite',
+    description:
+      'Native, neutral and calm. Mac-like materials, system blue, color only where attention is needed.',
+    modes: { light: graphiteLight, dark: graphiteDark },
+    geometry: {
+      'radius-control': '6px',
+      'radius-popover': '8px',
+      'radius-card': '10px',
+      'radius-dialog': '12px',
+      'material-blur': '24px',
+    },
+  },
+  {
+    id: 'flight-deck',
+    name: 'Flight deck',
+    description: 'Soft graphite with a blue bias and an ice-blue action. Depth from lightness, no glass.',
+    modes: { dark: flightDeckDark },
+    geometry: {
+      'radius-control': '8px',
+      'radius-popover': '10px',
+      'radius-card': '14px',
+      'radius-dialog': '16px',
+      'material-blur': '0px',
+    },
+  },
+  {
+    id: 'deep-space',
+    name: 'Deep space',
+    description:
+      'Near-black void, nebula light and frosted glass for docs heroes, onboarding and empty states.',
+    modes: { dark: deepSpaceDark },
+    geometry: {
+      'radius-control': '10px',
+      'radius-popover': '12px',
+      'radius-card': '16px',
+      'radius-dialog': '18px',
+      'material-blur': '22px',
+    },
+  },
+];
+
+/** Mode-independent tokens: type, motion, controls, elevation. */
+export const foundation = {
+  font: {
+    sans: 'system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", Arial, sans-serif',
+    mono: 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace',
+  },
+  /** [size, line-height, letter-spacing, weight]. Tracking tightens as size grows, as Apple's tables do. */
+  text: {
+    caption: ['11px', '14px', '0.005em', '400'],
+    label: ['12px', '16px', '0em', '500'],
+    body: ['13px', '18px', '-0.003em', '400'],
+    callout: ['14px', '20px', '-0.006em', '400'],
+    prose: ['15px', '24px', '-0.009em', '400'],
+    headline: ['15px', '20px', '-0.012em', '600'],
+    'title-3': ['17px', '22px', '-0.016em', '600'],
+    'title-2': ['20px', '25px', '-0.018em', '650'],
+    'title-1': ['24px', '30px', '-0.02em', '650'],
+    'large-title': ['32px', '38px', '-0.024em', '700'],
+    display: ['44px', '48px', '-0.03em', '680'],
+  },
+  control: {
+    xs: '22px',
+    sm: '24px',
+    md: '28px',
+    lg: '32px',
+    /** Coarse pointers get at least this height for primary controls. */
+    touch: '36px',
+  },
+  ease: {
+    out: 'cubic-bezier(0.23, 1, 0.32, 1)',
+    'in-out': 'cubic-bezier(0.77, 0, 0.175, 1)',
+    drawer: 'cubic-bezier(0.32, 0.72, 0, 1)',
+  },
+  duration: {
+    press: '120ms',
+    hover: '150ms',
+    popover: '180ms',
+    dialog: '240ms',
+    toast: '400ms',
+  },
+  shadow: {
+    light: {
+      raised: '0 0.5px 1px oklch(0 0 0 / 0.12), 0 1px 2px oklch(0 0 0 / 0.06)',
+      popover:
+        '0 0 0 0.5px oklch(0 0 0 / 0.12), 0 8px 24px oklch(0 0 0 / 0.12), 0 2px 6px oklch(0 0 0 / 0.06)',
+      dialog:
+        '0 0 0 0.5px oklch(0 0 0 / 0.14), 0 24px 64px oklch(0 0 0 / 0.2), 0 4px 12px oklch(0 0 0 / 0.08)',
+    },
+    dark: {
+      raised: 'inset 0 0.5px 0 oklch(1 0 0 / 0.1), 0 1px 2px oklch(0 0 0 / 0.4)',
+      popover:
+        'inset 0 0 0 1px oklch(1 0 0 / 0.1), 0 0 0 0.5px oklch(0 0 0 / 0.8), 0 12px 32px oklch(0 0 0 / 0.5)',
+      dialog:
+        'inset 0 0 0 1px oklch(1 0 0 / 0.1), 0 0 0 0.5px oklch(0 0 0 / 0.8), 0 28px 80px oklch(0 0 0 / 0.6)',
+    },
+  },
+} as const;
+
+/** Foreground/background pairs that must meet WCAG AA. `min` is the required ratio. */
+export const contrastPairs: Array<{
+  fg: ColorRole | 'white';
+  bg: ColorRole;
+  /** The surface(s) under `bg`, nearest first, all resting on `background`: ['selection', 'card']. */
+  over?: ColorRole | ColorRole[];
+  /** Draw `bg` at this opacity (a status badge is its role at 15 %). */
+  tint?: number;
+  min: number;
+  note: string;
+}> = [
+  { fg: 'foreground', bg: 'background', min: 4.5, note: 'Body text' },
+  { fg: 'card-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Text on cards' },
+  { fg: 'popover-foreground', bg: 'popover', over: 'background', min: 4.5, note: 'Text in menus' },
+  { fg: 'muted-foreground', bg: 'background', min: 4.5, note: 'Secondary text' },
+  { fg: 'muted-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Secondary text on cards' },
+  { fg: 'muted-foreground', bg: 'popover', over: 'background', min: 4.5, note: 'Secondary text in menus' },
+  { fg: 'subtle-foreground', bg: 'background', min: 4.5, note: 'Tertiary text, captions' },
+  { fg: 'subtle-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Tertiary text on cards' },
+  { fg: 'secondary-foreground', bg: 'secondary', over: 'card', min: 4.5, note: 'Secondary button label' },
+  { fg: 'primary-foreground', bg: 'primary', min: 4.5, note: 'Primary button label' },
+  { fg: 'white', bg: 'destructive', min: 4.5, note: 'Destructive button label' },
+  { fg: 'destructive-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Error text' },
+  { fg: 'success-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Success text' },
+  { fg: 'warning-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Warning text' },
+  { fg: 'info-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Info text' },
+  { fg: 'foreground', bg: 'selection', over: 'card', min: 4.5, note: 'Selected row text' },
+  { fg: 'sidebar-foreground', bg: 'sidebar', over: 'background', min: 4.5, note: 'Sidebar text' },
+  { fg: 'input', bg: 'card', over: 'background', min: 3, note: 'Field boundary (non-text, 1.4.11)' },
+  { fg: 'ring', bg: 'background', min: 3, note: 'Focus ring (non-text)' },
+  { fg: 'chart-1', bg: 'card', over: 'background', min: 3, note: 'Primary series (graphical object)' },
+  { fg: 'link', bg: 'background', min: 4.5, note: 'Links and primary-tinted text' },
+  { fg: 'link', bg: 'card', over: 'background', min: 4.5, note: 'Links on cards' },
+  { fg: 'link', bg: 'popover', over: 'background', min: 4.5, note: 'Links in menus' },
+  { fg: 'subtle-foreground', bg: 'secondary', over: 'card', min: 4.5, note: 'Captions on a filled control' },
+  {
+    fg: 'subtle-foreground',
+    bg: 'sidebar-accent',
+    over: 'sidebar',
+    min: 4.5,
+    note: 'Counts on the active sidebar item',
+  },
+  {
+    fg: 'destructive-foreground',
+    bg: 'destructive',
+    tint: 0.15,
+    over: ['selection', 'card'],
+    min: 4.5,
+    note: 'Error badge on a selected row',
+  },
+  {
+    fg: 'success-foreground',
+    bg: 'success',
+    tint: 0.15,
+    over: ['selection', 'card'],
+    min: 4.5,
+    note: 'Success badge on a selected row',
+  },
+  {
+    fg: 'warning-foreground',
+    bg: 'warning',
+    tint: 0.15,
+    over: ['selection', 'card'],
+    min: 4.5,
+    note: 'Warning badge on a selected row',
+  },
+  {
+    fg: 'info-foreground',
+    bg: 'info',
+    tint: 0.15,
+    over: ['selection', 'card'],
+    min: 4.5,
+    note: 'Info badge on a selected row',
+  },
+];
