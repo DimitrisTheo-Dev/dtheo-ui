@@ -30,6 +30,8 @@ for (const theme of ['dark', 'light'] as const) {
       }, theme);
       await page.goto(path);
       await page.waitForLoadState('networkidle');
+      // Audit the page people use: after React has hydrated and Base UI has wired up labels and ids.
+      await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
       const { violations } = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
         .analyze();
