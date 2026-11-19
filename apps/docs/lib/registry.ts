@@ -84,6 +84,23 @@ const baseItems = (): RegistryItem[] => [
     ],
   },
   {
+    name: 'lab-data',
+    type: 'registry:lib',
+    title: 'Lab data',
+    description:
+      'Synthetic bench data for the chart examples: a Bode response, a spectrum, 412 runs and a live bench. Not real measurements.',
+    dependencies: [],
+    registryDependencies: [],
+    files: [
+      {
+        path: 'registry/dtheo/lib/lab-data.ts',
+        type: 'registry:lib',
+        target: 'lib/lab-data.ts',
+        content: repoFile('apps/docs/lib/lab-data.ts'),
+      },
+    ],
+  },
+  {
     name: 'styles',
     type: 'registry:file',
     title: 'Styles',
