@@ -45,7 +45,8 @@ export function HeroPreview() {
             limit={10 / 15}
           />
           <Metric
-            label="Peak current"
+            label="Current"
+            hint="Peak phase current"
             value={fmt.n1.format(M.peakCurrent)}
             unit="A"
             status="warn"
