@@ -42,7 +42,9 @@ const config: NextConfig = {
     return [
       // Markdown mirrors for agents: /docs/components/button.md -> rendered from the same contract as the page
       { source: '/docs/:path*.md', destination: '/md/docs/:path*' },
-      { source: '/.well-known/ai-catalog.json', destination: '/api/ai-catalog' },
+      // Agentic Resource Discovery; ai-catalog.json is the name the spec had before
+      { source: '/.well-known/ard.json', destination: '/api/ard' },
+      { source: '/.well-known/ai-catalog.json', destination: '/api/ard' },
     ];
   },
 };

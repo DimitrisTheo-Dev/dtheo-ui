@@ -43,7 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* dtheo-check-ignore-next-line (a constant inline script that sets the theme before paint, so there is no flash) */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
-        <link rel="ai-catalog" href="/.well-known/ai-catalog.json" />
+        <link rel="ard" href="/.well-known/ard.json" />
         {/* WebMCP: offers the read-only docs tools to in-page agents when the browser supports document.modelContext */}
         <script src="/mcp?webmcp-script" defer />
       </head>

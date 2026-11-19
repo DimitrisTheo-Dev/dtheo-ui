@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { categories, components } from '@dtheo/ui/meta';
 import { registryItem, registryNames } from '@/lib/registry';
+import { ardManifest } from '@/lib/ard';
 import { llmsTxt } from '@/lib/markdown';
 import { exampleSource } from '@/lib/source';
 import { pageUsage, usedIn } from '@/lib/usage';
@@ -89,6 +90,21 @@ describe('registry', () => {
 });
 
 describe('agent surfaces', () => {
+  it('publishes an ARD manifest registries can index', () => {
+    const { entries } = ardManifest();
+    const ids = entries.map((e) => e.identifier);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const e of entries) {
+      // ARD v0.91: a host-anchored URN, a name, an application media type, url xor data, and 2-5 sample queries.
+      expect(e.identifier).toMatch(/^urn:air:ui\.dtheo\.dev(:[a-zA-Z0-9._-]+)+$/);
+      expect(e.displayName).toBeTruthy();
+      expect(e.type).toMatch(/^application\/[\w.+-]+$/);
+      expect(('url' in e) !== ('data' in e), `${e.identifier} has exactly one of url and data`).toBe(true);
+      expect(e.representativeQueries.length).toBeGreaterThanOrEqual(2);
+      expect(e.representativeQueries.length).toBeLessThanOrEqual(5);
+    }
+  });
+
   it('lists every component in llms.txt', () => {
     const txt = llmsTxt();
     for (const c of components) expect(txt).toContain(c.title);
