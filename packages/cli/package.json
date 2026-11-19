@@ -1,0 +1,44 @@
+{
+  "name": "dtheo",
+  "version": "0.1.0",
+  "description": "Add dtheo/ui components to any React project, and check UI code against the system. Built for people and agents.",
+  "keywords": [
+    "accessibility",
+    "base-ui",
+    "cli",
+    "design-system",
+    "lint",
+    "mcp",
+    "react",
+    "shadcn",
+    "tailwindcss"
+  ],
+  "homepage": "https://ui.dtheo.dev",
+  "bugs": {
+    "url": "https://github.com/DimitrisTheo-Dev/dtheo-ui/issues"
+  },
+  "license": "MIT",
+  "author": "Dimitris Theodoropoulos",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DimitrisTheo-Dev/dtheo-ui.git",
+    "directory": "packages/cli"
+  },
+  "bin": {
+    "dtheo": "./src/bin.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "type": "module",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./check": "./src/check.mjs"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
