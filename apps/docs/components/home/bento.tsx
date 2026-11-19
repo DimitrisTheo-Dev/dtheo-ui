@@ -5,6 +5,7 @@ import { Button } from '@dtheo/ui/components/button';
 import { ThemeScope, type ThemePreset } from '@dtheo/ui/lib/theme';
 import contrast from '@dtheo/tokens/contrast.json';
 import { ruleList } from 'dtheo/check';
+import { A11yDemo } from './a11y-demo';
 
 const passing = contrast.filter((r) => r.ok).length;
 
@@ -45,7 +46,7 @@ const presets: Array<{ preset: ThemePreset; name: string; dark: boolean }> = [
   { preset: 'deep-space', name: 'Deep space', dark: true },
 ];
 
-/** Six reasons, each one a picture and a sentence. */
+/** Seven reasons, each one a picture and a sentence. */
 export function Bento() {
   return (
     <ul className="grid gap-3 lg:grid-cols-3">
@@ -80,6 +81,34 @@ export function Bento() {
           <CircleCheckIcon className="size-3.5" aria-hidden="true" />
           Pass WCAG AA
         </span>
+      </Tile>
+
+      <Tile
+        className="lg:col-span-3"
+        title="Accessible by default"
+        text="Everything works from the keyboard and reads aloud, charts included."
+      >
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-center lg:gap-8">
+          <A11yDemo />
+          <ul className="flex flex-col gap-2 text-body">
+            {[
+              'Every control and chart works from the keyboard',
+              'A focus ring you can see, in every theme',
+              'Status is an icon and a word, never color alone',
+              'Focus traps, typeahead and roving focus from Base UI',
+              'Animations stop when reduced motion is on',
+              'axe checks the pages in both themes on every pull request',
+            ].map((f) => (
+              <li key={f} className="flex gap-2">
+                <CircleCheckIcon
+                  className="mt-0.5 size-4 shrink-0 text-success-foreground"
+                  aria-hidden="true"
+                />
+                {f}
+              </li>
+            ))}
+          </ul>
+        </div>
       </Tile>
 
       <Tile

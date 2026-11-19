@@ -76,7 +76,7 @@ export function AgentDemo() {
       <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div
           key={run}
-          className="flex flex-col justify-between gap-6 border-border bg-background/40 p-4 max-lg:border-b sm:p-5 lg:border-r"
+          className="flex flex-col gap-5 border-border bg-background/40 p-4 max-lg:border-b sm:p-5 lg:border-r"
         >
           <ol aria-label="Agent steps" className="flex flex-col gap-2.5 font-mono text-label font-normal">
             {steps.map((s, i) => (
@@ -100,9 +100,19 @@ export function AgentDemo() {
               </li>
             ))}
           </ol>
-          <dl
-            className="demo-in grid grid-cols-3 gap-2 border-t border-border pt-4"
+          <p
+            className="demo-in flex gap-2.5 rounded-popover border border-border bg-card/60 px-3 py-2.5 text-body text-pretty"
             style={{ '--i': steps.length } as React.CSSProperties}
+          >
+            <SparkleIcon className="mt-0.5 size-3.5 shrink-0 text-link" aria-hidden="true" />
+            <span>
+              Done. <code className="font-mono text-label">run-card.tsx</code> shows the three acceptance checks and
+              the torque trace against its 10 % limit. Overshoot fails, so the card asks for a retune.
+            </span>
+          </p>
+          <dl
+            className="demo-in mt-auto grid grid-cols-3 gap-2 border-t border-border pt-4"
+            style={{ '--i': steps.length + 1 } as React.CSSProperties}
           >
             {[
               ['MCP calls', '1'],
