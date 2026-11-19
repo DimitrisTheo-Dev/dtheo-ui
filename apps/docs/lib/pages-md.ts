@@ -1,0 +1,253 @@
+// dtheo-check-disable-file transition-all, scale-zero, ease-in -- documentation that quotes the rules.
+import { site } from './site';
+import { agentsMarkdown } from './agents';
+
+/**
+ * Long-form docs pages, authored once in Markdown. The HTML page renders this text and the `.md` mirror serves it
+ * verbatim, so people and agents read the same words.
+ */
+export const pagesMarkdown: Record<string, string> = {
+  index: `# Introduction
+
+> ${site.description}
+
+${site.name} is built for the tools engineers use every day: run reviews, dashboards, trackers and assistants. The interfaces are dense where the data needs it and calm everywhere else, so a first-time user can find the problem and the next step without asking.
+
+## Principles
+
+- **Color marks attention.** Surfaces are neutral. Green, amber and red appear only when something needs a person, and always with a word or an icon.
+- **Native by default.** System fonts, Mac-like materials, a focus ring you can always see, motion that responds immediately and never makes you wait.
+- **Summary before detail.** Checks first, then the evidence (charts, tables), then the record.
+- **One source of truth.** Each component has one contract that drives its page, its Markdown, the registry, the MCP server and the CLI.
+- **Proof over claims.** Every text color pair is contrast-checked when tokens build; the build fails below WCAG AA.
+
+## What is in the box
+
+- 35 components on Base UI, styled with Tailwind CSS v4 and OKLCH tokens.
+- 8 engineering charts: line (limits, bands, synced crosshair, keyboard reading), bar, heatmap, sparkline, a live stream chart, frequency (spectrum and Bode with margins), scatter and histogram (spec limits and Cpk).
+- 3 presets: Graphite (default), Flight deck and Deep space, each a different character from the same components.
+- Agent surfaces: \`/llms.txt\`, a \`.md\` mirror of every page, a shadcn-compatible registry, an MCP server at \`/mcp\`, and the \`dtheo\` CLI with a design checker.
+`,
+
+  installation: `# Installation
+
+> Add ${site.name} to a Next.js or Vite app with Tailwind CSS v4.
+
+## 1. Initialize
+
+Run this in a React project that already uses Tailwind CSS v4 and the \`@/\` import alias:
+
+\`\`\`bash
+npx ${site.cli}@latest init
+\`\`\`
+
+It adds three things: \`lib/utils.ts\` (the \`cn\` helper), \`lib/theme.tsx\` (\`ThemeScope\` for scoped themes) and \`styles/dtheo.css\` (tokens, theme and base styles).
+
+## 2. Import the styles
+
+In your global CSS, after Tailwind:
+
+\`\`\`css
+@import "tailwindcss";
+@import "./styles/dtheo.css";
+\`\`\`
+
+## 3. Choose a mode and preset
+
+Set the mode with a class and the preset with an attribute on \`<html>\` (or on any element, see Theming):
+
+\`\`\`tsx
+<html lang="en" className="dark" data-preset="graphite">
+\`\`\`
+
+## 4. Add components
+
+\`\`\`bash
+npx ${site.cli} add button field select table line-chart
+\`\`\`
+
+Components are copied into \`components/ui\` (charts into \`components/charts\`). You own the code. The command prints the npm dependencies to install.
+
+## 5. Mount the providers
+
+\`\`\`tsx
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toast";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className="dark">
+      <body>
+        <TooltipProvider>
+          <Toaster>{children}</Toaster>
+        </TooltipProvider>
+      </body>
+    </html>
+  );
+}
+\`\`\`
+
+## Using the shadcn CLI instead
+
+Every item is a valid shadcn registry item:
+
+\`\`\`bash
+npx shadcn@latest add ${site.url}/r/button.json
+\`\`\`
+
+## Check your UI code
+
+\`\`\`bash
+npx ${site.cli} check src
+\`\`\`
+
+It flags raw colors, palette classes, \`transition-all\`, unlabeled icon buttons and other mistakes, with the fix for each. Add it to CI; it exits with 1 on errors.
+`,
+
+  theming: `# Theming
+
+> Mode, preset and density are attributes, not separate stylesheets. Components never change.
+
+## Light and dark
+
+The \`dark\` class switches every color role. Put it on \`<html>\` for the whole app, or on any element to scope it:
+
+\`\`\`tsx
+import { ThemeScope } from "@/lib/theme";
+
+<ThemeScope mode="light" preset="graphite">
+  <RunReview />
+</ThemeScope>
+\`\`\`
+
+Overlays opened inside a \`ThemeScope\` (menus, dialogs, tooltips, toasts) mount inside it, so they keep the scope's theme.
+
+## Presets
+
+| Preset | Character | Modes |
+| --- | --- | --- |
+| \`graphite\` | Native and neutral, Mac-like materials, system blue | light, dark |
+| \`flight-deck\` | Soft graphite with a blue bias, ice-blue action, no glass | dark |
+| \`deep-space\` | Near-black, nebula light, frosted glass | dark |
+
+Each tool in a suite can pick its preset and keep its own character while clearly belonging to the same family. Presets without a light mode fall back to Graphite light.
+
+## Tokens
+
+Colors use the shadcn role names (\`background\`, \`foreground\`, \`card\`, \`primary\`, \`muted-foreground\`, …) plus \`subtle-foreground\`, \`selection\`, status roles (\`success\`, \`warning\`, \`info\`, \`destructive\`, each with a readable \`-foreground\` text color) and chart roles. The source is \`packages/tokens/src/index.ts\`; \`pnpm tokens\` generates CSS, DTCG JSON and React Native values and fails if any declared pair misses WCAG AA.
+
+## React Native and Expo
+
+Native apps cannot read CSS variables. Import the generated hex values instead:
+
+\`\`\`ts
+import { colors, radii } from "@dtheo/tokens/native";
+
+const card = colors.graphite.dark.card;
+\`\`\`
+`,
+
+  agents: agentsMarkdown(),
+
+  cli: `# CLI
+
+> \`${site.cli}\` copies components into your project and checks UI code against the system. It is built for scripts and agents: every command takes \`--json\`.
+
+## Commands
+
+\`\`\`bash
+npx ${site.cli} init                 # utils, ThemeScope and styles
+npx ${site.cli} add button table     # components and what they need
+npx ${site.cli} list chart           # search the registry
+npx ${site.cli} check src            # design check, exits 1 on errors
+npx ${site.cli} rules                # what each check means
+npx ${site.cli} mcp                  # MCP config for your editor or agent
+\`\`\`
+
+## Options
+
+| Option | Meaning |
+| --- | --- |
+| \`--registry <url>\` | Use another registry (default ${site.url}, or \`$DTHEO_REGISTRY\`) |
+| \`--cwd <dir>\` | Run against another project directory |
+| \`--overwrite\` | Replace files that already exist (skipped by default) |
+| \`--dry-run\` | Show what would be written |
+| \`--json\` | Machine-readable output |
+
+## Safety
+
+The CLI only reads from the registry, over HTTPS unless the host is local. It refuses absolute paths, \`..\` segments and anything that would land outside your project, and never runs code it downloads. Dependencies are printed for you to install.
+`,
+
+  'atomic-design': `# Atomic design
+
+> The system is layered the way Brad Frost describes it, but navigation uses the names engineers search for.
+
+| Level | In ${site.name} | Examples |
+| --- | --- | --- |
+| Atoms | Foundations and single-purpose controls | tokens, Button, Input, Checkbox, Badge, Kbd, Sparkline |
+| Molecules | Small groups with one job | Field, Select, Combobox, Menu, Metric, Card, Table |
+| Organisms | Complex sections | Dialog, Sheet, Command palette, Line chart, Heatmap |
+| Templates | Page structures without content | App shell, Data table, Forms, States |
+| Pages | Templates with real data | Run review, Motor map, Lab assistant |
+
+Every component page has a **Used in** section: the templates and pages that depend on it. Before changing a component, look there; that is the blast radius of the change, and the list of screens to review.
+`,
+
+  'patterns/data-table': `# Data table
+
+> A table people can search, filter, sort, select and recover from: the most common screen in an engineering tool.
+
+## Structure
+
+1. A toolbar above the table: search on the left, filters next to it, view options and the primary action on the right.
+2. The table: identifiers in monospace, numbers right-aligned with tabular figures, units in the header or after the value, status as a badge with a word.
+3. A footer with the count ("8 of 412 runs") and pagination.
+
+## States
+
+- **Loading**: skeleton rows shaped like real rows, so nothing shifts when data arrives.
+- **No data yet**: say what will appear here and how to create the first item.
+- **No results**: name the filter that excluded everything and offer to clear it.
+- **Failed to load**: say what failed, keep the filters, offer Retry.
+
+## Rules
+
+- Never truncate numbers, units or identifiers that people compare.
+- Selection shows a count and the actions that apply to the selection.
+- Row actions live in a "…" menu at the end of the row; the row itself opens the item.
+- Wide tables scroll inside their container; the page never scrolls sideways.
+`,
+
+  'patterns/forms': `# Forms
+
+> Labels above fields, help where the decision is made, validation that says what to do, and a save that never loses work.
+
+## Rules
+
+- Every field has a visible label. Placeholders show format, not meaning.
+- Mark the exception: if most fields are required, mark the optional ones.
+- Validate on blur and on submit, not on every keystroke. The message names the problem and the fix: "Enter a gain between 0 and 10."
+- Show units in the field (N·m, ms) instead of in the label.
+- Save buttons say what they do ("Save limits"). While saving, the button shows progress and keeps its width.
+- A failed save keeps every value, says what went wrong and offers Retry. A successful save confirms with a toast.
+- Warn before leaving with unsaved changes; offer to save or discard.
+`,
+
+  'patterns/states': `# Loading, empty and error states
+
+> Each state has a different reason and a different next step. Write them deliberately.
+
+| State | Say | Offer |
+| --- | --- | --- |
+| Loading (under 300 ms) | Nothing; show the content when ready | – |
+| Loading (longer) | A skeleton shaped like the content, or a spinner with what is loading | Cancel, if it is long |
+| No data yet | What will appear here | The action that creates the first item |
+| No results | Which filter excluded everything | Clear the filter |
+| No permission | Who can grant access | Request access |
+| Error | What failed, in plain words; whether data was lost | Retry; a way to report it |
+| Partial | What loaded and what did not | Retry the failed part |
+
+Never show raw error codes or stack traces as the message. Never fake progress: use an indeterminate indicator when the duration is unknown.
+`,
+};
