@@ -23,11 +23,16 @@ const ci = process.env.GITHUB_ACTIONS === 'true';
 function run(cmd, cmdArgs, opts = {}) {
   const result = spawnSync(cmd, cmdArgs, { encoding: 'utf8', stdio: 'inherit', ...opts });
   if (result.status !== 0) {
-    console.error(`\n${cmd} ${cmdArgs.join(' ')} failed with exit code ${result.status}.`);
+    console.error(`\n${cmd} ${cmdArgs.join(' ')} failed: ${result.error?.message ?? `exit code ${result.status}`}.`);
     process.exit(result.status ?? 1);
   }
   return result;
 }
+
+// pnpm is on PATH in CI (corepack enable) but often not in a fresh shell; corepack runs the pinned version then.
+const pnpm = spawnSync('pnpm', ['--version'], { stdio: 'ignore' }).error
+  ? (pnpmArgs, opts) => run('corepack', ['pnpm', ...pnpmArgs], opts)
+  : (pnpmArgs, opts) => run('pnpm', pnpmArgs, opts);
 
 function isPublished(name, version) {
   const result = spawnSync('npm', ['view', `${name}@${version}`, 'version'], { encoding: 'utf8' });
@@ -58,7 +63,7 @@ try {
     }
     console.log(`\n${dryRun ? 'Would publish' : 'Publishing'} ${name}@${version}`);
     const dest = join(out, name.replace('/', '-'));
-    run('pnpm', ['pack', '--pack-destination', dest], { cwd: dir, stdio: ['ignore', 'ignore', 'inherit'] });
+    pnpm(['pack', '--pack-destination', dest], { cwd: dir, stdio: ['ignore', 'ignore', 'inherit'] });
     const tarball = readdirSync(dest).find((f) => f.endsWith('.tgz'));
     if (!tarball) throw new Error(`pnpm pack wrote no tarball for ${name}`);
     run('npm', [
