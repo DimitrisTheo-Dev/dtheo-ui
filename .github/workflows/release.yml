@@ -1,0 +1,36 @@
+name: Release
+
+# Publishes every package whose version is not on npm yet. Bump the version in a pull request, merge it, then run
+# this from the Actions tab (or `gh workflow run release.yml`). npm trusts this workflow file in the `npm`
+# environment (trusted publishing), so no npm token exists anywhere, and each version carries a provenance
+# attestation that links it to this repository and commit.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # the OIDC token npm exchanges for a short-lived publish credential
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: node scripts/release.mjs --dry-run
+      - run: node scripts/release.mjs

@@ -16,6 +16,7 @@ The docs app runs Next.js 16; read `apps/docs/AGENTS.md` before writing Next cod
 | Regenerate example index / usage graph | `pnpm examples` / `pnpm usage` |
 | Recapture the example screenshots on the landing page | `pnpm screens` (dev server running) |
 | Check UI code against the system | `node packages/cli/src/bin.mjs check <paths or globs>` |
+| See what a release would publish | `pnpm release --dry-run` |
 
 Use pnpm 11 through corepack. New dependencies must be at least two weeks old (`minimumReleaseAge`).
 
@@ -51,6 +52,14 @@ Use pnpm 11 through corepack. New dependencies must be at least two weeks old (`
 Edit `packages/tokens/src/index.ts`, then `pnpm tokens`. The build fails if any pair in `contrastPairs` drops below
 its minimum. When a new surface or text combination appears in the UI, add the pair first (layered surfaces are
 supported: `over: ['selection', 'card']`, `tint: 0.15`).
+
+## Releasing
+
+`@dtheo/tokens` and `dtheo` (the CLI) are published to npm by the **Release** workflow
+(`.github/workflows/release.yml`), never from a laptop once a package exists. Bump `version` in the package's
+`package.json` in a pull request; after it merges, the owner runs the workflow (`gh workflow run release.yml`). It
+publishes every version that is not on npm yet through trusted publishing, with provenance; prereleases go to the
+`next` tag. Packages are packed with pnpm because `publishConfig` swaps in the compiled exports.
 
 ## Boundaries
 
