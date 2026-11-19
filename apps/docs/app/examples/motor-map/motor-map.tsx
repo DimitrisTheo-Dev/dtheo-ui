@@ -241,7 +241,7 @@ export function MotorMap() {
             <Card>
               <CardHeader>
                 <div className="flex flex-col gap-0.5">
-                  <CardTitle>{q.label}</CardTitle>
+                  <CardTitle level={2}>{q.label}</CardTitle>
                   <CardDescription>
                     Shaft speed against torque, within the peak torque envelope
                   </CardDescription>
@@ -306,7 +306,7 @@ export function MotorMap() {
               <Card>
                 <CardHeader>
                   <div className="flex flex-col gap-0.5">
-                    <CardTitle>Torque–speed envelope</CardTitle>
+                    <CardTitle level={2}>Torque–speed envelope</CardTitle>
                     <CardDescription>
                       Constant torque to {nf(0).format(N_BASE)} rpm, then constant power (
                       {nf(0).format(P_PEAK)} kW)
@@ -365,7 +365,7 @@ export function MotorMap() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Recent sweeps</CardTitle>
+                  <CardTitle level={2}>Recent sweeps</CardTitle>
                   <CardAction>
                     <Badge variant="outline">4 of 118</Badge>
                   </CardAction>

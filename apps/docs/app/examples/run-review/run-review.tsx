@@ -283,7 +283,7 @@ export function RunReview() {
             <Card className="order-3 xl:order-none">
               <CardHeader>
                 <div className="flex min-w-0 flex-col gap-0.5">
-                  <CardTitle>Step response</CardTitle>
+                  <CardTitle level={2}>Step response</CardTitle>
                   <CardDescription>
                     Torque command 0 → 12 N·m at 20 ms, against the last passing run
                   </CardDescription>
@@ -438,7 +438,7 @@ export function RunReview() {
             <Card className="order-4 xl:order-none">
               <CardHeader>
                 <div className="flex flex-col gap-0.5">
-                  <CardTitle>Run history</CardTitle>
+                  <CardTitle level={2}>Run history</CardTitle>
                   <CardDescription>RA-14 hip pitch, last 8 runs</CardDescription>
                 </div>
               </CardHeader>
@@ -589,7 +589,7 @@ export function RunReview() {
 
             <Card className="order-5 xl:order-none">
               <CardHeader className="pb-1">
-                <CardTitle className="text-label text-muted-foreground">Overshoot by run</CardTitle>
+                <CardTitle level={2} className="text-label text-muted-foreground">Overshoot by run</CardTitle>
               </CardHeader>
               <CardContent className="pt-1 pb-2">
                 <BarChart
@@ -610,7 +610,7 @@ export function RunReview() {
 
             <Card className="order-6 xl:order-none">
               <CardHeader className="pb-1">
-                <CardTitle className="text-label text-muted-foreground">Controller gains</CardTitle>
+                <CardTitle level={2} className="text-label text-muted-foreground">Controller gains</CardTitle>
               </CardHeader>
               <CardContent className="pt-1">
                 <dl className="grid grid-cols-[auto_1fr] text-body">
@@ -870,7 +870,7 @@ function NotesCard({
   return (
     <Card className={className}>
       <CardHeader className="pb-1">
-        <CardTitle className="text-label text-muted-foreground">Notes</CardTitle>
+        <CardTitle level={2} className="text-label text-muted-foreground">Notes</CardTitle>
         {notes.length && !editing ? (
           <CardAction>
             <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>

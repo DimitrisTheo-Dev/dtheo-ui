@@ -789,6 +789,15 @@ export const components: ComponentMeta[] = [
     dependencies: styling,
     registryDependencies: ['utils'],
     examples: ['card'],
+    props: [
+      {
+        name: 'level',
+        type: '2 | 3 | 4',
+        default: '3',
+        description:
+          'CardTitle heading level. Use 2 when cards sit directly under the page title, so headings never skip a level.',
+      },
+    ],
   },
   {
     slug: 'metric',

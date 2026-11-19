@@ -236,9 +236,14 @@ export async function ComponentDoc({ meta }: { meta: ComponentMeta }) {
         />
       }
     >
-      <div id="preview" className="scroll-mt-20">
+      <section id="preview" aria-labelledby="preview-heading" className="scroll-mt-20">
+        {/* Listed in the table of contents; hidden on screen, where the demo speaks for itself. It also keeps the
+            outline whole: headings inside the demo are h3s and need an h2 above them. */}
+        <h2 id="preview-heading" className="sr-only">
+          Preview
+        </h2>
         {first ? <ExampleBlock id={first} first /> : null}
-      </div>
+      </section>
       <WhenToUse meta={meta} />
       {rest.length ? (
         <DocSection title="Examples">
