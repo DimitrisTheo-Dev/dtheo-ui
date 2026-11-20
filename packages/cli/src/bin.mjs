@@ -2,7 +2,7 @@
 /**
  * dtheo: add dtheo/ui components to a React project, and check UI code against the system.
  *
- *   dtheo init                     add utils, theme scope and the stylesheet
+ *   dtheo init                     add utils, theme scope and the stylesheet, and import it in the global CSS
  *   dtheo add <item...>            copy components (and what they need) into your project
  *   dtheo list [query]             list registry items
  *   dtheo check [paths...]         check UI code for design-system mistakes (offline)
@@ -100,14 +100,30 @@ function targetFor(file) {
   return full;
 }
 
-async function add(names) {
-  if (!names.length) fail('Name at least one item: dtheo add button select');
+/** The install command for the project's package manager, or null when there is nothing to install. */
+function installCommand(packages, dev) {
+  if (!packages.size) return null;
+  const pm = existsSync(join(cwd, 'pnpm-lock.yaml'))
+    ? 'pnpm add'
+    : existsSync(join(cwd, 'bun.lock')) || existsSync(join(cwd, 'bun.lockb'))
+      ? 'bun add'
+      : existsSync(join(cwd, 'yarn.lock'))
+        ? 'yarn add'
+        : 'npm install';
+  return `${pm}${dev ? ' -D' : ''} ${[...packages].sort().join(' ')}`;
+}
+
+/** Copy items into the project. Returns the result and its report lines; the caller prints them. */
+async function copyItems(names) {
   const items = await resolveItems(names);
   const written = [];
   const skipped = [];
   const deps = new Set();
+  // Type packages, such as @types/d3-scale: without them a TypeScript build fails on the chart imports.
+  const devDeps = new Set();
   for (const item of items) {
     for (const d of item.dependencies ?? []) deps.add(d);
+    for (const d of item.devDependencies ?? []) devDeps.add(d);
     for (const file of item.files) {
       if (typeof file.content !== 'string') fail(`Item "${item.name}" has a file without content.`);
       const target = targetFor(file);
@@ -123,23 +139,106 @@ async function add(names) {
       written.push(rel);
     }
   }
-  const pm = existsSync(join(cwd, 'pnpm-lock.yaml'))
-    ? 'pnpm add'
-    : existsSync(join(cwd, 'bun.lock')) || existsSync(join(cwd, 'bun.lockb'))
-      ? 'bun add'
-      : existsSync(join(cwd, 'yarn.lock'))
-        ? 'yarn add'
-        : 'npm install';
-  const install = deps.size ? `${pm} ${[...deps].sort().join(' ')}` : null;
-  out(
-    { ok: true, items: items.map((i) => i.name), written, skipped, install, dryRun: flags.has('--dry-run') },
-    [
-      `${c.green('✓')} ${flags.has('--dry-run') ? 'Would add' : 'Added'} ${items.map((i) => c.bold(i.name)).join(', ')}`,
-      ...written.map((f) => `  ${c.dim('+')} ${f}`),
-      ...skipped.map((f) => `  ${c.yellow('=')} ${f} ${c.dim('(exists; --overwrite to replace)')}`),
-      install ? `\nInstall dependencies:\n  ${install}` : '',
-    ].join('\n'),
-  );
+  const install = installCommand(deps, false);
+  const installDev = installCommand(devDeps, true);
+  const result = {
+    ok: true,
+    items: items.map((i) => i.name),
+    written,
+    skipped,
+    install,
+    installDev,
+    dryRun: flags.has('--dry-run'),
+  };
+  const lines = [
+    `${c.green('✓')} ${flags.has('--dry-run') ? 'Would add' : 'Added'} ${items.map((i) => c.bold(i.name)).join(', ')}`,
+    ...written.map((f) => `  ${c.dim('+')} ${f}`),
+    ...skipped.map((f) => `  ${c.yellow('=')} ${f} ${c.dim('(exists; --overwrite to replace)')}`),
+  ];
+  if (install || installDev)
+    lines.push('', 'Install dependencies:', ...[install, installDev].filter(Boolean).map((cmd) => `  ${cmd}`));
+  return { items, result, lines };
+}
+
+async function add(names) {
+  if (!names.length) fail('Name at least one item: dtheo add button select');
+  const { result, lines } = await copyItems(names);
+  out(result, lines.join('\n'));
+}
+
+// The global stylesheet is the CSS file that imports Tailwind; these are where Next.js, Vite and others put it.
+const globalCssFiles = [
+  'app/globals.css',
+  'src/app/globals.css',
+  'src/index.css',
+  'src/styles/globals.css',
+  'styles/globals.css',
+  'src/globals.css',
+  'src/styles.css',
+  'src/app.css',
+  'app/app.css',
+];
+const tailwindImport = /^@import\s+["']tailwindcss["'][^\n]*$/m;
+
+/**
+ * Top-level rules that beat dtheo/ui's theme: unlayered rules win over its base layer, and a later @theme
+ * replaces its fonts and colors. The create-next-app starter ships all of them (white :root colors, a Geist
+ * @theme, an Arial body).
+ */
+function overridingRules(css) {
+  const found = [];
+  for (const m of css.matchAll(/^([^\s{}][^{}\n]*?)\s*\{([\s\S]*?)^\}/gm)) {
+    const [, selector, body] = m;
+    const overrides =
+      (/^(:root|html|@media\b)/.test(selector) && /--(background|foreground)\s*:/.test(body)) ||
+      (/^@theme\b/.test(selector) && /--(font|color)-[\w-]+\s*:/.test(body)) ||
+      (/^body\b/.test(selector) && /^\s*(background|color|font-family)\s*:/m.test(body));
+    if (overrides) found.push({ selector, line: css.slice(0, m.index).split('\n').length });
+  }
+  return found;
+}
+
+/** Import the stylesheet once, right after Tailwind, with a path relative to the global CSS file. */
+function importStyles(stylesheet) {
+  const file = globalCssFiles
+    .map((p) => join(cwd, p))
+    .find((p) => existsSync(p) && tailwindImport.test(readFileSync(p, 'utf8')));
+  if (!file) return { file: null, specifier: null, imported: false, overrides: [] };
+  const css = readFileSync(file, 'utf8');
+  let specifier = relative(dirname(file), stylesheet).split(sep).join('/');
+  if (!specifier.startsWith('.')) specifier = `./${specifier}`;
+  const imported = !/@import\s+["'][^"']*dtheo\.css["']/.test(css);
+  const next = imported ? css.replace(tailwindImport, (line) => `${line}\n@import "${specifier}";`) : css;
+  if (imported && !flags.has('--dry-run')) writeFileSync(file, next);
+  // Line numbers refer to the file as it now reads (or would read, on a dry run).
+  return { file: relative(cwd, file), specifier, imported, overrides: overridingRules(next) };
+}
+
+async function init() {
+  const { items, result, lines } = await copyItems(['styles', 'utils', 'theme']);
+  const sheet = items.find((i) => i.name === 'styles')?.files[0];
+  const css = importStyles(sheet ? targetFor(sheet) : join(cwd, 'styles/dtheo.css'));
+  const dry = flags.has('--dry-run');
+  if (!css.file)
+    lines.push(
+      '',
+      'Import the stylesheet once in the CSS file that imports Tailwind, with a path relative to that file:',
+      '  @import "tailwindcss";',
+      '  @import "../styles/dtheo.css";',
+    );
+  else if (css.imported)
+    lines.push('', `${c.green('✓')} ${dry ? 'Would import' : 'Imported'} ${css.specifier} in ${c.bold(css.file)}`);
+  else lines.push('', `${c.dim('=')} ${css.file} already imports dtheo.css`);
+  if (css.overrides.length) {
+    const width = String(Math.max(...css.overrides.map((o) => o.line))).length;
+    lines.push(
+      '',
+      `${c.yellow('!')} ${css.file} has rules that override the dtheo/ui theme. The Next.js starter adds them:`,
+      ...css.overrides.map((o) => `    ${c.dim(`line ${String(o.line).padStart(width)}`)}  ${o.selector}`),
+      '  Delete these rules and keep the two @import lines.',
+    );
+  }
+  out({ ...result, css }, lines.join('\n'));
 }
 
 async function list(query) {
@@ -242,11 +341,7 @@ Docs: ${registry}/docs/cli`;
 try {
   switch (command) {
     case 'init':
-      await add(['styles', 'utils', 'theme']);
-      if (!json)
-        console.log(
-          `\nImport the styles once in your global CSS, after Tailwind:\n  @import "tailwindcss";\n  @import "./styles/dtheo.css";`,
-        );
+      await init();
       break;
     case 'add':
       await add(rest);

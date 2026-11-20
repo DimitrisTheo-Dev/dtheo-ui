@@ -82,6 +82,18 @@ describe('registry', () => {
     }
   });
 
+  it('lists the TypeScript types each untyped dependency needs', () => {
+    // The charts package builds with these, so the names are real and the versions are known to work.
+    const { devDependencies: built } = JSON.parse(readFileSync(`${repo}packages/charts/package.json`, 'utf8'));
+    for (const c of components) {
+      const item = registryItem(c.slug)!;
+      for (const dep of item.dependencies.filter((d) => d.startsWith('d3-'))) {
+        expect(item.devDependencies, c.slug).toContain(`@types/${dep}`);
+        expect(built, `@types/${dep}`).toHaveProperty([`@types/${dep}`]);
+      }
+    }
+  });
+
   it('only depends on items it can serve', () => {
     const names = new Set(registryNames());
     for (const c of components)

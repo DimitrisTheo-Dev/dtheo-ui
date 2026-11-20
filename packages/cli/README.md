@@ -11,8 +11,8 @@ npx dtheo check src                 # 17 rules, each with the fix; exits 1 on er
 
 | Command | What it does |
 | --- | --- |
-| `dtheo init` | Adds `lib/utils.ts`, `lib/theme.tsx` and `styles/dtheo.css` |
-| `dtheo add <items…>` | Copies components and what they need into your project; prints the npm dependencies |
+| `dtheo init` | Adds `lib/utils.ts`, `lib/theme.tsx` and `styles/dtheo.css`, and imports the stylesheet in your global CSS |
+| `dtheo add <items…>` | Copies components and what they need into your project; prints the install commands, types included |
 | `dtheo list [query]` | Lists registry items |
 | `dtheo check [paths…]` | Checks UI code offline: raw colors, palette classes, `transition-all`, unnamed icon buttons, off-system radii… |
 | `dtheo rules` | Explains every check rule |

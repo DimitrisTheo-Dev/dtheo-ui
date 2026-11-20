@@ -41,16 +41,18 @@ Run this in a React project that already uses Tailwind CSS v4 and the \`@/\` imp
 npx ${site.cli}@latest init
 \`\`\`
 
-It adds three things: \`lib/utils.ts\` (the \`cn\` helper), \`lib/theme.tsx\` (\`ThemeScope\` for scoped themes) and \`styles/dtheo.css\` (tokens, theme and base styles).
+It adds three things: \`lib/utils.ts\` (the \`cn\` helper), \`lib/theme.tsx\` (\`ThemeScope\` for scoped themes) and \`styles/dtheo.css\` (tokens, theme and base styles). Then it imports the stylesheet in your global CSS, right after Tailwind.
 
-## 2. Import the styles
+## 2. Clear the starter styles
 
-In your global CSS, after Tailwind:
+A new Next.js app's \`app/globals.css\` sets its own colors, font and body styles, and they override the theme. \`init\` lists them with their line numbers. Delete them and keep the two imports:
 
 \`\`\`css
 @import "tailwindcss";
-@import "./styles/dtheo.css";
+@import "../styles/dtheo.css";
 \`\`\`
+
+If \`init\` cannot find your global CSS, add these two lines yourself, with the path relative to that file.
 
 ## 3. Choose a mode and preset
 
@@ -66,7 +68,7 @@ Set the mode with a class and the preset with an attribute on \`<html>\` (or on 
 npx ${site.cli} add button field select table line-chart
 \`\`\`
 
-Components are copied into \`components/ui\` (charts into \`components/charts\`). You own the code. The command prints the npm dependencies to install.
+Components are copied into \`components/ui\` (charts into \`components/charts\`). You own the code. The command prints what to install: the npm packages, and for charts the TypeScript types they need.
 
 ## 5. Mount the providers
 

@@ -17,6 +17,7 @@ export interface RegistryItem {
   title: string;
   description: string;
   dependencies: string[];
+  devDependencies?: string[];
   registryDependencies: string[];
   files: RegistryFile[];
   docs?: string;
@@ -38,7 +39,7 @@ const strip = (css: string) => css.replace(/^@import[^\n]*\n/gm, '');
 
 function stylesheet() {
   return [
-    `/* ${site.name} ${site.version}. Import after Tailwind: @import "tailwindcss"; @import "./styles/dtheo.css"; */`,
+    `/* ${site.name} ${site.version}. Import once in your global CSS, right after Tailwind, with a path relative to that file; \`dtheo init\` does it for you. */`,
     '/* dtheo-check-disable-file raw-color -- this file is the design tokens: the one place color values live. */',
     strip(repoFile('packages/ui/src/styles/theme.css')),
     strip(repoFile('packages/ui/src/styles/tokens.css')),
@@ -133,6 +134,8 @@ function componentItem(meta: ComponentMeta, withContent: boolean): RegistryItem 
       };
     });
   const deps = new Set(meta.registryDependencies.filter((d) => d !== meta.slug));
+  // d3 ships no TypeScript types, so a TypeScript build fails on the chart imports without these.
+  const types = meta.dependencies.filter((d) => d.startsWith('d3-')).map((d) => `@types/${d}`);
   if (!charts) {
     deps.add('utils');
     if (meta.files.some((f) => repoFile(`packages/ui/src/${f}`).includes("'../lib/theme'")))
@@ -145,6 +148,7 @@ function componentItem(meta: ComponentMeta, withContent: boolean): RegistryItem 
     title: meta.title,
     description: meta.description,
     dependencies: meta.dependencies.filter((d) => !['clsx', 'tailwind-merge'].includes(d) || charts),
+    ...(types.length ? { devDependencies: types } : {}),
     registryDependencies: [...deps].map(itemUrl),
     files,
     docs: `${site.url}/docs/${charts ? 'charts' : 'components'}/${meta.slug}`,
