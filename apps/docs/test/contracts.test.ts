@@ -7,6 +7,7 @@ import { registryItem, registryNames } from '@/lib/registry';
 import { ardManifest } from '@/lib/ard';
 import { brand, starIn, starPath, tilePath } from '@/lib/brand';
 import { llmsTxt } from '@/lib/markdown';
+import { pagesMarkdown } from '@/lib/pages-md';
 import { site } from '@/lib/site';
 import { exampleSource } from '@/lib/source';
 import { pageUsage, usedIn } from '@/lib/usage';
@@ -169,5 +170,38 @@ describe('agent surfaces', () => {
       return pages.length === 0 && composedBy.length === 0;
     });
     expect(unused.map((c) => c.slug)).toEqual([]);
+  });
+});
+
+/** The import paths (`components/ui/button`) the named registry items write. */
+const installed = (names: string[]) =>
+  new Set(names.flatMap((n) => registryItem(n)!.files.map((f) => f.target.replace(/\.tsx?$/, ''))));
+
+describe('installation page', () => {
+  // Followed literally in a fresh Next.js app, the steps have to build: every file the layout imports must have
+  // been added by an earlier command, on both the dtheo and the shadcn path.
+  const md = pagesMarkdown.installation!;
+  const section = (heading: string) => md.split(`\n## ${heading}\n`)[1]!.split('\n## ')[0]!;
+  const code = (heading: string) =>
+    [...section(heading).matchAll(/```\w*\n([\s\S]*?)```/g)].map((m) => m[1]!);
+  const layout = code('5. Mount the providers')[0]!;
+  const imports = [...layout.matchAll(/from "@\/([\w/-]+)"/g)].map((m) => m[1]!);
+
+  it('adds every component the root layout imports', () => {
+    expect(imports.length).toBeGreaterThan(0);
+    const added = code('4. Add components')[0]!
+      .match(/ add (.+)/)![1]!
+      .trim()
+      .split(/\s+/);
+    for (const path of imports) expect(installed(added), path).toContain(path);
+
+    const shadcn = code('Using the shadcn CLI instead')[0]!;
+    const viaShadcn = [...shadcn.matchAll(/\/r\/([\w-]+)\.json/g)].map((m) => m[1]!);
+    for (const path of imports) expect(installed(viaShadcn), `shadcn: ${path}`).toContain(path);
+  });
+
+  it('writes a layout that keeps the global CSS and the mode and preset from step 3', () => {
+    expect(layout).toContain('import "./globals.css";');
+    expect(layout).toContain(code('3. Choose a mode and preset')[0]!.trim());
   });
 });
