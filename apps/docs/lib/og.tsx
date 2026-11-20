@@ -2,6 +2,7 @@ import * as React from 'react';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { colors } from '@dtheo/tokens/native';
+import { brand, starPath, tile } from './brand';
 import { site } from './site';
 
 const fontFile = (weight: number) =>
@@ -22,7 +23,7 @@ export async function ogFonts() {
 
 /**
  * Share cards and icons, rendered by next/og at build time. Images live outside the CSS theme, so every color comes
- * from the token export (graphite, dark), never a literal.
+ * from the token export (graphite, dark), never a literal; the mark's black and white come from lib/brand.ts.
  */
 const c = colors.graphite.dark;
 const alpha = (hex: string, a: number) =>
@@ -66,26 +67,29 @@ function Stars({ width, height, count = 170 }: { width: number; height: number; 
   );
 }
 
-/** The orbit mark: two bodies and the five points between them; the two stable points carry the accent. */
-export function Mark({ size, ring = true }: { size: number; ring?: boolean }) {
+/** The mark: a white north star on a black tile, exactly as in the site header and the browser tab. */
+export function Mark({ size }: { size: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24">
-      {ring ? (
-        <circle cx="12" cy="12" r="10.25" fill="none" stroke={alpha(c.foreground, 0.28)} strokeWidth="1" />
-      ) : null}
-      <circle cx="7" cy="12" r="2.6" fill={c.foreground} />
-      <circle cx="17.6" cy="12" r="1.15" fill={alpha(c.foreground, 0.7)} />
-      <circle cx="12.3" cy="3.35" r="1.35" fill={c['chart-1']} />
-      <circle cx="12.3" cy="20.65" r="1.35" fill={c['chart-1']} />
-      <circle cx="21.1" cy="12" r="0.8" fill={alpha(c.foreground, 0.45)} />
-      <circle cx="15.2" cy="12" r="0.8" fill={alpha(c.foreground, 0.45)} />
-      <circle cx="1.6" cy="12" r="0.8" fill={alpha(c.foreground, 0.45)} />
+      <rect width="24" height="24" rx={tile.radius} fill={brand.ink} />
+      <g transform={tile.star}>
+        <path d={starPath} fill={brand.star} />
+      </g>
+    </svg>
+  );
+}
+
+/** The star alone, for large faint backdrops. */
+function Star({ size, opacity }: { size: number; opacity: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24">
+      <path d={starPath} fill={brand.star} fillOpacity={opacity} />
     </svg>
   );
 }
 
 function Wordmark({ size }: { size: number }) {
-  const [brand, suffix] = site.name.split('/');
+  const [name, suffix] = site.name.split('/');
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: size * 0.45 }}>
       <Mark size={size * 1.15} />
@@ -98,7 +102,7 @@ function Wordmark({ size }: { size: number }) {
           color: c.foreground,
         }}
       >
-        {brand}
+        {name}
         <span style={{ color: c['muted-foreground'] }}>/{suffix}</span>
       </div>
     </div>
@@ -276,8 +280,8 @@ export function DocCard({
 }) {
   return (
     <Sky>
-      <div style={{ position: 'absolute', right: -120, top: 60, display: 'flex', opacity: 0.12 }}>
-        <Mark size={560} />
+      <div style={{ position: 'absolute', right: -40, top: 35, display: 'flex' }}>
+        <Star size={560} opacity={0.07} />
       </div>
       <div
         style={{
@@ -319,7 +323,10 @@ export function DocCard({
   );
 }
 
-/** The app icon: the mark on a graphite tile, sized for a home screen. */
+/**
+ * The app icon: the star on black with a soft glow, sized for a home screen. Full bleed, since iOS rounds the
+ * corners itself.
+ */
 export function AppIcon({ size }: { size: number }) {
   return (
     <div
@@ -329,11 +336,11 @@ export function AppIcon({ size }: { size: number }) {
         justifyContent: 'center',
         width: '100%',
         height: '100%',
-        backgroundColor: c.background,
-        backgroundImage: `radial-gradient(${size}px ${size}px at 20% 0%, ${alpha(c['chart-4'], 0.45)}, transparent 70%)`,
+        backgroundColor: brand.ink,
+        backgroundImage: `radial-gradient(circle at 50% 50%, ${alpha(brand.star, 0.3)}, ${alpha(brand.star, 0.08)} 24%, transparent 52%)`,
       }}
     >
-      <Mark size={size * 0.72} />
+      <Star size={size * 0.66} opacity={1} />
     </div>
   );
 }
