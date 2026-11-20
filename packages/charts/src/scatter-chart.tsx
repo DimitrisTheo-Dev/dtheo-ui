@@ -376,6 +376,7 @@ function ScatterTooltip({
   const px = g.sx(point.x);
   return (
     <div
+      data-slot="scatter-tooltip"
       className="pointer-events-none absolute z-10 min-w-36 rounded-popover border border-border bg-popover/95 px-3 py-2 text-label shadow-popover backdrop-blur-material"
       style={{
         top: Math.max(0, g.sy(point.y) - 70),
@@ -428,6 +429,8 @@ export function ScatterChart({
 }: ScatterChartProps) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  // The scales are relative to the plot box, which sits below the legend, so the pointer is measured from it.
+  const plotRef = React.useRef<HTMLDivElement>(null);
   const [active, setActive] = React.useState<number | null>(null);
   const [announce, setAnnounce] = React.useState('');
   const descId = React.useId();
@@ -487,7 +490,8 @@ export function ScatterChart({
       tabIndex={0}
       className={`relative w-full touch-pan-y rounded-control select-none ${className ?? ''}`}
       onPointerMove={(e) => {
-        const rect = e.currentTarget.getBoundingClientRect();
+        const rect = plotRef.current?.getBoundingClientRect();
+        if (!rect) return;
         const i = nearestPoint(points, sx, sy, e.clientX - rect.left, e.clientY - rect.top);
         setActive(i < 0 ? null : i);
       }}
@@ -502,7 +506,7 @@ export function ScatterChart({
         {announce}
       </span>
       {groups.length > 1 ? <ScatterLegend groups={groups} points={points} /> : null}
-      <div className="relative" style={{ height }}>
+      <div ref={plotRef} className="relative" style={{ height }}>
         <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 size-full" />
         {w ? (
           <ScatterOverlay

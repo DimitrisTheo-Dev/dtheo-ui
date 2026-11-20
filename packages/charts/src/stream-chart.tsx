@@ -65,7 +65,8 @@ const isOver = (l: StreamLimit, v: number) =>
 
 /**
  * Draws one series as a canvas path. When there are more samples than pixels, each pixel column keeps its first,
- * lowest, highest and last sample (M4 aggregation), so spikes survive at any rate.
+ * lowest, highest and last sample (M4 aggregation), so spikes survive at any rate. A non-finite sample (NaN for a
+ * dropout) lifts the pen: the trace breaks there instead of drawing a straight line across the gap.
  */
 function seriesPath(
   stream: Stream,
@@ -80,31 +81,34 @@ function seriesPath(
   const path = new Path2D();
   const n = stream.size - i0;
   const px = (t: number) => left + plotW * (1 - (tEnd - t) / span);
+  let pen = false;
+  const to = (x: number, y: number) => {
+    if (pen) path.lineTo(x, y);
+    else path.moveTo(x, y);
+    pen = true;
+  };
   if (n <= plotW * 1.5) {
     for (let i = i0; i < stream.size; i++) {
-      const x = px(stream.time(i));
-      const y = sy(stream.value(channel, i));
-      if (i === i0) path.moveTo(x, y);
-      else path.lineTo(x, y);
+      const v = stream.value(channel, i);
+      if (Number.isFinite(v)) to(px(stream.time(i)), sy(v));
+      else pen = false;
     }
     return path;
   }
   let col = -1;
+  let filled = false;
   let first = 0;
   let last = 0;
   let lo = 0;
   let hi = 0;
-  let started = false;
   const flush = () => {
-    if (col < 0) return;
+    if (!filled) return;
     const x = left + col + 0.5;
-    if (!started) {
-      path.moveTo(x, sy(first));
-      started = true;
-    } else path.lineTo(x, sy(first));
+    to(x, sy(first));
     path.lineTo(x, sy(lo));
     path.lineTo(x, sy(hi));
     path.lineTo(x, sy(last));
+    filled = false;
   };
   for (let i = i0; i < stream.size; i++) {
     const c = Math.floor(px(stream.time(i)) - left);
@@ -112,7 +116,14 @@ function seriesPath(
     if (c !== col) {
       flush();
       col = c;
+    }
+    if (!Number.isFinite(v)) {
+      // Draw what the column had before the gap, then lift the pen.
+      flush();
+      pen = false;
+    } else if (!filled) {
       first = lo = hi = last = v;
+      filled = true;
     } else {
       if (v < lo) lo = v;
       if (v > hi) hi = v;
@@ -350,7 +361,7 @@ export function StreamChart({
                 <dd
                   className={`font-semibold tabular-nums ${over ? 'text-destructive-foreground' : 'text-foreground'}`}
                 >
-                  {v === undefined || Number.isNaN(v) ? '–' : formatNumber(v, s.digits ?? 1)}
+                  {v === undefined ? '–' : formatNumber(v, s.digits ?? 1)}
                   {s.unit ? <span className="font-normal text-muted-foreground"> {s.unit}</span> : null}
                   {over ? <span className="ml-1.5 font-semibold">over limit</span> : null}
                 </dd>

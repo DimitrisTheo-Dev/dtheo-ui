@@ -149,15 +149,24 @@ function visibleRange(x: ArrayLike<number>, x0: number, x1: number): [number, nu
   return [a, b];
 }
 
-/** A series as an SVG path, downsampled (LTTB) to about two points per pixel. */
+/**
+ * A series as an SVG path, downsampled (LTTB) to about two points per pixel. A non-finite value (NaN for a dropout)
+ * lifts the pen, so a gap in the data is a gap in the line, never a straight line across it.
+ */
 function seriesPath(x: ArrayLike<number>, values: ArrayLike<number>, i0: number, i1: number, f: Frame) {
   const xs = Array.from({ length: i1 - i0 + 1 }, (_, k) => x[i0 + k]!);
   const ys = Array.from({ length: i1 - i0 + 1 }, (_, k) => values[i0 + k]!);
   const idx = lttb(xs, ys, Math.max(64, Math.round(f.plotW * 2)));
   let d = '';
-  for (let k = 0; k < idx.length; k++) {
-    const j = idx[k]!;
-    d += `${k ? 'L' : 'M'}${f.sx(xs[j]!).toFixed(2)} ${f.sy(ys[j]!).toFixed(2)}`;
+  let pen = false;
+  for (const j of idx) {
+    const v = ys[j]!;
+    if (!Number.isFinite(v)) {
+      pen = false;
+      continue;
+    }
+    d += `${pen ? 'L' : 'M'}${f.sx(xs[j]!).toFixed(2)} ${f.sy(v).toFixed(2)}`;
+    pen = true;
   }
   return d;
 }
@@ -402,7 +411,8 @@ function Crosshair({ f, cx, series, index }: { f: Frame; cx: number; series: Lin
         className="stroke-muted-foreground/50"
       />
       {series
-        .filter((s) => s.dot !== false && (s.width ?? 2) > 1)
+        // No dot where a series has no value (a gap): there is nothing to point at.
+        .filter((s) => s.dot !== false && (s.width ?? 2) > 1 && Number.isFinite(s.values[index]!))
         .map((s) => (
           <circle
             key={s.id}
@@ -496,11 +506,15 @@ function useChartFrame({
 function useReadout(series: LineSeries[], extraReadout: LineChartProps['extraReadout']) {
   return React.useCallback(
     (i: number): ReadoutRow[] => [
-      ...series.map((s) => ({
-        label: s.label,
-        value: `${formatNumber(s.values[i]!, s.digits ?? 2)}${s.unit ? ` ${s.unit}` : ''}`,
-        tone: s.tone ?? 'primary',
-      })),
+      ...series.map((s) => {
+        const v = s.values[i]!;
+        return {
+          label: s.label,
+          // A gap reads as a dash, without a unit.
+          value: Number.isFinite(v) ? `${formatNumber(v, s.digits ?? 2)}${s.unit ? ` ${s.unit}` : ''}` : '–',
+          tone: s.tone ?? 'primary',
+        };
+      }),
       ...(extraReadout?.(i) ?? []),
     ],
     [series, extraReadout],

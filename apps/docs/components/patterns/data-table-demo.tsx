@@ -142,7 +142,7 @@ export function DataTableDemo() {
     );
     const dir = sort.dir === 'asc' ? 1 : -1;
     return [...filtered].sort(
-      (a, b) => (sort.key === 'id' ? a.id.localeCompare(b.id) : a[sort.key] - b[sort.key]) * dir,
+      (a, b) => (sort.key === 'id' ? a.id.localeCompare(b.id, 'en') : a[sort.key] - b[sort.key]) * dir,
     );
   }, [query, status, sort]);
 

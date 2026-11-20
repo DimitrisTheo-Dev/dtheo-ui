@@ -12,6 +12,8 @@ export function Slider({
   className,
   thumbLabels,
   'aria-label': ariaLabel,
+  // One locale on the server and in the browser, so the announced value hydrates the same everywhere.
+  locale = 'en-US',
   ...props
 }: React.ComponentProps<typeof SliderPrimitive.Root> & { thumbLabels?: string[] }) {
   const values = props.value ?? props.defaultValue;
@@ -21,6 +23,7 @@ export function Slider({
       data-slot="slider"
       aria-label={ariaLabel}
       className={cn('w-full touch-none select-none', className)}
+      locale={locale}
       {...props}
     >
       <SliderPrimitive.Control className="flex h-5 w-full items-center data-disabled:opacity-45">

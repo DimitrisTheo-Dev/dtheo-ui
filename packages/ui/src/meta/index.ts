@@ -351,6 +351,13 @@ export const components: ComponentMeta[] = [
         type: 'string[]',
         description: 'A name per thumb ("Window start", "Window end") so a range is announced apart.',
       },
+      {
+        name: 'locale',
+        type: 'Intl.LocalesArgument',
+        default: "'en-US'",
+        description:
+          'Formats the announced value. Fixed, so the server and every browser render the same text and the page hydrates.',
+      },
     ],
     keyboard: [
       ['Arrow keys', 'Step the value'],
@@ -721,6 +728,13 @@ export const components: ComponentMeta[] = [
         type: 'string',
         description: 'Shown after the value when showValue is on, for units Intl cannot format (A, N·m).',
       },
+      {
+        name: 'locale',
+        type: 'Intl.LocalesArgument',
+        default: "'en-US'",
+        description:
+          'Formats the shown and announced value. Fixed, so the server and every browser render the same text and the page hydrates.',
+      },
     ],
     a11y: [
       'Indeterminate progress (`value={null}`) is honest when the duration is unknown; never fake a percentage.',
@@ -984,7 +998,8 @@ export const components: ComponentMeta[] = [
       {
         name: 'series',
         type: 'LineSeries[]',
-        description: 'id, label, values, tone, width (2 = the story, 1.5 = reference, 1 = context).',
+        description:
+          'id, label, values, tone, width (2 = the story, 1.5 = reference, 1 = context). A NaN in values is a gap: the line breaks there, also when downsampled, and the readout shows –.',
       },
       { name: 'yDomain', type: '[number, number]', description: 'One y-axis. Never two.' },
       {
@@ -1059,7 +1074,8 @@ export const components: ComponentMeta[] = [
       {
         name: 'values',
         type: 'number[]',
-        description: 'The series, oldest first. The last point is emphasized.',
+        description:
+          'The series, oldest first. The last point is emphasized. A NaN is a gap: the line and area break there.',
       },
       {
         name: 'domain',
@@ -1106,7 +1122,7 @@ export const components: ComponentMeta[] = [
         name: 'stream',
         type: 'Stream',
         description:
-          'A ring buffer from `createStream(channels, capacity)`. Push samples into it as fast as they arrive; the chart draws once per frame.',
+          'A ring buffer from `createStream(channels, capacity)`. Push samples into it as fast as they arrive; the chart draws once per frame. Push NaN for a dropout: the trace breaks there and the readout shows –.',
       },
       {
         name: 'series',
