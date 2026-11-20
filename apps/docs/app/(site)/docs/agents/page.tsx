@@ -7,13 +7,15 @@ import { CodeBlock, CommandLine } from '@/components/code-block';
 import { CopyButton } from '@/components/copy-button';
 import { mcpClients, mcpTools, agentPrompt } from '@/lib/agents';
 import { site } from '@/lib/site';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'For agents',
   description:
     'Connect your coding agent in one command. It looks components up, copies them and checks its work.',
-  alternates: { canonical: '/docs/agents', types: { 'text/markdown': '/docs/agents.md' } },
-};
+  path: '/docs/agents',
+  markdown: '/docs/agents.md',
+});
 
 function Step({
   n,

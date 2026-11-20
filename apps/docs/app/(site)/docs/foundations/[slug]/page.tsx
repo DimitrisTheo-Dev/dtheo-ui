@@ -8,6 +8,7 @@ import {
   TypographyFoundation,
 } from '@/components/foundations';
 import { foundations } from '@/lib/nav';
+import { pageMetadata } from '@/lib/metadata';
 
 const slugs = ['color', 'typography', 'geometry', 'motion'] as const;
 type Slug = (typeof slugs)[number];
@@ -21,15 +22,13 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const page = foundations.find((f) => f.href.endsWith(`/${slug}`));
-  if (!page) return {};
-  return {
+  if (!page?.description) return {};
+  return pageMetadata({
     title: page.title,
     description: page.description,
-    alternates: {
-      canonical: `/docs/foundations/${slug}`,
-      types: { 'text/markdown': `/docs/foundations/${slug}.md` },
-    },
-  };
+    path: `/docs/foundations/${slug}`,
+    markdown: `/docs/foundations/${slug}.md`,
+  });
 }
 
 const content: Record<Slug, { description: string; body: React.ReactNode }> = {

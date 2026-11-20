@@ -2,8 +2,9 @@
 export const site = {
   name: 'dtheo/ui',
   tagline: 'Pixel-perfect UI, even when your agent writes it.',
+  /** Also the share and search snippet, so it stays under 155 characters. */
   description:
-    'dtheo/ui is a React design system for data-dense engineering tools: native-feeling components on Base UI, custom engineering charts, OKLCH tokens with contrast checked at build time, and an MCP server, CLI and llms.txt so agents build with it as well as people do.',
+    'A React design system for data-dense engineering tools: components, charts and OKLCH tokens, plus an MCP server and a linter so agents build it right.',
   url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ui.dtheo.dev',
   repo: 'https://github.com/DimitrisTheo-Dev/dtheo-ui',
   /** Who made it: credited in the footer, and linked back from the author's own site. */

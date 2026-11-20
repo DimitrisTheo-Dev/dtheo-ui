@@ -12,13 +12,17 @@ export const metadata: Metadata = {
   description: site.description,
   applicationName: site.name,
   alternates: { canonical: '/' },
+  // The homepage's share tags. Every other page sets its own through pageMetadata (lib/metadata.ts).
   openGraph: {
-    title: site.name,
+    title: `${site.name}: ${site.tagline}`,
     description: site.description,
-    url: site.url,
+    url: '/',
     siteName: site.name,
     type: 'website',
   },
+  // X reads twitter:* tags. Next fills their title, text and image from openGraph, so X shows the same card as
+  // LinkedIn and Slack on every page.
+  twitter: { card: 'summary_large_image' },
   robots: { index: true, follow: true },
 };
 
