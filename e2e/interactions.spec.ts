@@ -75,6 +75,21 @@ test('archiving a run asks first, then confirms with a toast', async ({ page }) 
   expect(errors).toEqual([]);
 });
 
+test('a run is never offered for comparison with itself', async ({ page }) => {
+  await page.goto('/examples/run-review');
+  await page.getByRole('button', { name: 'Actions for R-0412' }).click();
+  let menu = page.getByRole('menu');
+  await expect(menu.getByRole('menuitem', { name: 'Open R-0412' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: /Compare with/ })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  // The reference run compares with R-0412 but is already the reference.
+  await page.getByRole('button', { name: 'Actions for R-0409' }).click();
+  menu = page.getByRole('menu');
+  await expect(menu.getByRole('menuitem', { name: 'Compare with R-0412' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'Set as reference' })).toHaveCount(0);
+});
+
 test('the retune dialog explains an invalid gain and blocks the run', async ({ page }) => {
   await page.goto('/examples/run-review');
   await page.getByRole('button', { name: 'Queue retune run' }).first().click();
