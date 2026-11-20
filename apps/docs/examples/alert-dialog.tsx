@@ -25,7 +25,7 @@ export default function AlertDialogExample() {
         <div className="flex flex-col gap-1.5">
           <AlertDialogTitle>Delete 3 runs?</AlertDialogTitle>
           <AlertDialogDescription>
-            R-0409, R-0410 and R-0411 and their traces (1.2 GB) are removed for everyone on the team. This
+            R-0402, R-0403 and R-0404 and their traces (1.2 GB) are removed for everyone on the team. This
             cannot be undone.
           </AlertDialogDescription>
         </div>
@@ -36,7 +36,7 @@ export default function AlertDialogExample() {
             onClick={() =>
               toast.add({
                 title: '3 runs deleted',
-                description: 'R-0409 to R-0411 and their traces were removed.',
+                description: 'R-0402 to R-0404 and their traces were removed.',
               })
             }
           >

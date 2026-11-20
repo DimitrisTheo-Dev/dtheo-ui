@@ -12,9 +12,9 @@ function validateBaseline(value: unknown) {
     .trim()
     .toUpperCase();
   // U+2011 (non-breaking hyphen) keeps the sample ID on one line when the message wraps.
-  if (!run) return 'Enter the run to compare against, like R\u20110398.';
+  if (!run) return 'Enter the run to compare against, like R\u20110409.';
   if (!/^R-\d{4}$/.test(run))
-    return `“${run}” is not a run ID. Use four digits after “R-”, like R\u20110398.`;
+    return `“${run}” is not a run ID. Use four digits after “R-”, like R\u20110409.`;
   if (run === CURRENT_RUN) return `${CURRENT_RUN} is the run under review. Pick an earlier run.`;
   return null;
 }
@@ -32,7 +32,7 @@ export default function FieldValidation() {
       actionsRef={actions}
     >
       <FieldLabel>Baseline run</FieldLabel>
-      <Input defaultValue="R-398" autoComplete="off" spellCheck={false} />
+      <Input defaultValue="R-409" autoComplete="off" spellCheck={false} />
       <FieldDescription>Overshoot and settling time are compared against this run.</FieldDescription>
       <FieldError />
     </Field>

@@ -5,12 +5,9 @@ import { RotateCwIcon } from 'lucide-react';
 import { Button } from '@dtheo/ui/components/button';
 import { Skeleton } from '@dtheo/ui/components/skeleton';
 import { Spinner } from '@dtheo/ui/components/spinner';
+import { fmt, runHistory } from '@/lib/lab-data';
 
-const runs = [
-  { id: 'R-0412', profile: 'High-gain step', overshoot: '17.6 %' },
-  { id: 'R-0411', profile: 'High-gain step', overshoot: '11.2 %' },
-  { id: 'R-0410', profile: 'Fast rise', overshoot: '7.9 %' },
-];
+const runs = runHistory.slice(0, 3);
 
 export default function LoadingExample() {
   const [loading, setLoading] = React.useState(true);
@@ -47,7 +44,7 @@ export default function LoadingExample() {
                   <span className="text-body font-medium tabular-nums">{run.id}</span>
                   <span className="text-caption text-muted-foreground">{run.profile}</span>
                 </span>
-                <span className="text-body tabular-nums">{run.overshoot}</span>
+                <span className="text-body tabular-nums">{fmt.n1.format(run.overshoot)} %</span>
               </>
             )}
           </li>

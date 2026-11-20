@@ -1,6 +1,11 @@
 'use client';
 
+import { TriangleAlertIcon } from 'lucide-react';
 import { Meter, Progress } from '@dtheo/ui/components/progress';
+import { CURRENT_LIMIT, TEMP_LIMIT, WINDING_TEMP, fmt, measuredMetrics as M } from '@/lib/lab-data';
+
+// R-0412's winding temperature and peak phase current, against their limits. The current is within 10 % of its
+// limit, so its meter is amber and says so in words.
 
 export default function ProgressMeterExample() {
   return (
@@ -17,25 +22,30 @@ export default function ProgressMeterExample() {
         </h3>
         <Meter
           label="Winding temperature"
-          value={71.2}
+          value={WINDING_TEMP}
           max={120}
-          limit={90}
+          limit={TEMP_LIMIT}
           tone="neutral"
           showValue
           format={{ style: 'unit', unit: 'celsius', maximumFractionDigits: 1 }}
         />
         <div className="flex flex-col gap-1.5">
           <Meter
-            label="Phase current"
-            value={37.6}
-            max={50}
-            limit={40}
+            label="Peak phase current"
+            value={M.peakCurrent}
+            max={40}
+            limit={CURRENT_LIMIT}
             tone="warning"
             showValue
             unit="A"
-            getAriaValueText={(_, value) => `${value} amperes, near the 40 ampere limit`}
+            getAriaValueText={(_, value) =>
+              `${fmt.n1.format(value)} amperes, near the ${CURRENT_LIMIT} ampere limit`
+            }
           />
-          <p className="text-caption text-warning-foreground">Near the 40 A limit</p>
+          <p className="flex items-center gap-1 text-caption text-warning-foreground">
+            <TriangleAlertIcon className="size-3" aria-hidden="true" />
+            Near the {CURRENT_LIMIT} A limit
+          </p>
         </div>
       </section>
     </div>

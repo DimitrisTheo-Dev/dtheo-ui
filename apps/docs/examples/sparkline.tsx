@@ -11,19 +11,16 @@ import {
   TableHeader,
   TableRow,
 } from '@dtheo/ui/components/table';
+import { OVERSHOOT_LIMIT, runs } from '@/lib/lab-data';
 
-// Overshoot (%) over the last 12 step tests of each joint on Bench 3, oldest first.
+// Overshoot (%) over the last 12 step tests of each joint on Bench 3, oldest first. Hip pitch is RA-14, up to R-0412.
 const joints = [
-  {
-    name: 'Hip pitch',
-    values: [4.2, 3.9, 4.6, 4.1, 5.0, 5.2, 6.1, 6.8, 7.9, 9.4, 11.2, 17.6],
-    trend: 'rising',
-  },
+  { name: 'Hip pitch', values: runs.slice(-12).map((r) => r.overshoot), trend: 'rising' },
   { name: 'Knee', values: [4.8, 4.9, 5.0, 5.1, 5.1, 5.0, 4.9, 4.9, 5.0, 5.1, 5.0, 4.9], trend: 'steady' },
   { name: 'Ankle', values: [9.2, 8.8, 8.1, 7.6, 7.0, 6.2, 5.9, 5.1, 4.6, 4.2, 3.9, 3.7], trend: 'falling' },
 ];
 
-const LIMIT = 10;
+const LIMIT = OVERSHOOT_LIMIT;
 // One shared scale, so a steady joint looks steady next to a rising one.
 const DOMAIN: [number, number] = [0, Math.max(...joints.flatMap((j) => j.values))];
 

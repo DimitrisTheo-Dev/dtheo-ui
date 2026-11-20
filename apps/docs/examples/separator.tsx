@@ -3,17 +3,19 @@
 import { DownloadIcon, PlayIcon, ZoomInIcon, ZoomOutIcon } from 'lucide-react';
 import { Button } from '@dtheo/ui/components/button';
 import { Separator } from '@dtheo/ui/components/separator';
+import { OVERSHOOT_LIMIT, SETTLE_LIMIT, TEMP_LIMIT, fmt, gains as k } from '@/lib/lab-data';
 
+// R-0412's gains and the acceptance limits it is checked against.
 const gains = [
-  ['Kp', '4.20'],
-  ['Ki', '0.80'],
-  ['Kd', '0.12'],
+  ['Kp', fmt.n2.format(k.kp)],
+  ['Ki', fmt.n2.format(k.ki)],
+  ['Kd', fmt.n2.format(k.kd)],
 ];
 
 const limits = [
-  ['Overshoot', '10 %'],
-  ['Settling time', '200 ms'],
-  ['Winding temperature', '90 °C'],
+  ['Overshoot', `${OVERSHOOT_LIMIT} %`],
+  ['Settling time', `${SETTLE_LIMIT} ms`],
+  ['Winding temperature', `${TEMP_LIMIT} °C`],
 ];
 
 export default function SeparatorExample() {

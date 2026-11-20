@@ -7,6 +7,7 @@ import { Field, FieldLabel } from '@dtheo/ui/components/field';
 import { Input } from '@dtheo/ui/components/input';
 import { InputGroup, InputGroupAddon } from '@dtheo/ui/components/input-group';
 import { Kbd } from '@dtheo/ui/components/kbd';
+import { SETTLE_LIMIT, TORQUE_LIMIT, fmt } from '@/lib/lab-data';
 
 export default function InputGroupExample() {
   const [query, setQuery] = React.useState('');
@@ -53,14 +54,14 @@ export default function InputGroupExample() {
         <Field>
           <FieldLabel>Torque limit</FieldLabel>
           <InputGroup>
-            <Input defaultValue="12.0" inputMode="decimal" className="tabular-nums" />
+            <Input defaultValue={fmt.n1.format(TORQUE_LIMIT)} inputMode="decimal" className="tabular-nums" />
             <InputGroupAddon>N·m</InputGroupAddon>
           </InputGroup>
         </Field>
         <Field>
           <FieldLabel>Settling target</FieldLabel>
           <InputGroup>
-            <Input defaultValue="250" inputMode="numeric" className="tabular-nums" />
+            <Input defaultValue={SETTLE_LIMIT} inputMode="numeric" className="tabular-nums" />
             <InputGroupAddon>ms</InputGroupAddon>
           </InputGroup>
         </Field>

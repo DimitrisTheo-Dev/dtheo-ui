@@ -5,15 +5,9 @@ import { Checkbox } from '@dtheo/ui/components/checkbox';
 import { Kbd } from '@dtheo/ui/components/kbd';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@dtheo/ui/components/table';
 import { useRowSelection, withShift } from '@dtheo/ui/lib/use-row-selection';
+import { fmt, runHistory } from '@/lib/lab-data';
 
-const runs = [
-  { id: 'R-0412', profile: 'High-gain step', overshoot: 17.6 },
-  { id: 'R-0411', profile: 'High-gain step', overshoot: 21.3 },
-  { id: 'R-0410', profile: 'Fast rise', overshoot: 9.4 },
-  { id: 'R-0409', profile: 'Nominal step', overshoot: 4.1 },
-  { id: 'R-0408', profile: 'Nominal step', overshoot: 6.8 },
-  { id: 'R-0407', profile: 'Damped step', overshoot: 3.2 },
-];
+const runs = runHistory.slice(0, 6);
 const ids = runs.map((r) => r.id);
 
 export default function TableSelectionExample() {
@@ -63,7 +57,7 @@ export default function TableSelectionExample() {
                 </TableCell>
                 <TableCell className="font-mono text-label">{r.id}</TableCell>
                 <TableCell>{r.profile}</TableCell>
-                <TableCell numeric>{r.overshoot.toFixed(1)} %</TableCell>
+                <TableCell numeric>{fmt.n1.format(r.overshoot)} %</TableCell>
               </TableRow>
             ))}
           </TableBody>

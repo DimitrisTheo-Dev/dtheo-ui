@@ -12,22 +12,22 @@ import {
   CardTitle,
 } from '@dtheo/ui/components/card';
 import { SegmentedControl, SegmentedControlItem } from '@dtheo/ui/components/toggle-group';
+import {
+  OVERSHOOT_LIMIT,
+  TARGET,
+  TORQUE_LIMIT,
+  fmt,
+  measured,
+  measuredMetrics as M,
+  reference,
+} from '@/lib/lab-data';
 
-/** Unit step response of a second-order system: damping ratio z, natural frequency wn (rad/s), t in ms. */
-function stepResponse(z: number, wn: number, tMs: number) {
-  if (tMs < 0) return 0;
-  const t = tMs / 1000;
-  const root = Math.sqrt(1 - z * z);
-  return 1 - (Math.exp(-z * wn * t) / root) * Math.sin(wn * root * t + Math.acos(z));
-}
-
-// 8.0 N·m step at 20 ms, sampled at 1 kHz.
-const t = Array.from({ length: 401 }, (_, i) => i);
+// A 12 N·m step at 20 ms, sampled at 1 kHz.
 const series: LineSeries[] = [
   {
     id: 'measured',
     label: 'R-0412 measured',
-    values: t.map((ms) => 8 * stepResponse(0.484, 44, ms - 20)),
+    values: measured.torque,
     tone: 'primary',
     width: 2,
     unit: 'N·m',
@@ -35,7 +35,7 @@ const series: LineSeries[] = [
   {
     id: 'reference',
     label: 'R-0409 reference',
-    values: t.map((ms) => 8 * stepResponse(0.72, 34, ms - 20)),
+    values: reference.torque,
     tone: 'muted',
     width: 1.5,
     unit: 'N·m',
@@ -81,14 +81,17 @@ export default function CardExample() {
           ]}
         />
         <LineChart
-          x={t}
+          x={measured.t}
           series={series}
           xDomain={windows[win].domain}
-          yDomain={[0, 10]}
+          yDomain={[0, 16]}
+          yTicks={[0, 4, 8, 12, 16]}
           xUnit="ms"
           height={200}
-          thresholds={[{ value: 8.8, label: 'Limit +10 %', shadeSeries: 'measured' }]}
-          ariaLabel="Torque step response. R-0412 overshoots the 8.0 N·m command by 17.6 %, past the 10 % limit; the R-0409 reference stays under it."
+          thresholds={[
+            { value: TORQUE_LIMIT, label: `Limit +${OVERSHOOT_LIMIT} %`, shadeSeries: 'measured' },
+          ]}
+          ariaLabel={`Torque step response. R-0412 overshoots the ${TARGET} N·m command by ${fmt.n1.format(M.overshoot)} %, past the ${OVERSHOOT_LIMIT} % limit; the R-0409 reference stays under it.`}
         />
       </CardContent>
       <CardFooter>Bench 3 · firmware 4.18.2 · captured at 1 kHz</CardFooter>

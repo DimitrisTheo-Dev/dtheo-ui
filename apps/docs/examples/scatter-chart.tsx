@@ -1,7 +1,7 @@
 'use client';
 
 import { ScatterChart } from '@dtheo/charts';
-import { OVERSHOOT_USL, runs } from '@/lib/lab-data';
+import { OVERSHOOT_USL, fmt, gains, measuredMetrics as M, overshootStats as S, runs } from '@/lib/lab-data';
 
 const points = runs.map((r) => ({
   x: r.kp,
@@ -24,15 +24,15 @@ export default function ScatterChartExample() {
           { id: 'pass', label: 'Within limit', tone: 'muted' },
         ]}
         xDomain={[1.5, 4.75]}
-        yDomain={[0, 20]}
+        yDomain={[0, 25]}
         xLabel="Kp"
         yLabel="Overshoot"
         yUnit="%"
-        limits={[{ axis: 'y', value: OVERSHOOT_USL, label: 'Limit 10 %' }]}
+        limits={[{ axis: 'y', value: OVERSHOOT_USL, label: `Limit ${OVERSHOOT_USL} %` }]}
         highlight="R-0412"
         fit
         height={280}
-        ariaLabel={`Overshoot rises with Kp across ${runs.length} runs. Every run over the 10 % limit has Kp above 3.1; R-0412, at Kp 4.20, overshoots 17.6 %.`}
+        ariaLabel={`Overshoot rises with Kp across ${runs.length} runs. Every run over the ${OVERSHOOT_USL} % limit has Kp of ${fmt.n2.format(S.minKpOver)} or more; R-0412, at Kp ${fmt.n2.format(gains.kp)}, overshoots ${fmt.n1.format(M.overshoot)} %.`}
       />
     </div>
   );

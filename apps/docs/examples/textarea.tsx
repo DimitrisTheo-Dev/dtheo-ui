@@ -5,14 +5,14 @@ import { Button } from '@dtheo/ui/components/button';
 import { Field, FieldDescription, FieldLabel } from '@dtheo/ui/components/field';
 import { Textarea } from '@dtheo/ui/components/textarea';
 import { useToast } from '@dtheo/ui/components/toast';
+import { OVERSHOOT_LIMIT, fmt, gains, measuredMetrics as M } from '@/lib/lab-data';
 
 const MAX = 600;
+const draft = `Overshoot ${fmt.n1.format(M.overshoot)} % is over the ${OVERSHOOT_LIMIT} % limit. Kp ${fmt.n2.format(gains.kp)} is too aggressive for the 2 kg load; suggest Kp 3.60 and a rerun on Bench 3.`;
 
 export default function TextareaExample() {
   const toast = useToast();
-  const [note, setNote] = React.useState(
-    'Overshoot 17.6 % is over the 15 % limit. Kp 4.20 is too aggressive for the 2 kg load; suggest Kp 3.60 and a rerun on Bench 3.',
-  );
+  const [note, setNote] = React.useState(draft);
   return (
     <div className="flex w-full max-w-md flex-col gap-3">
       <Field>

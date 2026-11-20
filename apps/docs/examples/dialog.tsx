@@ -15,6 +15,7 @@ import {
 import { Field, FieldDescription, FieldLabel } from '@dtheo/ui/components/field';
 import { NumberField } from '@dtheo/ui/components/number-field';
 import { useToast } from '@dtheo/ui/components/toast';
+import { fmt, measuredMetrics as M } from '@/lib/lab-data';
 
 export default function DialogExample() {
   const [open, setOpen] = React.useState(false);
@@ -26,7 +27,8 @@ export default function DialogExample() {
         <DialogHeader>
           <DialogTitle>Queue a retune run</DialogTitle>
           <DialogDescription>
-            R-0412 overshot by 17.6 %. Lower the proportional gain and rerun the same step on Bench 3.
+            R-0412 overshot by {fmt.n1.format(M.overshoot)} %. Lower the proportional gain and rerun the same
+            step on Bench 3.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">

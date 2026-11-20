@@ -34,8 +34,8 @@ export default function AlertExample() {
         <AlertContent>
           <AlertTitle>Bench 3 now runs firmware 4.18.2</AlertTitle>
           <AlertDescription>
-            Runs from before the update are compared against the old reference,{' '}
-            <span className="whitespace-nowrap">R-0409</span>.
+            Runs from before the update stay in the history but are not compared against the current
+            reference, <span className="whitespace-nowrap">R-0409</span>.
           </AlertDescription>
         </AlertContent>
         <AlertActions>
