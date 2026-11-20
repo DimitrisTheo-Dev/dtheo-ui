@@ -75,16 +75,42 @@ export const crisp = (v: number) => Math.round(v) + 0.5;
 /**
  * Largest-Triangle-Three-Buckets downsampling. Keeps the visual shape of a dense trace (peaks included)
  * with roughly `threshold` points, so a 100k-sample capture renders as fast as a 1k one.
+ *
+ * A non-finite y (NaN for a dropout) is a gap: each stretch between gaps is downsampled on its own share of the
+ * points, and the first index of every gap is kept, so a line drawn from the result lifts the pen there.
  */
 export function lttb(xs: ArrayLike<number>, ys: ArrayLike<number>, threshold: number): number[] {
   const n = xs.length;
   if (threshold >= n || threshold < 3) return Array.from({ length: n }, (_, i) => i);
-  const out: number[] = [0];
+  let finite = 0;
+  for (let i = 0; i < n; i++) if (Number.isFinite(ys[i]!)) finite++;
+  if (finite === n) return lttbRun(xs, ys, 0, n, threshold);
+  const out: number[] = [];
+  for (let i = 0; i < n;) {
+    if (!Number.isFinite(ys[i]!)) {
+      out.push(i);
+      while (i < n && !Number.isFinite(ys[i]!)) i++;
+      continue;
+    }
+    let end = i;
+    while (end < n && Number.isFinite(ys[end]!)) end++;
+    const share = Math.max(3, Math.round((threshold * (end - i)) / finite));
+    for (const k of lttbRun(xs, ys, i, end, share)) out.push(k);
+    i = end;
+  }
+  return out;
+}
+
+/** LTTB over the samples in [from, to), all finite. */
+function lttbRun(xs: ArrayLike<number>, ys: ArrayLike<number>, from: number, to: number, threshold: number) {
+  const n = to - from;
+  if (threshold >= n) return Array.from({ length: n }, (_, i) => from + i);
+  const out: number[] = [from];
   const every = (n - 2) / (threshold - 2);
-  let a = 0;
+  let a = from;
   for (let i = 0; i < threshold - 2; i++) {
-    const start = Math.floor((i + 1) * every) + 1;
-    const end = Math.min(Math.floor((i + 2) * every) + 1, n);
+    const start = from + Math.floor((i + 1) * every) + 1;
+    const end = from + Math.min(Math.floor((i + 2) * every) + 1, n);
     let avgX = 0;
     let avgY = 0;
     for (let j = start; j < end; j++) {
@@ -94,8 +120,8 @@ export function lttb(xs: ArrayLike<number>, ys: ArrayLike<number>, threshold: nu
     const len = Math.max(1, end - start);
     avgX /= len;
     avgY /= len;
-    const rStart = Math.floor(i * every) + 1;
-    const rEnd = Math.floor((i + 1) * every) + 1;
+    const rStart = from + Math.floor(i * every) + 1;
+    const rEnd = from + Math.floor((i + 1) * every) + 1;
     let maxArea = -1;
     let next = rStart;
     for (let j = rStart; j < rEnd; j++) {
@@ -108,7 +134,7 @@ export function lttb(xs: ArrayLike<number>, ys: ArrayLike<number>, threshold: nu
     out.push(next);
     a = next;
   }
-  out.push(n - 1);
+  out.push(to - 1);
   return out;
 }
 
