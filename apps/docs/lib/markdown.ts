@@ -202,6 +202,8 @@ export function llmsTxt() {
     '',
     'Every docs page has a Markdown mirror at the same URL with `.md`. The MCP server at /mcp (Streamable HTTP, read-only) exposes the same contracts as tools. The registry at /r/registry.json is shadcn-compatible.',
     '',
+    `Source: ${site.repo} (MIT). Created by ${site.author.name} (${site.author.url}).`,
+    '',
     '## Get started',
     '',
     ...getStarted.map((p) => `- [${p.title}](${md(p.href)}): ${p.description}`),

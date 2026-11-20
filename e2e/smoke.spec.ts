@@ -23,6 +23,19 @@ test('the sitemap lists the docs, components, charts and examples', async ({ req
     ).toBe(true);
 });
 
+test('every docs page links to the repo and credits its author', async ({ page }) => {
+  for (const path of ['/', '/docs/components', '/docs/installation']) {
+    await page.goto(path);
+    await expect(page.getByRole('link', { name: 'dtheo/ui on GitHub' }), path).toHaveAttribute(
+      'href',
+      'https://github.com/DimitrisTheo-Dev/dtheo-ui',
+    );
+    const footer = page.getByRole('contentinfo');
+    await expect(footer.getByRole('link', { name: 'dtheo.dev' }), path).toHaveAttribute('href', 'https://dtheo.dev');
+    await expect(footer.getByRole('link', { name: 'GitHub' }), path).toBeVisible();
+  }
+});
+
 test('every route renders without errors or sideways scroll @phone', async ({ page, request }, info) => {
   test.setTimeout(10 * 60_000);
   const failures: string[] = [];
