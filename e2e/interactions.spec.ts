@@ -13,6 +13,44 @@ test('⌘K search finds a component and opens it', async ({ page }) => {
   await expect(page).toHaveURL(/\/docs\/components\/number-field$/);
 });
 
+test('⌘K search finds a page by what it covers, not only by its name', async ({ page }) => {
+  await page.goto('/docs');
+  await page.keyboard.press('ControlOrMeta+k');
+  const search = page.getByRole('combobox', { name: 'Search commands' });
+  // The words a launch review typed and got nothing for, with the page each one should find.
+  for (const [query, title] of [
+    ['Bode', 'Frequency chart'],
+    ['Cpk', 'Histogram'],
+    ['MCP', 'For agents'],
+    ['contrast', 'Color'],
+    ['tokens', 'Theming'],
+    ['limit', 'Line chart'],
+    ['dark mode', 'Theming'],
+    ['telemetry', 'Stream chart'],
+    ['shadcn', 'Installation'],
+  ]) {
+    await search.fill(query);
+    // The name itself must show, not only a long description beside it.
+    const option = page.getByRole('option', { name: new RegExp(`^${title}`) });
+    await expect(option.getByText(title, { exact: true }), query).toBeVisible();
+  }
+  // A name still wins: other pages mention tables, but Enter opens the Table page.
+  await search.fill('table');
+  await expect(page.getByRole('option').first()).toHaveText(/^Table/);
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/docs\/components\/table$/);
+});
+
+test('⌘K search says what to try when nothing matches', async ({ page }) => {
+  await page.goto('/docs');
+  await page.keyboard.press('ControlOrMeta+k');
+  await page.getByRole('combobox', { name: 'Search commands' }).fill('qwertyuiop');
+  await expect(page.getByText(/^No pages match\. Try a component name/)).toBeVisible();
+  await page.getByRole('button', { name: 'Browse all components' }).click();
+  await expect(page).toHaveURL(/\/docs\/components$/);
+  await expect(page.getByRole('combobox', { name: 'Search commands' })).toBeHidden();
+});
+
 test('the theme toggle switches and survives a reload', async ({ page }) => {
   await page.goto('/docs');
   const html = page.locator('html');

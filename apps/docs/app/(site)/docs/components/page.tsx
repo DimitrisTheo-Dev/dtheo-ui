@@ -1,12 +1,14 @@
 import { components } from '@dtheo/ui/meta';
 import { DocPage } from '@/components/doc-page';
 import { ComponentGallery } from '@/components/component-gallery';
+import { pageMetadata } from '@/lib/metadata';
 
-export const metadata = {
+export const metadata = pageMetadata({
   title: 'Components',
   description: `All ${components.length} components and charts, live.`,
-  alternates: { canonical: '/docs/components', types: { 'text/markdown': '/docs/components.md' } },
-};
+  path: '/docs/components',
+  markdown: '/docs/components.md',
+});
 
 export default function ComponentsIndex() {
   return (
