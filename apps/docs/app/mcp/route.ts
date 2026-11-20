@@ -14,6 +14,21 @@ import { site } from '@/lib/site';
  */
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 const slugs = components.map((c) => c.slug) as [string, ...string[]];
+const docsPage = (slug: string) =>
+  `${site.url}/docs/${getComponent(slug)?.package === 'charts' ? 'charts' : 'components'}/${slug}`;
+
+/**
+ * Build a tool's answer. If that fails, log the cause for the owner and tell the agent where the same answer is
+ * published as a static file. The agent never sees a server path or a maintainer's to-do.
+ */
+function answer(tool: string, build: () => string, instead: string) {
+  try {
+    return text(build());
+  } catch (error) {
+    console.error(`[mcp] ${tool} failed`, error);
+    return { ...text(`${tool} could not build this answer right now. ${instead}`), isError: true };
+  }
+}
 
 const handler = createMcpHandler(
   (server) => {
@@ -39,11 +54,14 @@ const handler = createMcpHandler(
         }),
       },
       async ({ category }) =>
-        text(
-          components
-            .filter((c) => !category || c.category === category)
-            .map((c) => `- ${c.slug} (${c.category}, ${c.level}): ${c.description}`)
-            .join('\n'),
+        answer(
+          'list_components',
+          () =>
+            components
+              .filter((c) => !category || c.category === category)
+              .map((c) => `- ${c.slug} (${c.category}, ${c.level}): ${c.description}`)
+              .join('\n'),
+          `Fetch ${site.url}/docs/components.md for the same list.`,
         ),
     );
 
@@ -55,7 +73,12 @@ const handler = createMcpHandler(
           'The full contract for one component: install command, exports, when to use and avoid, API, keyboard, accessibility and example code.',
         inputSchema: z.object({ slug: z.enum(slugs) }),
       },
-      async ({ slug }) => text(componentMarkdown(getComponent(slug)!)),
+      async ({ slug }) =>
+        answer(
+          'get_component',
+          () => componentMarkdown(getComponent(slug)!),
+          `Fetch ${docsPage(slug)}.md: the same contract as Markdown.`,
+        ),
     );
 
     server.registerTool(
@@ -66,17 +89,20 @@ const handler = createMcpHandler(
           'Source files for a component (imports already rewritten to @/components/ui and @/lib), plus npm and registry dependencies.',
         inputSchema: z.object({ slug: z.enum(slugs) }),
       },
-      async ({ slug }) => {
-        const item = registryItem(slug)!;
-        return text(
-          [
-            `# ${item.title} source`,
-            `npm dependencies: ${item.dependencies.join(' ') || 'none'}`,
-            `registry dependencies: ${item.registryDependencies.join(' ') || 'none'}`,
-            ...item.files.map((f) => `\n## ${f.target}\n\n\`\`\`tsx\n${f.content}\n\`\`\``),
-          ].join('\n'),
-        );
-      },
+      async ({ slug }) =>
+        answer(
+          'get_component_source',
+          () => {
+            const item = registryItem(slug)!;
+            return [
+              `# ${item.title} source`,
+              `npm dependencies: ${item.dependencies.join(' ') || 'none'}`,
+              `registry dependencies: ${item.registryDependencies.join(' ') || 'none'}`,
+              ...item.files.map((f) => `\n## ${f.target}\n\n\`\`\`tsx\n${f.content}\n\`\`\``),
+            ].join('\n');
+          },
+          `Fetch ${site.url}/r/${slug}.json instead: each entry in files[] has the file's content and its target path, and registryDependencies lists the items it needs. Or run \`npx ${site.cli}@latest add ${slug}\` in the project.`,
+        ),
     );
 
     server.registerTool(
@@ -87,44 +113,47 @@ const handler = createMcpHandler(
           'Ranked search across components, foundations, patterns and guides. Use plain words: "filter a table", "limit line", "toast".',
         inputSchema: z.object({ query: z.string().min(2).max(120) }),
       },
-      async ({ query }) => {
-        const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
-        const docs = [
-          ...components.map((c) => ({
-            title: c.title,
-            url: `${site.url}/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}.md`,
-            body: `${c.title} ${c.description} ${c.use.join(' ')} ${c.avoid?.join(' ') ?? ''} ${c.category}`,
-          })),
-          ...Object.entries(pagesMarkdown).map(([k, v]) => ({
-            title: v.split('\n')[0]!.replace('# ', ''),
-            url: `${site.url}/docs/${k}.md`,
-            body: v,
-          })),
-          ...['color', 'typography', 'geometry', 'motion'].map((k) => ({
-            title: k,
-            url: `${site.url}/docs/foundations/${k}.md`,
-            body: foundationMarkdown(k)!,
-          })),
-        ];
-        const scored = docs
-          .map((d) => {
-            const hay = d.body.toLowerCase();
-            const title = d.title.toLowerCase();
-            const score = terms.reduce(
-              (s, t) => s + (title.includes(t) ? 5 : 0) + Math.min(5, hay.split(t).length - 1),
-              0,
-            );
-            return { ...d, score };
-          })
-          .filter((d) => d.score > 0)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 8);
-        return text(
-          scored.length
-            ? scored.map((d) => `- ${d.title}: ${d.url}`).join('\n')
-            : 'No matches. Try list_components.',
-        );
-      },
+      async ({ query }) =>
+        answer(
+          'search_docs',
+          () => {
+            const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+            const docs = [
+              ...components.map((c) => ({
+                title: c.title,
+                url: `${docsPage(c.slug)}.md`,
+                body: `${c.title} ${c.description} ${c.use.join(' ')} ${c.avoid?.join(' ') ?? ''} ${c.category}`,
+              })),
+              ...Object.entries(pagesMarkdown).map(([k, v]) => ({
+                title: v.split('\n')[0]!.replace('# ', ''),
+                url: `${site.url}/docs/${k}.md`,
+                body: v,
+              })),
+              ...['color', 'typography', 'geometry', 'motion'].map((k) => ({
+                title: k,
+                url: `${site.url}/docs/foundations/${k}.md`,
+                body: foundationMarkdown(k)!,
+              })),
+            ];
+            const scored = docs
+              .map((d) => {
+                const hay = d.body.toLowerCase();
+                const title = d.title.toLowerCase();
+                const score = terms.reduce(
+                  (s, t) => s + (title.includes(t) ? 5 : 0) + Math.min(5, hay.split(t).length - 1),
+                  0,
+                );
+                return { ...d, score };
+              })
+              .filter((d) => d.score > 0)
+              .sort((a, b) => b.score - a.score)
+              .slice(0, 8);
+            return scored.length
+              ? scored.map((d) => `- ${d.title}: ${d.url}`).join('\n')
+              : 'No matches. Try list_components.';
+          },
+          `Fetch ${site.url}/llms.txt: every page, described, with a link to its Markdown.`,
+        ),
     );
 
     server.registerTool(
@@ -138,20 +167,23 @@ const handler = createMcpHandler(
           mode: z.enum(['light', 'dark']).default('dark'),
         }),
       },
-      async ({ preset, mode }) => {
-        const p = presets.find((x) => x.id === preset)!;
-        const scheme = p.modes[mode] ?? presets[0]!.modes[mode]!;
-        return text(
-          [
-            `# ${p.name} (${mode})`,
-            ...colorRoles.map((r) => `--${r}: ${scheme[r]}`),
-            '',
-            ...Object.entries(p.geometry).map(([k, v]) => `--${k}: ${v}`),
-            '',
-            ...Object.entries(foundation.text).map(([k, v]) => `text-${k}: ${v[0]}/${v[1]} ${v[3]}`),
-          ].join('\n'),
-        );
-      },
+      async ({ preset, mode }) =>
+        answer(
+          'get_tokens',
+          () => {
+            const p = presets.find((x) => x.id === preset)!;
+            const scheme = p.modes[mode] ?? presets[0]!.modes[mode]!;
+            return [
+              `# ${p.name} (${mode})`,
+              ...colorRoles.map((r) => `--${r}: ${scheme[r]}`),
+              '',
+              ...Object.entries(p.geometry).map(([k, v]) => `--${k}: ${v}`),
+              '',
+              ...Object.entries(foundation.text).map(([k, v]) => `text-${k}: ${v[0]}/${v[1]} ${v[3]}`),
+            ].join('\n');
+          },
+          `Fetch ${site.url}/docs/foundations/color.md and ${site.url}/docs/foundations/geometry.md: the same values as Markdown.`,
+        ),
     );
 
     server.registerTool(
@@ -175,11 +207,14 @@ const handler = createMcpHandler(
         }),
       },
       async ({ topic }) =>
-        text(
-          foundationMarkdown(topic) ??
+        answer(
+          'get_guidelines',
+          () =>
+            foundationMarkdown(topic) ??
             pagesMarkdown[topic] ??
             pagesMarkdown[`patterns/${topic}`] ??
             'Unknown topic.',
+          `Fetch ${site.url}/llms.txt and open the page for "${topic}"; every page has a Markdown copy.`,
         ),
     );
 
@@ -194,19 +229,22 @@ const handler = createMcpHandler(
           filename: z.string().max(200).optional(),
         }),
       },
-      async ({ code, filename }) => {
-        const findings = checkSource(code, { file: filename });
-        if (!findings.length)
-          return text('0 findings. The code follows the dtheo/ui rules this checker knows.');
-        return text(
-          findings
-            .map(
-              (f) =>
-                `${f.severity.toUpperCase()} ${f.rule} (line ${f.line}): ${f.message}\n  Fix: ${f.fix}\n  > ${f.excerpt}`,
-            )
-            .join('\n'),
-        );
-      },
+      async ({ code, filename }) =>
+        answer(
+          'check_ui_code',
+          () => {
+            const findings = checkSource(code, { file: filename });
+            if (!findings.length)
+              return '0 findings. The code follows the dtheo/ui rules this checker knows.';
+            return findings
+              .map(
+                (f) =>
+                  `${f.severity.toUpperCase()} ${f.rule} (line ${f.line}): ${f.message}\n  Fix: ${f.fix}\n  > ${f.excerpt}`,
+              )
+              .join('\n');
+          },
+          `Save the code to a file and run \`npx ${site.cli}@latest check <file>\`: the same rules, offline.`,
+        ),
     );
   },
   {
