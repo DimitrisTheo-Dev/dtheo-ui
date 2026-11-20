@@ -30,6 +30,8 @@ export function componentMarkdown(meta: ComponentMeta) {
     shadcnCommand(meta.slug),
     '```',
     '',
+    `First time in this project? Run \`npx ${site.cli}@latest init\` first, or follow ${site.url}/docs/installation#using-the-shadcn-cli-instead to set up the shadcn CLI once.`,
+    '',
     `Dependencies: ${meta.dependencies.join(', ') || 'none'}. Registry dependencies: ${meta.registryDependencies.join(', ') || 'none'}.`,
     '',
     '## Exports',

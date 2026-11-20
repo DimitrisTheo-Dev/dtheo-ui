@@ -35,6 +35,17 @@ const config: NextConfig = {
   devIndicators: false,
   productionBrowserSourceMaps: false,
   poweredByHeader: false,
+  // The MCP route answers from the component sources, the stylesheet and the examples on every call (through
+  // lib/source.ts). Build-time tracing cannot see paths built at run time, so ship those files with the function.
+  // test/mcp.test.ts fails when a tool reads a file these globs miss.
+  outputFileTracingIncludes: {
+    '/mcp': [
+      '../../packages/ui/src/**/*.{ts,tsx,css}',
+      '../../packages/charts/src/**/*.{ts,tsx}',
+      './examples/*.tsx',
+      './lib/lab-data.ts',
+    ],
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

@@ -65,20 +65,23 @@ Set the mode with a class and the preset with an attribute on \`<html>\` (or on 
 ## 4. Add components
 
 \`\`\`bash
-npx ${site.cli} add button field select table line-chart
+npx ${site.cli}@latest add button field select table line-chart tooltip toast
 \`\`\`
 
-Components are copied into \`components/ui\` (charts into \`components/charts\`). You own the code. The command prints what to install: the npm packages, and for charts the TypeScript types they need.
+Components are copied into \`components/ui\` (charts into \`components/charts\`). You own the code. The command prints what to install: the npm packages, and for charts the TypeScript types they need. Run those install commands before you build.
 
 ## 5. Mount the providers
 
+The root layout wraps the app in the tooltip and toast providers you added in step 4, and keeps the mode and preset from step 3. In Next.js, make \`app/layout.tsx\`:
+
 \`\`\`tsx
+import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toast";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-preset="graphite">
       <body>
         <TooltipProvider>
           <Toaster>{children}</Toaster>
@@ -89,21 +92,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 \`\`\`
 
+In a Vite app, wrap \`<App />\` the same way in \`src/main.tsx\`.
+
 ## Using the shadcn CLI instead
 
-Every item is a valid shadcn registry item:
+Every item is also a shadcn registry item, and brings the stylesheet (\`styles/dtheo.css\`) with it. In a project without \`components.json\`, run \`npx shadcn@latest init\` first and pick any options: ${site.name} replaces the theme it writes. Then add components with \`--overwrite\`:
 
 \`\`\`bash
-npx shadcn@latest add ${site.url}/r/button.json
+npx shadcn@latest add --overwrite ${site.url}/r/button.json ${site.url}/r/tooltip.json ${site.url}/r/toast.json
 \`\`\`
+
+\`--overwrite\` replaces the \`lib/utils.ts\` and \`components/ui/button.tsx\` that shadcn init wrote (and any component of yours with the same name). Without it, shadcn keeps its own button and a \`cn()\` that does not know the ${site.name} type and radius scales.
+
+Then make \`app/globals.css\` exactly these two lines, deleting the theme shadcn added (\`tw-animate-css\`, \`shadcn/tailwind.css\`, \`@custom-variant dark\`, \`@theme inline\`, \`:root\`, \`.dark\` and \`@layer base\`), because it overrides this one:
+
+\`\`\`css
+@import "tailwindcss";
+@import "../styles/dtheo.css";
+\`\`\`
+
+Finish with steps 3 and 5: the mode and preset on \`<html>\`, and the providers in the root layout. Later components need no flags: \`npx shadcn@latest add ${site.url}/r/table.json\`.
 
 ## Check your UI code
 
 \`\`\`bash
-npx ${site.cli} check src
+npx ${site.cli}@latest check app components
 \`\`\`
 
-It flags raw colors, palette classes, \`transition-all\`, unlabeled icon buttons and other mistakes, with the fix for each. Add it to CI; it exits with 1 on errors.
+Name the folders that hold your UI code (\`src\` in a Vite app). It flags raw colors, palette classes, \`transition-all\`, unlabeled icon buttons and other mistakes, with the fix for each. Add it to CI; it exits with 1 on errors.
 `,
 
   theming: `# Theming
