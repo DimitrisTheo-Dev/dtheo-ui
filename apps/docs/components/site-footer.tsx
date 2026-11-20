@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { site } from '@/lib/site';
+import { GithubMark } from './github-link';
 import { LogoMark } from './logo';
 
 export function SiteFooter() {
@@ -10,14 +11,28 @@ export function SiteFooter() {
           <LogoMark px={16} />
           {site.name} {site.version}
         </span>
-        <span>Built on Base UI and Tailwind CSS. MIT licensed.</span>
-        <nav aria-label="Footer" className="ml-auto flex flex-wrap gap-x-5 gap-y-2">
-          <Link className="hover:text-foreground" href="/llms.txt">
+        <span>
+          Created by{' '}
+          <a
+            href={site.author.url}
+            className="font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
+          >
+            {site.author.site}
+          </a>
+          . Built on Base UI and Tailwind CSS. MIT licensed.
+        </span>
+        <nav aria-label="Footer" className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-2">
+          <a className="flex items-center gap-1.5 hover:text-foreground" href={site.repo}>
+            <GithubMark className="size-3.5" />
+            GitHub
+          </a>
+          {/* Plain links: these are files, and a Link would prefetch them as pages and log a 404. */}
+          <a className="hover:text-foreground" href="/llms.txt">
             llms.txt
-          </Link>
-          <Link className="hover:text-foreground" href="/r/registry.json">
+          </a>
+          <a className="hover:text-foreground" href="/r/registry.json">
             Registry
-          </Link>
+          </a>
           <Link className="hover:text-foreground" href="/docs/agents">
             MCP server
           </Link>
