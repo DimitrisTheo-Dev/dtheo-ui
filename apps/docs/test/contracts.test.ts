@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { categories, components } from '@dtheo/ui/meta';
 import { registryItem, registryNames } from '@/lib/registry';
 import { ardManifest } from '@/lib/ard';
+import { brand, starPath, tile } from '@/lib/brand';
 import { llmsTxt } from '@/lib/markdown';
 import { exampleSource } from '@/lib/source';
 import { pageUsage, usedIn } from '@/lib/usage';
@@ -98,6 +99,18 @@ describe('registry', () => {
     const names = new Set(registryNames());
     for (const c of components)
       for (const dep of c.registryDependencies) expect(names, `${c.slug} → ${dep}`).toContain(dep);
+  });
+});
+
+describe('brand', () => {
+  it('draws the same star in the favicon as in the logo', () => {
+    // app/icon.svg is a static file, so it cannot import the path; this keeps the copy honest.
+    const icon = readFileSync(`${repo}apps/docs/app/icon.svg`, 'utf8');
+    expect(icon).toContain(`d="${starPath}"`);
+    expect(icon).toContain(`transform="${tile.star}"`);
+    expect(icon).toContain(`rx="${tile.radius}"`);
+    expect(icon).toContain(`fill="${brand.ink}"`);
+    expect(icon).toContain(`fill="${brand.star}"`);
   });
 });
 
