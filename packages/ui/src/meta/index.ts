@@ -351,6 +351,13 @@ export const components: ComponentMeta[] = [
         type: 'string[]',
         description: 'A name per thumb ("Window start", "Window end") so a range is announced apart.',
       },
+      {
+        name: 'locale',
+        type: 'Intl.LocalesArgument',
+        default: "'en-US'",
+        description:
+          'Formats the announced value. Fixed, so the server and every browser render the same text and the page hydrates.',
+      },
     ],
     keyboard: [
       ['Arrow keys', 'Step the value'],
@@ -720,6 +727,13 @@ export const components: ComponentMeta[] = [
         name: 'unit',
         type: 'string',
         description: 'Shown after the value when showValue is on, for units Intl cannot format (A, N·m).',
+      },
+      {
+        name: 'locale',
+        type: 'Intl.LocalesArgument',
+        default: "'en-US'",
+        description:
+          'Formats the shown and announced value. Fixed, so the server and every browser render the same text and the page hydrates.',
       },
     ],
     a11y: [

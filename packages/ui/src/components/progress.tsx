@@ -5,6 +5,8 @@ import { Progress as ProgressPrimitive } from '@base-ui/react/progress';
 import { Meter as MeterPrimitive } from '@base-ui/react/meter';
 import { cn } from '../lib/utils';
 
+// Values render on the server too, so they use one locale everywhere: with the browser's locale a German visitor
+// gets "64 %" where the server wrote "64%" and React discards the server HTML. Pass `locale` to change it.
 const valueFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 
 /** Task completion. Pass `value={null}` for indeterminate work; never fake a percentage. */
@@ -13,6 +15,7 @@ export function Progress({
   label,
   showValue = false,
   unit,
+  locale = 'en-US',
   ...props
 }: React.ComponentProps<typeof ProgressPrimitive.Root> & {
   label?: React.ReactNode;
@@ -24,6 +27,7 @@ export function Progress({
     <ProgressPrimitive.Root
       data-slot="progress"
       className={cn('grid w-full grid-cols-[1fr_auto] gap-x-3 gap-y-1.5', className)}
+      locale={locale}
       {...props}
     >
       {label ? <ProgressPrimitive.Label className="text-label">{label}</ProgressPrimitive.Label> : null}
@@ -54,6 +58,7 @@ export function Meter({
   min = 0,
   showValue = false,
   unit,
+  locale = 'en-US',
   ...props
 }: React.ComponentProps<typeof MeterPrimitive.Root> & {
   label?: React.ReactNode;
@@ -77,6 +82,7 @@ export function Meter({
       className={cn('grid w-full grid-cols-[1fr_auto] gap-x-3 gap-y-1.5', className)}
       max={max}
       min={min}
+      locale={locale}
       {...props}
     >
       {label ? <MeterPrimitive.Label className="text-label">{label}</MeterPrimitive.Label> : null}

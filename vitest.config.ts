@@ -11,7 +11,7 @@ export default defineConfig({
     ],
   },
   test: {
-    include: ['packages/*/test/**/*.test.{ts,mjs}', 'apps/docs/test/**/*.test.ts'],
+    include: ['packages/*/test/**/*.test.{ts,tsx,mjs}', 'apps/docs/test/**/*.test.ts'],
     environment: 'node',
     testTimeout: 30_000,
   },
