@@ -1,8 +1,10 @@
 import * as React from 'react';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { ImageResponse } from 'next/og';
 import { colors } from '@dtheo/tokens/native';
 import { brand, Mark, starPath } from './brand';
+import { examples } from './nav';
 import { site } from './site';
 
 const fontFile = (weight: number) =>
@@ -308,6 +310,15 @@ export function DocCard({
         )}
       </div>
     </Sky>
+  );
+}
+
+/** An example app's share card: its name and what it shows, from the docs navigation. */
+export async function exampleCard(href: string) {
+  const page = examples.find((e) => e.href === href);
+  return new ImageResponse(
+    <DocCard eyebrow="Example app" title={page?.title ?? site.name} description={page?.description ?? ''} />,
+    { ...ogSize, fonts: await ogFonts() },
   );
 }
 

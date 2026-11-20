@@ -1,7 +1,8 @@
 import { ImageResponse } from 'next/og';
 import { HomeCard, ogFonts, ogSize } from '@/lib/og';
+import { site } from '@/lib/site';
 
-export const alt = 'dtheo/ui: pixel-perfect UI, even when your agent writes it.';
+export const alt = `${site.name}: ${site.tagline}`;
 export const size = ogSize;
 export const contentType = 'image/png';
 
