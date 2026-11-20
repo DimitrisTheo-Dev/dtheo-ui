@@ -11,7 +11,20 @@ import { useToast } from '@dtheo/ui/components/toast';
 import { FrequencyChart, Histogram, ScatterChart, StreamChart, createStream } from '@dtheo/charts';
 import { LabSidebar } from '../_shared/lab-sidebar';
 import { ThemeToggle } from '@/components/theme-controls';
-import { OVERSHOOT_USL, bode, createBench, overshootStats as S, runs, spectrum } from '@/lib/lab-data';
+import {
+  CURRENT_LIMIT,
+  OVERSHOOT_USL,
+  TARGET,
+  TORQUE_LIMIT,
+  bode,
+  createBench,
+  fmt,
+  gains,
+  measuredMetrics as M,
+  overshootStats as S,
+  runs,
+  spectrum,
+} from '@/lib/lab-data';
 
 const nf = (digits: number) =>
   new Intl.NumberFormat('en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits });
@@ -20,8 +33,8 @@ const ref = bode.referenceMargins;
 const PM_MIN = 45;
 const GM_MIN = 6;
 const CPK_MIN = 1.33;
-const CURRENT_LIMIT = 32;
-const TORQUE_LIMIT = 13.2;
+// One scale for the scatter and the histogram, with room above the highest run.
+const OVERSHOOT_MAX = Math.ceil(S.max / 5) * 5;
 
 const points = runs.map((r) => ({
   x: r.kp,
@@ -62,7 +75,7 @@ function LiveBench() {
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div className="flex flex-col gap-0.5">
           <CardTitle level={2}>Live bench</CardTitle>
-          <CardDescription>A 12 N·m step every 1.5 s, sampled at 1 kHz</CardDescription>
+          <CardDescription>A {TARGET} N·m step every 1.5 s, sampled at 1 kHz</CardDescription>
         </div>
         <div className="flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 text-label font-normal text-muted-foreground">
@@ -86,9 +99,15 @@ function LiveBench() {
             { channel: 'command', label: 'Command', tone: 'faint', width: 1, unit: 'N·m' },
             { channel: 'torque', label: 'Torque', unit: 'N·m', digits: 2 },
           ]}
-          limits={[{ value: TORQUE_LIMIT, label: `Overshoot limit ${TORQUE_LIMIT} N·m`, channel: 'torque' }]}
+          limits={[
+            {
+              value: TORQUE_LIMIT,
+              label: `Overshoot limit ${fmt.n1.format(TORQUE_LIMIT)} N·m`,
+              channel: 'torque',
+            },
+          ]}
           height={180}
-          ariaLabel="Live output torque against the command. Each step overshoots past the 13.2 N·m limit before settling."
+          ariaLabel={`Live output torque against the command. Each step overshoots past the ${fmt.n1.format(TORQUE_LIMIT)} N·m limit before settling.`}
         />
         <StreamChart
           stream={stream}
@@ -99,7 +118,7 @@ function LiveBench() {
           series={[{ channel: 'current', label: 'Phase current', unit: 'A', tone: 'chart-2' }]}
           limits={[{ value: CURRENT_LIMIT, label: `Limit ${CURRENT_LIMIT} A`, channel: 'current' }]}
           height={180}
-          ariaLabel="Live phase current. It peaks near 30 A on each step; load bumps sometimes push it past the 32 A limit."
+          ariaLabel={`Live phase current. It peaks near 30 A on each step; load bumps sometimes push it past the ${CURRENT_LIMIT} A limit.`}
         />
       </CardContent>
     </Card>
@@ -276,15 +295,15 @@ export function Tuning() {
                   { id: 'pass', label: 'Within limit', tone: 'muted' },
                 ]}
                 xDomain={[1.5, 4.75]}
-                yDomain={[0, 20]}
+                yDomain={[0, OVERSHOOT_MAX]}
                 xLabel="Kp"
                 yLabel="Overshoot"
                 yUnit="%"
-                limits={[{ axis: 'y', value: OVERSHOOT_USL, label: 'Limit 10 %' }]}
+                limits={[{ axis: 'y', value: OVERSHOOT_USL, label: `Limit ${OVERSHOOT_USL} %` }]}
                 highlight="R-0412"
                 fit
                 height={260}
-                ariaLabel={`Overshoot rises with Kp across ${runs.length} runs; every run over the 10 % limit has Kp above 3.1. R-0412, at Kp 4.20, overshoots 17.6 %.`}
+                ariaLabel={`Overshoot rises with Kp across ${runs.length} runs; every run over the ${OVERSHOOT_USL} % limit has Kp of ${fmt.n2.format(S.minKpOver)} or more. R-0412, at Kp ${fmt.n2.format(gains.kp)}, overshoots ${fmt.n1.format(M.overshoot)} %.`}
               />
             </CardContent>
           </Card>
@@ -292,22 +311,22 @@ export function Tuning() {
             <CardHeader>
               <div className="flex flex-col gap-0.5">
                 <CardTitle level={2}>Overshoot across runs</CardTitle>
-                <CardDescription>Against the 10 % limit and the 5 % target</CardDescription>
+                <CardDescription>Against the {OVERSHOOT_USL} % limit and the 5 % target</CardDescription>
               </div>
             </CardHeader>
             <CardContent>
               <Histogram
                 values={runs.map((r) => r.overshoot)}
-                domain={[0, 20]}
+                domain={[0, OVERSHOOT_MAX]}
                 binWidth={1}
                 upper={OVERSHOOT_USL}
                 target={5}
-                marker={{ value: 17.6, label: 'R-0412' }}
+                marker={{ value: M.overshoot, label: 'R-0412' }}
                 normal
                 xLabel="Overshoot"
                 unit="%"
                 height={240}
-                ariaLabel={`Overshoot of ${S.n} runs: ${S.over} exceed the 10 % limit, and Cpk is ${nf(2).format(S.cpk)}, so the process is not capable at these gains. R-0412 is the highest.`}
+                ariaLabel={`Overshoot of ${S.n} runs: ${S.over} exceed the ${OVERSHOOT_USL} % limit, and Cpk is ${nf(2).format(S.cpk)}, so the process is not capable at these gains. R-0412 is at ${fmt.n1.format(M.overshoot)} %.`}
               />
             </CardContent>
           </Card>

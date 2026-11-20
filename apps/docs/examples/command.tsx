@@ -6,6 +6,15 @@ import { Button } from '@dtheo/ui/components/button';
 import { CommandDialog, type CommandItemData } from '@dtheo/ui/components/command';
 import { Kbd } from '@dtheo/ui/components/kbd';
 import { useToast } from '@dtheo/ui/components/toast';
+import { runHistory } from '@/lib/lab-data';
+
+// The three runs a reviewer jumps between: the run under review, the one before it and the reference.
+const run = (id: string) => runHistory.find((r) => r.id === id)!;
+const recent = [
+  { ...run('R-0412'), hint: 'Bench 3 · today 14:32' },
+  { ...run('R-0411'), hint: 'Bench 3 · today 13:05' },
+  { ...run('R-0409'), hint: 'Bench 3 · reference · yesterday 16:20' },
+];
 
 export default function CommandExample() {
   const toast = useToast();
@@ -13,30 +22,14 @@ export default function CommandExample() {
   const items = React.useMemo<CommandItemData[]>(() => {
     const go = (title: string) => () => toast.add({ title });
     return [
-      {
-        value: 'r-0412',
+      ...recent.map((r) => ({
+        value: r.id.toLowerCase(),
         group: 'Runs',
-        label: 'R-0412 · High-gain step',
-        hint: 'Bench 3 · today 14:32',
+        label: `${r.id} · ${r.profile}`,
+        hint: r.hint,
         icon: <ActivityIcon />,
-        onSelect: go('Opened R-0412'),
-      },
-      {
-        value: 'r-0411',
-        group: 'Runs',
-        label: 'R-0411 · Damped step',
-        hint: 'Bench 3 · today 11:05',
-        icon: <ActivityIcon />,
-        onSelect: go('Opened R-0411'),
-      },
-      {
-        value: 'r-0398',
-        group: 'Runs',
-        label: 'R-0398 · Accepted baseline',
-        hint: 'Bench 1 · 12 Nov',
-        icon: <ActivityIcon />,
-        onSelect: go('Opened R-0398'),
-      },
+        onSelect: go(`Opened ${r.id}`),
+      })),
       {
         value: 'bench-1',
         group: 'Benches',
@@ -71,9 +64,9 @@ export default function CommandExample() {
       {
         value: 'compare',
         group: 'Actions',
-        label: 'Compare R-0412 with baseline',
+        label: 'Compare R-0412 with the reference',
         icon: <GitCompareIcon />,
-        onSelect: go('Comparing R-0412 with R-0398'),
+        onSelect: go('Comparing R-0412 with R-0409'),
       },
       {
         value: 'export',

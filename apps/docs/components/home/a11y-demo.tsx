@@ -4,7 +4,7 @@ import * as React from 'react';
 import { AudioLinesIcon } from 'lucide-react';
 import { Kbd } from '@dtheo/ui/components/kbd';
 import { LineChart } from '@dtheo/charts';
-import { CURRENT_LIMIT, fmt, measured, measuredMetrics as M } from '@/lib/actuator';
+import { CURRENT_LIMIT, fmt, measured, measuredMetrics as M } from '@/lib/lab-data';
 
 const ariaLabel = `Phase current for run R-0412. It peaks at ${fmt.n1.format(M.peakCurrent)} A, under the ${CURRENT_LIMIT} A limit.`;
 

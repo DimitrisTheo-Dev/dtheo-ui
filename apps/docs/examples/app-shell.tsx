@@ -23,11 +23,20 @@ import {
 import { Avatar } from '@dtheo/ui/components/avatar';
 import { Badge } from '@dtheo/ui/components/badge';
 import { Button } from '@dtheo/ui/components/button';
+import {
+  OVERSHOOT_LIMIT,
+  WINDING_TEMP,
+  fmt,
+  gains,
+  measuredMetrics as M,
+  overshootStats,
+  runs,
+} from '@/lib/lab-data';
 
 const views = [
-  { id: 'all', label: 'All runs', icon: <HistoryIcon aria-hidden="true" />, count: 412 },
+  { id: 'all', label: 'All runs', icon: <HistoryIcon aria-hidden="true" />, count: runs.length },
   { id: 'review', label: 'Needs review', icon: <TriangleAlertIcon aria-hidden="true" />, count: 3 },
-  { id: 'failed', label: 'Failed', icon: <CircleXIcon aria-hidden="true" />, count: 7 },
+  { id: 'failed', label: 'Failed', icon: <CircleXIcon aria-hidden="true" />, count: overshootStats.over },
 ];
 
 const benches = [
@@ -103,21 +112,21 @@ export default function AppShellExample() {
             level={2}
             eyebrow="Bench 3 · firmware 4.18.2"
             title="R-0412 High-gain step"
-            description="Overshoot reached 17.6 %, past the 10 % limit. Settling took 186 ms."
+            description={`Overshoot reached ${fmt.n1.format(M.overshoot)} %, past the ${OVERSHOOT_LIMIT} % limit. Settled ${fmt.n0.format(M.settle)} ms after the step.`}
           >
             <div className="flex flex-wrap gap-1.5 pt-1">
               <Badge variant="destructive">
                 <CircleXIcon aria-hidden="true" />
                 Failed
               </Badge>
-              <Badge variant="outline">Kp 4.20</Badge>
+              <Badge variant="outline">Kp {fmt.n2.format(gains.kp)}</Badge>
             </div>
           </PageHeader>
           <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-3">
             {[
-              ['Peak torque', '9.41 N·m'],
-              ['Phase current', '31.2 A'],
-              ['Winding temperature', '71.2 °C'],
+              ['Peak torque', `${fmt.n1.format(M.peak)} N·m`],
+              ['Peak phase current', `${fmt.n1.format(M.peakCurrent)} A`],
+              ['Winding temperature', `${fmt.n1.format(WINDING_TEMP)} °C`],
             ].map(([label, value]) => (
               <div
                 key={label}

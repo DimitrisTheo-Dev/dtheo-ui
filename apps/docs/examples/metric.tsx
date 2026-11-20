@@ -1,10 +1,26 @@
 'use client';
 
 import { Metric, MetricGroup } from '@dtheo/ui/components/metric';
+import {
+  CURRENT_LIMIT,
+  OVERSHOOT_LIMIT,
+  RISE_LIMIT,
+  SETTLE_LIMIT,
+  TEMP_LIMIT,
+  WINDING_TEMP,
+  checkStatus,
+  fmt,
+  measuredMetrics as M,
+} from '@/lib/lab-data';
 
 // Acceptance checks for R-0412 "High-gain step" on Bench 3. Failing and near-limit checks lead.
-// `progress` and `limit` are positions on each meter (0 to 1); each meter spans 0 to 125 % of its limit.
-const on = (value: number, limit: number) => ({ progress: value / (limit * 1.25), limit: 0.8 });
+// Each check fails over its limit and is near the limit above 90 % of it. `progress` and `limit` are positions on
+// each meter (0 to 1); each meter spans 0 to 125 % of its limit.
+const check = (value: number, limit: number) => ({
+  status: checkStatus(value, limit),
+  progress: value / (limit * 1.25),
+  limit: 0.8,
+});
 
 export default function MetricExample() {
   return (
@@ -14,45 +30,42 @@ export default function MetricExample() {
         <Metric
           className="col-span-2 @2xl:col-span-1"
           label="Overshoot"
-          value="17.6"
+          value={fmt.n1.format(M.overshoot)}
           unit="%"
-          status="fail"
-          {...on(17.6, 10)}
-          limitLabel="Limit 10 %"
-        />
-        <Metric
-          label="Settling time"
-          value="186"
-          unit="ms"
-          status="warn"
-          {...on(186, 200)}
-          limitLabel="Limit 200 ms"
+          {...check(M.overshoot, OVERSHOOT_LIMIT)}
+          limitLabel={`Limit ${OVERSHOOT_LIMIT} %`}
         />
         <Metric
           label="Phase current"
-          value="31.2"
+          hint="Peak phase current"
+          value={fmt.n1.format(M.peakCurrent)}
           unit="A"
-          status="pass"
-          {...on(31.2, 40)}
-          limitLabel="Limit 40 A"
+          {...check(M.peakCurrent, CURRENT_LIMIT)}
+          limitLabel={`Limit ${CURRENT_LIMIT} A`}
+        />
+        <Metric
+          label="Settling time"
+          hint="Time after the step until torque stays inside ±2 %"
+          value={fmt.n0.format(M.settle)}
+          unit="ms"
+          {...check(M.settle, SETTLE_LIMIT)}
+          limitLabel={`Limit ${SETTLE_LIMIT} ms`}
+        />
+        <Metric
+          label="Rise time"
+          hint="10 to 90 % of the step"
+          value={fmt.n0.format(M.rise)}
+          unit="ms"
+          {...check(M.rise, RISE_LIMIT)}
+          limitLabel={`Limit ${RISE_LIMIT} ms`}
         />
         <Metric
           label="Winding temp."
           hint="Winding temperature"
-          value="71.2"
+          value={fmt.n1.format(WINDING_TEMP)}
           unit="°C"
-          status="pass"
-          {...on(71.2, 90)}
-          limitLabel="Limit 90 °C"
-        />
-        <Metric
-          label="Static error"
-          hint="Steady-state error"
-          value="0.4"
-          unit="%"
-          status="pass"
-          {...on(0.4, 2)}
-          limitLabel="Limit 2 %"
+          {...check(WINDING_TEMP, TEMP_LIMIT)}
+          limitLabel={`Limit ${TEMP_LIMIT} °C`}
         />
       </MetricGroup>
     </div>

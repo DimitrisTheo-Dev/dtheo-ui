@@ -1,19 +1,29 @@
 'use client';
 
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@dtheo/ui/components/tabs';
+import {
+  OVERSHOOT_LIMIT,
+  SAMPLES,
+  TARGET,
+  WINDING_TEMP,
+  fmt,
+  gains,
+  measuredMetrics as M,
+} from '@/lib/lab-data';
 
 const summary = [
-  { label: 'Overshoot', value: '17.6 %' },
-  { label: 'Settling time', value: '186 ms' },
-  { label: 'Peak torque', value: '9.41 N·m' },
-  { label: 'Winding temperature', value: '71.2 °C' },
+  { label: 'Overshoot', value: `${fmt.n1.format(M.overshoot)} %` },
+  { label: 'Settling time', value: `${fmt.n0.format(M.settle)} ms` },
+  { label: 'Peak torque', value: `${fmt.n1.format(M.peak)} N·m` },
+  { label: 'Winding temperature', value: `${fmt.n1.format(WINDING_TEMP)} °C` },
 ];
 
+// One second of capture.
 const traces = [
-  { name: 'Torque', detail: 'N·m · 1 kHz · 400 samples' },
-  { name: 'Phase current A, B, C', detail: 'A · 20 kHz · 8000 samples' },
-  { name: 'Winding temperature', detail: '°C · 10 Hz · 4 samples' },
-  { name: 'Encoder position', detail: 'rad · 1 kHz · 400 samples' },
+  { name: 'Torque', detail: `N·m · 1 kHz · ${fmt.n0.format(SAMPLES)} samples` },
+  { name: 'Phase current', detail: `A · 1 kHz · ${fmt.n0.format(SAMPLES)} samples` },
+  { name: 'Winding temperature', detail: '°C · 10 Hz · 11 samples' },
+  { name: 'Encoder position', detail: `rad · 1 kHz · ${fmt.n0.format(SAMPLES)} samples` },
 ];
 
 export default function TabsExample() {
@@ -50,9 +60,9 @@ export default function TabsExample() {
       </TabsPanel>
       <TabsPanel value="notes" className="min-h-40">
         <p className="text-body text-muted-foreground text-pretty">
-          Overshoot is 17.6&nbsp;%, past the 10&nbsp;% limit. Kp&nbsp;4.20 is too aggressive for the
-          8.0&nbsp;N·m step on firmware 4.18.2. Retune to Kp&nbsp;3.60 and rerun on Bench&nbsp;3 before
-          approving the gains.
+          Overshoot is {fmt.n1.format(M.overshoot)}&nbsp;%, past the {OVERSHOOT_LIMIT}&nbsp;% limit. Kp&nbsp;
+          {fmt.n2.format(gains.kp)} is too aggressive for the {TARGET}&nbsp;N·m step on firmware 4.18.2.
+          Retune to Kp&nbsp;3.60 and rerun on Bench&nbsp;3 before approving the gains.
         </p>
       </TabsPanel>
     </Tabs>

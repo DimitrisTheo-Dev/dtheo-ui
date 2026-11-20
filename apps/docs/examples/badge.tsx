@@ -11,7 +11,7 @@ import { Badge, StatusDot } from '@dtheo/ui/components/badge';
 
 const benches = [
   { name: 'Bench 1', status: 'Idle', tone: 'neutral' },
-  { name: 'Bench 2', status: 'Running R-0413', tone: 'info' },
+  { name: 'Bench 2', status: 'Running thermal soak', tone: 'info' },
   { name: 'Bench 3', status: 'Over temperature', tone: 'destructive' },
 ] as const;
 

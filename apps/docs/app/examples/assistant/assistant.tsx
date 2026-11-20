@@ -29,13 +29,21 @@ import {
   CURRENT_LIMIT,
   DELAY,
   OVERSHOOT_LIMIT,
+  SETTLE_LIMIT,
   TARGET,
+  TORQUE_LIMIT,
+  checkStatus,
   command,
   fmt,
+  gains,
   measured,
   measuredMetrics as M,
   reference,
-} from '@/lib/actuator';
+  referenceGains,
+  runHistory,
+} from '@/lib/lab-data';
+
+const overshootOf = (id: string) => fmt.n1.format(runHistory.find((r) => r.id === id)!.overshoot);
 
 type Part =
   | { type: 'text'; text: string }
@@ -64,7 +72,7 @@ const initial: Message[] = [
       { type: 'tool', summary: 'Read run R-0412 and the 7 runs before it · 8,008 samples' },
       {
         type: 'text',
-        text: `R-0412 overshot by ${fmt.n1.format(M.overshoot)} %, ${fmt.n1.format(M.overshoot - OVERSHOOT_LIMIT)} points over the ${OVERSHOOT_LIMIT} % limit. Kp rose from 2.80 to 4.20 since R-0409, the last passing run, which lowered damping. Phase current also peaked at ${fmt.n1.format(M.peakCurrent)} A, ${fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)} % of its limit.`,
+        text: `R-0412 overshot by ${fmt.n1.format(M.overshoot)} %, ${fmt.n1.format(M.overshoot - OVERSHOOT_LIMIT)} points over the ${OVERSHOOT_LIMIT} % limit. Kp rose from ${fmt.n2.format(referenceGains.kp)} to ${fmt.n2.format(gains.kp)} since R-0409, the last passing run, which lowered damping. Phase current also peaked at ${fmt.n1.format(M.peakCurrent)} A, ${fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)} % of its limit.`,
       },
       { type: 'checks' },
       { type: 'chart' },
@@ -103,11 +111,11 @@ const suggestions = [
 const scripted = (q: string) => {
   const s = q.toLowerCase();
   if (s.includes('settling'))
-    return 'Settling time is how long the output takes to stay within ±2 % of the command. R-0412 settled at 203 ms, inside the 250 ms limit; the problem was the overshoot on the way there.';
+    return `Settling time is how long the output takes, after the step, to stay within ±2 % of the command. R-0412 settled ${fmt.n0.format(M.settle)} ms after the step, inside the ${SETTLE_LIMIT} ms limit; the problem was the overshoot on the way there.`;
   if (s.includes('report'))
     return 'Draft: This week Bench 3 ran 41 step tests on RA-14. 3 failed on overshoot, all at Kp ≥ 3.9. Next week: retune at Kp 3.6 / Kd 0.09 and repeat the thermal soak.';
   if (s.includes('fail'))
-    return 'Today 2 runs failed: R-0412 and R-0411, both high-gain steps on RA-14 that overshot the 10 % limit (17.6 % and 21.3 %). No thermal or current failures.';
+    return `Today 2 runs failed: R-0412 and R-0411, both high-gain steps on RA-14 that overshot the ${OVERSHOOT_LIMIT} % limit (${overshootOf('R-0412')} % and ${overshootOf('R-0411')} %). No thermal or current failures.`;
   return 'This demo answers from scripted data. In a real deployment the assistant reads the run database through a read-only tool and cites every number it uses.';
 };
 
@@ -325,19 +333,19 @@ function AssistantMessage({
                     label="Overshoot"
                     value={fmt.n1.format(M.overshoot)}
                     unit="%"
-                    status="fail"
-                    progress={M.overshoot / 15}
-                    limit={10 / 15}
-                    limitLabel="Limit ≤ 10 %"
+                    status={checkStatus(M.overshoot, OVERSHOOT_LIMIT)}
+                    progress={M.overshoot / (OVERSHOOT_LIMIT * 1.5)}
+                    limit={1 / 1.5}
+                    limitLabel={`Limit ≤ ${OVERSHOOT_LIMIT} %`}
                   />
                   <Metric
                     label="Peak current"
                     value={fmt.n1.format(M.peakCurrent)}
                     unit="A"
-                    status="warn"
-                    progress={M.peakCurrent / 40}
-                    limit={32 / 40}
-                    limitLabel="Limit ≤ 32 A"
+                    status={checkStatus(M.peakCurrent, CURRENT_LIMIT)}
+                    progress={M.peakCurrent / (CURRENT_LIMIT * 1.25)}
+                    limit={1 / 1.25}
+                    limitLabel={`Limit ≤ ${CURRENT_LIMIT} A`}
                   />
                 </MetricGroup>
               );
@@ -403,7 +411,9 @@ function AssistantMessage({
                         },
                       ]}
                       bands={[{ from: TARGET * 0.98, to: TARGET * 1.02, fromX: DELAY }]}
-                      thresholds={[{ value: TARGET * 1.1, label: 'Limit +10 %', shadeSeries: 'meas' }]}
+                      thresholds={[
+                        { value: TORQUE_LIMIT, label: `Limit +${OVERSHOOT_LIMIT} %`, shadeSeries: 'meas' },
+                      ]}
                       markers={[
                         {
                           x: M.peakAt,
@@ -459,7 +469,7 @@ function AssistantMessage({
                     </TableHeader>
                     <TableBody>
                       {[
-                        { name: 'RA-14 hip pitch', peak: M.peakCurrent, limit: 32 },
+                        { name: 'RA-14 hip pitch', peak: M.peakCurrent, limit: CURRENT_LIMIT },
                         { name: 'RL-22 knee', peak: 27.8, limit: 30 },
                         { name: 'RW-05 wrist roll', peak: 6.1, limit: 10 },
                       ].map((a) => {
