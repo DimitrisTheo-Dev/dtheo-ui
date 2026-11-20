@@ -1,15 +1,11 @@
 import * as React from 'react';
-import { brand, starPath, tile } from '@/lib/brand';
+import { Mark } from '@/lib/brand';
 import { site } from '@/lib/site';
 
-/** The mark: a white north star on a black tile, the same in both themes and in the browser tab. */
-export function LogoMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true" className={className ?? 'size-5.5'}>
-      <rect width="24" height="24" rx={tile.radius} fill={brand.ink} />
-      <path d={starPath} transform={tile.star} fill={brand.star} />
-    </svg>
-  );
+/** The mark: a white north star on an enamel tile, the same in both themes and in the browser tab. */
+export function LogoMark({ px = 22 }: { px?: number }) {
+  const id = `mark${React.useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  return <Mark px={px} id={id} className="shrink-0" />;
 }
 
 /** The wordmark reads as one word with a quieter suffix: dtheo, then /ui. */

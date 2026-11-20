@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { categories, components } from '@dtheo/ui/meta';
 import { registryItem, registryNames } from '@/lib/registry';
 import { ardManifest } from '@/lib/ard';
-import { brand, starPath, tile } from '@/lib/brand';
+import { brand, starIn, starPath, tilePath } from '@/lib/brand';
 import { llmsTxt } from '@/lib/markdown';
 import { exampleSource } from '@/lib/source';
 import { pageUsage, usedIn } from '@/lib/usage';
@@ -107,10 +107,9 @@ describe('brand', () => {
     // app/icon.svg is a static file, so it cannot import the path; this keeps the copy honest.
     const icon = readFileSync(`${repo}apps/docs/app/icon.svg`, 'utf8');
     expect(icon).toContain(`d="${starPath}"`);
-    expect(icon).toContain(`transform="${tile.star}"`);
-    expect(icon).toContain(`rx="${tile.radius}"`);
-    expect(icon).toContain(`fill="${brand.ink}"`);
-    expect(icon).toContain(`fill="${brand.star}"`);
+    expect(icon).toContain(`d="${tilePath}"`);
+    expect(icon).toContain(`transform="${starIn(16)}"`);
+    for (const color of [brand.top, brand.middle, brand.ink, brand.star]) expect(icon).toContain(`"${color}"`);
   });
 });
 

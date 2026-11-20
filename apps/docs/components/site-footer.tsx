@@ -7,7 +7,7 @@ export function SiteFooter() {
     <footer className="border-t border-border">
       <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center gap-x-6 gap-y-3 px-[max(1rem,env(safe-area-inset-left,0px))] py-6 text-label font-normal text-subtle-foreground sm:px-6">
         <span className="flex items-center gap-2 text-muted-foreground">
-          <LogoMark className="size-4" />
+          <LogoMark px={16} />
           {site.name} {site.version}
         </span>
         <span>Built on Base UI and Tailwind CSS. MIT licensed.</span>

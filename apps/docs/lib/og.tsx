@@ -2,7 +2,7 @@ import * as React from 'react';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { colors } from '@dtheo/tokens/native';
-import { brand, starPath, tile } from './brand';
+import { brand, Mark, starPath } from './brand';
 import { site } from './site';
 
 const fontFile = (weight: number) =>
@@ -67,19 +67,7 @@ function Stars({ width, height, count = 170 }: { width: number; height: number; 
   );
 }
 
-/** The mark: a white north star on a black tile, exactly as in the site header and the browser tab. */
-export function Mark({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24">
-      <rect width="24" height="24" rx={tile.radius} fill={brand.ink} />
-      <g transform={tile.star}>
-        <path d={starPath} fill={brand.star} />
-      </g>
-    </svg>
-  );
-}
-
-/** The star alone, for large faint backdrops. */
+/** The star alone, for large faint backdrops and the app icon. */
 function Star({ size, opacity }: { size: number; opacity: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24">
@@ -92,7 +80,7 @@ function Wordmark({ size }: { size: number }) {
   const [name, suffix] = site.name.split('/');
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: size * 0.45 }}>
-      <Mark size={size * 1.15} />
+      <Mark px={Math.round(size * 1.15)} id="wordmark" />
       <div
         style={{
           display: 'flex',
@@ -324,8 +312,8 @@ export function DocCard({
 }
 
 /**
- * The app icon: the star on black with a soft glow, sized for a home screen. Full bleed, since iOS rounds the
- * corners itself.
+ * The app icon: the mark's enamel, full bleed because iOS rounds the corners itself. The star sits at about two
+ * thirds of the icon, as on the large tile.
  */
 export function AppIcon({ size }: { size: number }) {
   return (
@@ -337,10 +325,10 @@ export function AppIcon({ size }: { size: number }) {
         width: '100%',
         height: '100%',
         backgroundColor: brand.ink,
-        backgroundImage: `radial-gradient(circle at 50% 50%, ${alpha(brand.star, 0.3)}, ${alpha(brand.star, 0.08)} 24%, transparent 52%)`,
+        backgroundImage: `radial-gradient(circle at 50% 50%, ${alpha(brand.star, 0.26)}, ${alpha(brand.star, 0.07)} 20%, transparent 42%), linear-gradient(to bottom, ${brand.top}, ${brand.middle} 55%, ${brand.ink})`,
       }}
     >
-      <Star size={size * 0.66} opacity={1} />
+      <Star size={Math.round(size * 0.66)} opacity={1} />
     </div>
   );
 }
