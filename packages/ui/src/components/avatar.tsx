@@ -5,10 +5,12 @@ import { Avatar as AvatarPrimitive } from '@base-ui/react/avatar';
 import { cn } from '../lib/utils';
 
 /** Initials from grapheme clusters: first and last word, skipping suffixes. Handles emoji and accents. */
-// One segmenter for every avatar: grapheme-aware, so "Ølaf" and emoji names keep whole characters.
+// One segmenter for every avatar: grapheme-aware, so "Ølaf" and emoji names keep whole characters. Initials render
+// on the server too, so nothing here may depend on the browser's locale: a fixed segmenter locale, and a plain
+// uppercase (a Turkish browser would turn "i" into "İ" and break hydration).
 const graphemes =
   typeof Intl !== 'undefined' && 'Segmenter' in Intl
-    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+    ? new Intl.Segmenter('en', { granularity: 'grapheme' })
     : null;
 const firstGrapheme = (w?: string) =>
   !w ? '' : graphemes ? ([...graphemes.segment(w)][0]?.segment ?? '') : (Array.from(w)[0] ?? '');
@@ -20,7 +22,7 @@ export function initials(name: string) {
     .filter((w) => !/^(jr|sr|ii|iii|iv)\.?$/i.test(w));
   const parts =
     words.length > 1 ? [firstGrapheme(words[0]), firstGrapheme(words.at(-1))] : [firstGrapheme(words[0])];
-  return parts.join('').toLocaleUpperCase();
+  return parts.join('').toUpperCase();
 }
 
 /** A person or team. Falls back to initials when the image is missing or fails to load. */

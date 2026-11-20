@@ -165,11 +165,24 @@ export function useSyncedCursor(syncId?: string): [number | null, (x: number | n
   return syncId ? [shared, setShared] : local;
 }
 
+const numberFormats = new Map<number, Intl.NumberFormat>();
+
+/**
+ * Formats a reading with fixed digits in one locale, so the server and every browser print the same text; with the
+ * browser's locale a German visitor gets "5,6" where the server wrote "5.6" and React discards the server HTML.
+ * Negatives take a true minus sign (U+2212), a value that rounds to zero carries no sign, and a missing value
+ * (NaN, ±Infinity) reads "–".
+ */
 export function formatNumber(value: number, digits = 1) {
-  return new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(value);
+  if (!Number.isFinite(value)) return '–';
+  let nf = numberFormats.get(digits);
+  if (!nf) {
+    nf = new Intl.NumberFormat('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    numberFormats.set(digits, nf);
+  }
+  const text = nf.format(value);
+  if (!text.startsWith('-')) return text;
+  return /[1-9]/.test(text) ? `−${text.slice(1)}` : text.slice(1);
 }
 
 // ---------- Canvas charts ----------
