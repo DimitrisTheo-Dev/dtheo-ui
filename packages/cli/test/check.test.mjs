@@ -1,13 +1,72 @@
-import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { execFile, execFileSync, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
 import { checkSource, ruleList } from '../src/check.mjs';
 
 const bin = fileURLToPath(new URL('../src/bin.mjs', import.meta.url));
 const count = (src, rule, file = 'x.tsx') => checkSource(src, { file }).filter((f) => f.rule === rule).length;
+const runCli = promisify(execFile);
+
+/** A registry on localhost, so `init` and `add` run without the network. */
+const registryFile = (target) => ({ path: `registry/dtheo/${target}`, target, content: '' });
+const registryItems = {
+  styles: { name: 'styles', files: [registryFile('styles/dtheo.css')] },
+  utils: { name: 'utils', dependencies: ['clsx', 'tailwind-merge'], files: [registryFile('lib/utils.ts')] },
+  theme: { name: 'theme', files: [registryFile('lib/theme.tsx')] },
+  'line-chart': {
+    name: 'line-chart',
+    dependencies: ['d3-scale'],
+    devDependencies: ['@types/d3-scale'],
+    files: [registryFile('components/charts/line-chart.tsx')],
+  },
+};
+async function withRegistry(fn) {
+  const server = createServer((req, res) => {
+    const item = registryItems[req.url.match(/^\/r\/([\w-]+)\.json$/)?.[1]];
+    res.writeHead(item ? 200 : 404, { 'content-type': 'application/json' });
+    res.end(JSON.stringify(item ?? {}));
+  });
+  await new Promise((done) => server.listen(0, '127.0.0.1', done));
+  try {
+    return await fn(`http://127.0.0.1:${server.address().port}`);
+  } finally {
+    server.close();
+  }
+}
+
+// app/globals.css as create-next-app writes it.
+const nextStarterCss = `@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+`;
 
 // One sample per rule that must be caught, and one look-alike that must not be.
 const cases = {
@@ -147,6 +206,40 @@ describe('dtheo CLI', () => {
     const run = spawnSync(process.execPath, [bin, 'nope'], { encoding: 'utf8' });
     expect(run.status).toBe(1);
     expect(run.stderr).toContain('Unknown command');
+  });
+
+  it('imports the stylesheet right after Tailwind and flags the starter rules that override it', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dtheo-init-'));
+    mkdirSync(join(dir, 'app'));
+    writeFileSync(join(dir, 'app/globals.css'), nextStarterCss);
+    const init = () =>
+      withRegistry((url) => runCli(process.execPath, [bin, 'init', '--json', '--registry', url, '--cwd', dir]));
+
+    const report = JSON.parse((await init()).stdout);
+    expect(report.css).toMatchObject({ file: 'app/globals.css', specifier: '../styles/dtheo.css', imported: true });
+    expect(report.css.overrides.map((o) => o.selector)).toEqual([
+      ':root',
+      '@theme inline',
+      '@media (prefers-color-scheme: dark)',
+      'body',
+    ]);
+    // Line numbers point at the file as it reads after the import was added.
+    expect(report.css.overrides[0].line).toBe(4);
+    const css = () => readFileSync(join(dir, 'app/globals.css'), 'utf8');
+    expect(css().startsWith('@import "tailwindcss";\n@import "../styles/dtheo.css";\n')).toBe(true);
+
+    expect(JSON.parse((await init()).stdout).css.imported).toBe(false);
+    expect(css().match(/dtheo\.css/g)).toHaveLength(1);
+  });
+
+  it('prints the type packages a TypeScript build needs', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dtheo-add-'));
+    const { stdout } = await withRegistry((url) =>
+      runCli(process.execPath, [bin, 'add', 'line-chart', '--json', '--registry', url, '--cwd', dir]),
+    );
+    const report = JSON.parse(stdout);
+    expect(report.install).toBe('npm install d3-scale');
+    expect(report.installDev).toBe('npm install -D @types/d3-scale');
   });
 
   it('refuses plain-HTTP registries that are not local', () => {
