@@ -91,11 +91,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
 ## Using the shadcn CLI instead
 
-Every item is a valid shadcn registry item:
+Every item is also a shadcn registry item, and brings the stylesheet (\`styles/dtheo.css\`) with it. In a project without \`components.json\`, run \`npx shadcn@latest init\` first and pick any options: ${site.name} replaces the theme it writes. Then add components with \`--overwrite\`:
 
 \`\`\`bash
-npx shadcn@latest add ${site.url}/r/button.json
+npx shadcn@latest add --overwrite ${site.url}/r/button.json ${site.url}/r/tooltip.json ${site.url}/r/toast.json
 \`\`\`
+
+\`--overwrite\` replaces the \`lib/utils.ts\` and \`components/ui/button.tsx\` that shadcn init wrote (and any component of yours with the same name). Without it, shadcn keeps its own button and a \`cn()\` that does not know the ${site.name} type and radius scales.
+
+Then make \`app/globals.css\` exactly these two lines, deleting the theme shadcn added (\`tw-animate-css\`, \`shadcn/tailwind.css\`, \`@custom-variant dark\`, \`@theme inline\`, \`:root\`, \`.dark\` and \`@layer base\`), because it overrides this one:
+
+\`\`\`css
+@import "tailwindcss";
+@import "../styles/dtheo.css";
+\`\`\`
+
+Finish with steps 3 and 5: the mode and preset on \`<html>\`, and the providers in the root layout. Later components need no flags: \`npx shadcn@latest add ${site.url}/r/table.json\`.
 
 ## Check your UI code
 

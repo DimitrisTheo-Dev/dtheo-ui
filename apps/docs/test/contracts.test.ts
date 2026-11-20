@@ -7,6 +7,7 @@ import { registryItem, registryNames } from '@/lib/registry';
 import { ardManifest } from '@/lib/ard';
 import { brand, starIn, starPath, tilePath } from '@/lib/brand';
 import { llmsTxt } from '@/lib/markdown';
+import { site } from '@/lib/site';
 import { exampleSource } from '@/lib/source';
 import { pageUsage, usedIn } from '@/lib/usage';
 
@@ -93,6 +94,20 @@ describe('registry', () => {
         expect(built, `@types/${dep}`).toHaveProperty([`@types/${dep}`]);
       }
     }
+  });
+
+  it('brings the stylesheet with every component and chart', () => {
+    // Without styles/dtheo.css, h-control-md, rounded-control, text-body and the color roles do not exist, and a
+    // component added with the shadcn CLI renders as an unstyled box.
+    for (const c of components) {
+      const item = registryItem(c.slug)!;
+      expect(item.registryDependencies, c.slug).toContain(`${site.url}/r/styles.json`);
+      expect(item.docs, c.slug).toContain(
+        `/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}`,
+      );
+    }
+    // The shadcn CLI prints an item's docs after installing it: say how to import the stylesheet.
+    expect(registryItem('styles')!.docs).toContain('@import "../styles/dtheo.css";');
   });
 
   it('only depends on items it can serve', () => {
