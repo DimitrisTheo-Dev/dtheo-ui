@@ -75,16 +75,30 @@ import {
   DELAY,
   OVERSHOOT_LIMIT,
   RISE_LIMIT,
+  SAMPLES,
   SETTLE_LIMIT,
   TARGET,
+  TEMP_LIMIT,
+  TORQUE_LIMIT,
+  WINDING_TEMP,
+  checkStatus,
   command,
   fmt,
+  gains,
   measured,
   measuredMetrics as M,
   reference,
+  referenceGains,
   referenceMetrics as R,
   runHistory,
-} from '@/lib/actuator';
+} from '@/lib/lab-data';
+
+/** The run under review, and the run it is compared against. */
+const RUN = 'R-0412';
+const REFERENCE = 'R-0409';
+const kpRise = (gains.kp / referenceGains.kp - 1) * 100;
+const failed = runHistory.filter((r) => r.overshoot > OVERSHOOT_LIMIT).map((r) => r.id);
+const overLimit = `${failed.slice(0, -1).join(', ')} and ${failed.at(-1)}`;
 
 const resultMeta = {
   fail: { label: 'Fail', variant: 'destructive', Icon: CircleXIcon },
@@ -110,12 +124,15 @@ export function RunReview() {
   const [notes, setNotes] = React.useState<Note[]>([]);
   const span = Number(timeWindow[0] ?? 400);
 
-  const currentStatus =
-    M.peakCurrent > CURRENT_LIMIT ? 'fail' : M.peakCurrent > 0.9 * CURRENT_LIMIT ? 'warn' : 'pass';
-  const failing = [M.overshoot > OVERSHOOT_LIMIT, M.settle > SETTLE_LIMIT, M.rise > RISE_LIMIT].filter(
-    Boolean,
-  ).length;
-  const nearLimit = currentStatus === 'warn' ? 1 : 0;
+  const status = {
+    overshoot: checkStatus(M.overshoot, OVERSHOOT_LIMIT),
+    current: checkStatus(M.peakCurrent, CURRENT_LIMIT),
+    settle: checkStatus(M.settle, SETTLE_LIMIT),
+    rise: checkStatus(M.rise, RISE_LIMIT),
+    temp: checkStatus(WINDING_TEMP, TEMP_LIMIT),
+  };
+  const failing = Object.values(status).filter((s) => s === 'fail').length;
+  const nearLimit = Object.values(status).filter((s) => s === 'warn').length;
 
   return (
     <AppShell sidebar={<LabSidebar current="runs" onSearch={() => setPaletteOpen(true)} />}>
@@ -159,7 +176,10 @@ export function RunReview() {
             <MenuContent align="end">
               <MenuItem
                 onClick={() =>
-                  toast.add({ title: 'Export started', description: 'r-0412-samples.csv, 1,001 rows.' })
+                  toast.add({
+                    title: 'Export started',
+                    description: `r-0412-samples.csv, ${fmt.n0.format(SAMPLES)} rows.`,
+                  })
                 }
               >
                 <DownloadIcon aria-hidden="true" />
@@ -235,17 +255,17 @@ export function RunReview() {
                 label="Overshoot"
                 value={fmt.n1.format(M.overshoot)}
                 unit="%"
-                status={M.overshoot > OVERSHOOT_LIMIT ? 'fail' : 'pass'}
+                status={status.overshoot}
                 progress={M.overshoot / (OVERSHOOT_LIMIT * 1.5)}
                 limit={1 / 1.5}
                 limitLabel={`Limit ≤ ${OVERSHOOT_LIMIT} %`}
-                hint="Peak above the 12 N·m command"
+                hint={`Peak above the ${TARGET} N·m command`}
               />
               <Metric
                 label="Peak current"
                 value={fmt.n1.format(M.peakCurrent)}
                 unit="A"
-                status={currentStatus}
+                status={status.current}
                 progress={M.peakCurrent / (CURRENT_LIMIT * 1.25)}
                 limit={1 / 1.25}
                 limitLabel={`Limit ≤ ${CURRENT_LIMIT} A`}
@@ -255,28 +275,29 @@ export function RunReview() {
                 label="Settling, 2 %"
                 value={fmt.n0.format(M.settle)}
                 unit="ms"
-                status={M.settle > SETTLE_LIMIT ? 'fail' : 'pass'}
+                status={status.settle}
                 progress={M.settle / (SETTLE_LIMIT * 1.5)}
                 limit={1 / 1.5}
                 limitLabel={`Limit ≤ ${SETTLE_LIMIT} ms`}
+                hint="Time after the step until torque stays inside ±2 %"
               />
               <Metric
                 label="Rise, 10–90 %"
                 value={fmt.n0.format(M.rise)}
                 unit="ms"
-                status={M.rise > RISE_LIMIT ? 'fail' : 'pass'}
+                status={status.rise}
                 progress={M.rise / (RISE_LIMIT * 1.5)}
                 limit={1 / 1.5}
                 limitLabel={`Limit ≤ ${RISE_LIMIT} ms`}
               />
               <Metric
                 label="Winding temp"
-                value="71"
+                value={fmt.n1.format(WINDING_TEMP)}
                 unit="°C"
-                status="pass"
-                progress={71 / 135}
-                limit={90 / 135}
-                limitLabel="Limit ≤ 90 °C"
+                status={status.temp}
+                progress={WINDING_TEMP / (TEMP_LIMIT * 1.5)}
+                limit={1 / 1.5}
+                limitLabel={`Limit ≤ ${TEMP_LIMIT} °C`}
               />
             </MetricGroup>
 
@@ -285,7 +306,7 @@ export function RunReview() {
                 <div className="flex min-w-0 flex-col gap-0.5">
                   <CardTitle level={2}>Step response</CardTitle>
                   <CardDescription>
-                    Torque command 0 → 12 N·m at 20 ms, against the last passing run
+                    Torque command 0 → {TARGET} N·m at {DELAY} ms, against the last passing run
                   </CardDescription>
                 </div>
                 <CardAction>
@@ -361,8 +382,8 @@ export function RunReview() {
                       bands={[{ from: TARGET * 0.98, to: TARGET * 1.02, fromX: DELAY }]}
                       thresholds={[
                         {
-                          value: TARGET * (1 + OVERSHOOT_LIMIT / 100),
-                          label: `Overshoot limit ${fmt.n1.format(TARGET * (1 + OVERSHOOT_LIMIT / 100))} N·m`,
+                          value: TORQUE_LIMIT,
+                          label: `Overshoot limit ${fmt.n1.format(TORQUE_LIMIT)} N·m`,
                           shortLabel: `Limit +${OVERSHOOT_LIMIT} %`,
                           shadeSeries: 'meas',
                         },
@@ -376,7 +397,12 @@ export function RunReview() {
                           tone: 'critical',
                         },
                       ]}
-                      verticals={[{ x: DELAY + M.settle, label: `Settled at ${fmt.n0.format(M.settle)} ms` }]}
+                      verticals={[
+                        {
+                          x: DELAY + M.settle,
+                          label: `Settled ${fmt.n0.format(M.settle)} ms after the step`,
+                        },
+                      ]}
                       extraReadout={(i) => [
                         {
                           label: 'R-0412 current',
@@ -469,7 +495,7 @@ export function RunReview() {
                     {runHistory.map((run) => {
                       const meta = resultMeta[run.result];
                       return (
-                        <TableRow key={run.id} aria-selected={run.id === 'R-0412' || undefined}>
+                        <TableRow key={run.id} aria-selected={run.id === RUN || undefined}>
                           <TableCell className="font-mono text-label">{run.id}</TableCell>
                           <TableCell className="max-w-40 truncate text-muted-foreground sm:max-w-none">
                             <span className="text-foreground">{run.profile}</span>
@@ -493,7 +519,7 @@ export function RunReview() {
                           </TableCell>
                           <TableCell
                             numeric
-                            className={`hidden md:table-cell ${run.current > 0.9 * CURRENT_LIMIT ? 'font-medium text-warning-foreground' : ''}`}
+                            className={`hidden md:table-cell ${checkStatus(run.current, CURRENT_LIMIT) === 'pass' ? '' : 'font-medium text-warning-foreground'}`}
                           >
                             {fmt.n1.format(run.current)} A
                           </TableCell>
@@ -521,11 +547,14 @@ export function RunReview() {
                               </MenuTrigger>
                               <MenuContent align="end">
                                 <MenuItem>Open {run.id}</MenuItem>
-                                <MenuItem>
-                                  <GitCompareIcon aria-hidden="true" />
-                                  Compare with R-0412
-                                </MenuItem>
-                                <MenuItem>Set as reference</MenuItem>
+                                {/* A run is never compared with itself, and the reference is already set. */}
+                                {run.id === RUN ? null : (
+                                  <MenuItem>
+                                    <GitCompareIcon aria-hidden="true" />
+                                    Compare with {RUN}
+                                  </MenuItem>
+                                )}
+                                {run.id === REFERENCE ? null : <MenuItem>Set as reference</MenuItem>}
                               </MenuContent>
                             </Menu>
                           </TableCell>
@@ -562,7 +591,8 @@ export function RunReview() {
                   <strong className="font-semibold text-foreground">
                     {fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)}&nbsp;%
                   </strong>{' '}
-                  of its {CURRENT_LIMIT}&nbsp;A limit. Kp rose 50&nbsp;% since the reference run.
+                  of its {CURRENT_LIMIT}&nbsp;A limit. Kp rose {fmt.n0.format(kpRise)}&nbsp;% since the
+                  reference run.
                 </p>
                 <p className="text-body text-muted-foreground">
                   Lower Kp or raise Kd, then rerun the same step on Bench&nbsp;3.
@@ -575,13 +605,13 @@ export function RunReview() {
                   <Button
                     onClick={() =>
                       toast.add({
-                        title: 'Comparing with R-0409',
+                        title: `Comparing with ${REFERENCE}`,
                         description: 'Reference overlay is on the chart.',
                       })
                     }
                   >
                     <GitCompareIcon aria-hidden="true" />
-                    Compare with R-0409
+                    Compare with {REFERENCE}
                   </Button>
                 </div>
               </CardContent>
@@ -589,19 +619,21 @@ export function RunReview() {
 
             <Card className="order-5 xl:order-none">
               <CardHeader className="pb-1">
-                <CardTitle level={2} className="text-label text-muted-foreground">Overshoot by run</CardTitle>
+                <CardTitle level={2} className="text-label text-muted-foreground">
+                  Overshoot by run
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-1 pb-2">
                 <BarChart
-                  ariaLabel="Overshoot for the last 8 runs. R-0412, R-0411 and R-0407 exceed the 10 % limit."
+                  ariaLabel={`Overshoot for the last ${runHistory.length} runs. ${overLimit} exceed the ${OVERSHOOT_LIMIT} % limit.`}
                   bars={runHistory.toReversed().map((r) => ({
                     id: r.id,
                     label: r.id.slice(-2),
                     value: r.overshoot,
-                    current: r.id === 'R-0412',
+                    current: r.id === RUN,
                   }))}
                   limit={OVERSHOOT_LIMIT}
-                  limitLabel="Limit 10 %"
+                  limitLabel={`Limit ${OVERSHOOT_LIMIT} %`}
                   unit="%"
                   height={170}
                 />
@@ -610,14 +642,21 @@ export function RunReview() {
 
             <Card className="order-6 xl:order-none">
               <CardHeader className="pb-1">
-                <CardTitle level={2} className="text-label text-muted-foreground">Controller gains</CardTitle>
+                <CardTitle level={2} className="text-label text-muted-foreground">
+                  Controller gains
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-1">
                 <dl className="grid grid-cols-[auto_1fr] text-body">
                   {[
-                    ['Kp', '4.20', 'was 2.80', '+50 %'],
-                    ['Ki', '0.80', '', ''],
-                    ['Kd', '0.06', '', ''],
+                    [
+                      'Kp',
+                      fmt.n2.format(gains.kp),
+                      `was ${fmt.n2.format(referenceGains.kp)}`,
+                      `+${fmt.n0.format(kpRise)} %`,
+                    ],
+                    ['Ki', fmt.n2.format(gains.ki), '', ''],
+                    ['Kd', fmt.n2.format(gains.kd), '', ''],
                     ['Supply', '48.0 V', '', ''],
                     ['Ambient', '23.4 °C', '', ''],
                   ].map(([k, v, was, delta], i) => (
@@ -747,7 +786,7 @@ function SampleTable({ span }: { span: number }) {
               <TableCell numeric>{t} ms</TableCell>
               <TableCell
                 numeric
-                className={measured.torque[t]! > TARGET * 1.1 ? 'text-destructive-foreground' : ''}
+                className={measured.torque[t]! > TORQUE_LIMIT ? 'text-destructive-foreground' : ''}
               >
                 {fmt.n2.format(measured.torque[t]!)} N·m
               </TableCell>
@@ -772,7 +811,7 @@ function RetuneDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
   const [kp, setKp] = React.useState<number | null>(3.6);
   const [kd, setKd] = React.useState<number | null>(0.09);
   const [saving, setSaving] = React.useState(false);
-  const invalid = kp === null || kp <= 0 || kp >= 4.2;
+  const invalid = kp === null || kp <= 0 || kp >= gains.kp;
   const submit = () => {
     if (invalid) return;
     setSaving(true);
@@ -806,7 +845,9 @@ function RetuneDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (op
               max={10}
               format={{ minimumFractionDigits: 2 }}
             />
-            <FieldError match={invalid}>Lower Kp below 4.20 to reduce overshoot.</FieldError>
+            <FieldError match={invalid}>
+              Lower Kp below {fmt.n2.format(gains.kp)} to reduce overshoot.
+            </FieldError>
           </Field>
           <NumberField
             label="Kd"
@@ -870,7 +911,9 @@ function NotesCard({
   return (
     <Card className={className}>
       <CardHeader className="pb-1">
-        <CardTitle level={2} className="text-label text-muted-foreground">Notes</CardTitle>
+        <CardTitle level={2} className="text-label text-muted-foreground">
+          Notes
+        </CardTitle>
         {notes.length && !editing ? (
           <CardAction>
             <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>

@@ -12,13 +12,16 @@ import {
   CURRENT_LIMIT,
   DELAY,
   OVERSHOOT_LIMIT,
+  SETTLE_LIMIT,
   TARGET,
+  TORQUE_LIMIT,
+  checkStatus,
   command,
   fmt,
   measured,
   measuredMetrics as M,
   reference,
-} from '@/lib/actuator';
+} from '@/lib/lab-data';
 
 /** The hero shows the product, not decoration: the live checks and trace from the run review example. */
 export function HeroPreview() {
@@ -40,26 +43,27 @@ export function HeroPreview() {
             label="Overshoot"
             value={fmt.n1.format(M.overshoot)}
             unit="%"
-            status="fail"
-            progress={M.overshoot / 15}
-            limit={10 / 15}
+            status={checkStatus(M.overshoot, OVERSHOOT_LIMIT)}
+            progress={M.overshoot / (OVERSHOOT_LIMIT * 1.5)}
+            limit={1 / 1.5}
           />
           <Metric
             label="Current"
             hint="Peak phase current"
             value={fmt.n1.format(M.peakCurrent)}
             unit="A"
-            status="warn"
-            progress={M.peakCurrent / 40}
-            limit={32 / 40}
+            status={checkStatus(M.peakCurrent, CURRENT_LIMIT)}
+            progress={M.peakCurrent / (CURRENT_LIMIT * 1.25)}
+            limit={1 / 1.25}
           />
           <Metric
             label="Settling"
+            hint="Time after the step until torque stays inside ±2 %"
             value={fmt.n0.format(M.settle)}
             unit="ms"
-            status="pass"
-            progress={M.settle / 375}
-            limit={250 / 375}
+            status={checkStatus(M.settle, SETTLE_LIMIT)}
+            progress={M.settle / (SETTLE_LIMIT * 1.5)}
+            limit={1 / 1.5}
           />
         </MetricGroup>
         <ChartLegend
@@ -93,7 +97,7 @@ export function HeroPreview() {
           ]}
           bands={[{ from: TARGET * 0.98, to: TARGET * 1.02, fromX: DELAY }]}
           thresholds={[
-            { value: TARGET * 1.1, label: 'Overshoot limit', shortLabel: 'Limit', shadeSeries: 'meas' },
+            { value: TORQUE_LIMIT, label: 'Overshoot limit', shortLabel: 'Limit', shadeSeries: 'meas' },
           ]}
           markers={[
             {

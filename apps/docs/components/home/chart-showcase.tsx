@@ -6,7 +6,7 @@ import { ArrowUpRightIcon, PauseIcon, PlayIcon } from 'lucide-react';
 import { StreamChart, createStream } from '@dtheo/charts';
 import { Button } from '@dtheo/ui/components/button';
 import { examples } from '@/examples';
-import { createBench } from '@/lib/lab-data';
+import { TARGET, TORQUE_LIMIT, createBench, fmt } from '@/lib/lab-data';
 
 /**
  * The live chart on the landing page starts paused on six seconds of history: nothing moves until the reader asks,
@@ -55,9 +55,11 @@ function LivePreview() {
           { channel: 'command', label: 'Command', tone: 'faint', width: 1, unit: 'N·m' },
           { channel: 'torque', label: 'Torque', unit: 'N·m', digits: 2 },
         ]}
-        limits={[{ value: 13.2, label: 'Limit 13.2 N·m', channel: 'torque' }]}
+        limits={[
+          { value: TORQUE_LIMIT, label: `Limit ${fmt.n1.format(TORQUE_LIMIT)} N·m`, channel: 'torque' },
+        ]}
         height={330}
-        ariaLabel="Torque against a 12 N·m step command. Each step overshoots past the 13.2 N·m limit, drawn in red."
+        ariaLabel={`Torque against a ${TARGET} N·m step command. Each step overshoots past the ${fmt.n1.format(TORQUE_LIMIT)} N·m limit, drawn in red.`}
       />
     </div>
   );
