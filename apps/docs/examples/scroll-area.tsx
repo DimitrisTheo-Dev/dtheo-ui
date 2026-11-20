@@ -1,28 +1,53 @@
 'use client';
 
 import { ScrollArea } from '@dtheo/ui/components/scroll-area';
+import {
+  CURRENT_LIMIT,
+  DELAY,
+  OVERSHOOT_LIMIT,
+  SAMPLES,
+  SETTLE_LIMIT,
+  TARGET,
+  TORQUE_LIMIT,
+  fmt,
+  gains,
+  measured,
+  measuredMetrics as M,
+} from '@/lib/lab-data';
 
-// Event log for R-0412, milliseconds from the start of the capture.
+// Event log for R-0412, milliseconds from the start of the capture, read from the synthetic trace.
+const { torque } = measured;
+const backUnder = torque.findIndex((v, i) => i > M.peakAt && v < TORQUE_LIMIT);
+const dipAt = torque.indexOf(Math.min(...torque.slice(M.peakAt, DELAY + M.settle)), M.peakAt);
+const pct = (v: number) => fmt.n1.format((Math.abs(v - TARGET) / TARGET) * 100);
+const end = SAMPLES - 1;
+
 const events: Array<[number, string]> = [
   [0, 'Capture started, 1 kHz'],
   [0, 'Bench 3 armed, firmware 4.18.2'],
-  [5, 'Gains loaded: Kp\u00a04.20, Ki\u00a00.80, Kd\u00a00.12'],
+  [
+    5,
+    `Gains loaded: Kp\u00a0${fmt.n2.format(gains.kp)}, Ki\u00a0${fmt.n2.format(gains.ki)}, Kd\u00a0${fmt.n2.format(gains.kd)}`,
+  ],
   [12, 'Winding temperature 38.4 °C'],
-  [20, 'Step command 0 → 8.0 N·m'],
-  [32, 'Torque crossed 10 % of step'],
-  [68, 'Torque crossed 90 % of step'],
-  [83, 'Torque passed the overshoot limit, 8.80 N·m'],
-  [102, 'Peak torque 9.41 N·m, +17.6 %'],
-  [104, 'Peak phase current 31.2 A'],
-  [128, 'Torque back under the overshoot limit'],
-  [183, 'Undershoot 7.75 N·m, −3.1 %'],
-  [206, 'Settled inside ±2 %, 186 ms after the step'],
-  [265, 'Second peak 8.04 N·m, +0.5 %'],
+  [DELAY, `Step command 0 → ${TARGET} N·m`],
+  [M.t10, 'Torque crossed 10 % of step'],
+  [M.t90, 'Torque crossed 90 % of step'],
+  [
+    torque.findIndex((v) => v > TORQUE_LIMIT),
+    `Torque passed the overshoot limit, ${fmt.n1.format(TORQUE_LIMIT)} N·m`,
+  ],
+  [M.peakCurrentAt, `Peak phase current ${fmt.n1.format(M.peakCurrent)} A`],
+  [M.peakAt, `Peak torque ${fmt.n1.format(M.peak)} N·m, +${pct(M.peak)} %`],
+  [backUnder, 'Torque back under the overshoot limit'],
+  [dipAt, `Undershoot ${fmt.n1.format(torque[dipAt]!)} N·m, −${pct(torque[dipAt]!)} %`],
+  [DELAY + M.settle, `Settled inside ±2 %, ${M.settle} ms after the step`],
   [300, 'Winding temperature 52.7 °C'],
-  [400, 'Capture stopped, 401 samples'],
-  [412, 'Overshoot check failed, limit 10 %'],
-  [412, 'Settling check near limit, 186 of 200 ms'],
-  [415, 'Traces uploaded, 3.2 MB'],
+  [end, `Capture stopped, ${fmt.n0.format(SAMPLES)} samples`],
+  [end, `Overshoot check failed: ${pct(M.peak)} %, limit ${OVERSHOOT_LIMIT} %`],
+  [end, `Current check near limit: ${fmt.n1.format(M.peakCurrent)} of ${CURRENT_LIMIT} A`],
+  [end, `Settling check passed: ${M.settle} of ${SETTLE_LIMIT} ms`],
+  [end + 3, 'Traces uploaded, 3.2 MB'],
 ];
 
 export default function ScrollAreaExample() {

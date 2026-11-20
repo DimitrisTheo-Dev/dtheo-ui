@@ -17,26 +17,20 @@ import {
 } from '@dtheo/ui/components/sheet';
 import { Textarea } from '@dtheo/ui/components/textarea';
 import { useToast } from '@dtheo/ui/components/toast';
+import { OVERSHOOT_LIMIT, fmt, runHistory } from '@/lib/lab-data';
 
-const initialRuns = [
-  {
-    id: 'R-0410',
-    name: 'Nominal step',
-    time: '09:12',
-    kp: 3.2,
-    kd: 0.08,
-    note: 'Clean response, 4.1 % overshoot.',
-  },
-  { id: 'R-0411', name: 'Damped step', time: '11:05', kp: 3.6, kd: 0.12, note: '' },
-  {
-    id: 'R-0412',
-    name: 'High-gain step',
-    time: '14:32',
-    kp: 4.2,
-    kd: 0.06,
-    note: 'Overshoot 17.6 %, over the 15 % limit.',
-  },
-];
+// Today's three runs, oldest first, with a review note on each.
+const initialRuns = runHistory
+  .slice(0, 3)
+  .toReversed()
+  .map((r) => ({
+    id: r.id,
+    name: r.profile,
+    started: r.started,
+    kp: r.kp,
+    kd: r.kd,
+    note: `Overshoot ${fmt.n1.format(r.overshoot)} %, ${r.overshoot > OVERSHOOT_LIMIT ? 'over' : 'inside'} the ${OVERSHOOT_LIMIT} % limit.`,
+  }));
 const twoDecimals = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
 
 export default function SheetExample() {
@@ -81,7 +75,7 @@ export default function SheetExample() {
         <SheetContent>
           <SheetHeader>
             <SheetTitle>Edit {run.id}</SheetTitle>
-            <SheetDescription>Bench 3 · firmware 4.18.2 · 18 Nov, {run.time}</SheetDescription>
+            <SheetDescription>Bench 3 · firmware 4.18.2 · {run.started}</SheetDescription>
           </SheetHeader>
           <form key={run.id} onSubmit={save} className="flex flex-1 flex-col">
             <SheetBody>

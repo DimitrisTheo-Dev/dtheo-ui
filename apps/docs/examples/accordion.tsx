@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Accordion, AccordionItem, AccordionPanel, AccordionTrigger } from '@dtheo/ui/components/accordion';
+import { OVERSHOOT_LIMIT, SETTLE_LIMIT, TARGET, TEMP_LIMIT, fmt, measuredMetrics as M } from '@/lib/lab-data';
 
 // Non-breaking spaces (&nbsp;) keep each number with its unit; run IDs never wrap at the hyphen.
 const Id = ({ children }: { children: React.ReactNode }) => (
@@ -14,8 +15,9 @@ const faqs = [
     question: 'How is overshoot measured?',
     answer: (
       <>
-        The peak torque above the commanded step, as a percentage of the step. <Id>R-0412</Id> peaked at
-        9.41&nbsp;N·m on an 8.0&nbsp;N·m step: 17.6&nbsp;%. The limit is 10&nbsp;%.
+        The peak torque above the commanded step, as a percentage of the step. <Id>R-0412</Id> peaked at{' '}
+        {fmt.n1.format(M.peak)}&nbsp;N·m on a {TARGET}&nbsp;N·m step: {fmt.n1.format(M.overshoot)}&nbsp;%. The
+        limit is {OVERSHOOT_LIMIT}&nbsp;%.
       </>
     ),
   },
@@ -24,8 +26,9 @@ const faqs = [
     question: 'When does a run count as settled?',
     answer: (
       <>
-        From the step command until torque stays inside ±2&nbsp;% of the setpoint for good. The limit is
-        200&nbsp;ms; samples before the step are ignored.
+        From the step command until torque stays inside ±2&nbsp;% of the setpoint for good. The limit is{' '}
+        {SETTLE_LIMIT}&nbsp;ms; samples before the step are ignored. <Id>R-0412</Id> settled{' '}
+        {fmt.n0.format(M.settle)}&nbsp;ms after its step.
       </>
     ),
   },
@@ -35,7 +38,7 @@ const faqs = [
     answer: (
       <>
         The winding must cool below 40&nbsp;°C before the next step, so every run starts from the same thermal
-        state. Above 90&nbsp;°C the bench stops the run.
+        state. Above {TEMP_LIMIT}&nbsp;°C the bench stops the run.
       </>
     ),
   },

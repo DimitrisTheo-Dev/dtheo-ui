@@ -11,69 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from '@dtheo/ui/components/table';
+import { fmt, runHistory } from '@/lib/lab-data';
 
-type Result = 'fail' | 'warn' | 'pass';
-
-const runs: Array<{
-  id: string;
-  profile: string;
-  result: Result;
-  kp: number;
-  overshoot: number;
-  settling: number;
-  peak: number;
-}> = [
-  {
-    id: 'R-0412',
-    profile: 'High-gain step',
-    result: 'fail',
-    kp: 4.2,
-    overshoot: 17.6,
-    settling: 186,
-    peak: 9.41,
-  },
-  {
-    id: 'R-0411',
-    profile: 'High-gain step',
-    result: 'fail',
-    kp: 3.9,
-    overshoot: 11.2,
-    settling: 174,
-    peak: 8.9,
-  },
-  { id: 'R-0410', profile: 'Fast rise', result: 'warn', kp: 3.6, overshoot: 7.9, settling: 192, peak: 8.63 },
-  {
-    id: 'R-0409',
-    profile: 'Nominal step',
-    result: 'pass',
-    kp: 3.2,
-    overshoot: 3.8,
-    settling: 158,
-    peak: 8.3,
-  },
-  {
-    id: 'R-0408',
-    profile: 'Nominal step',
-    result: 'pass',
-    kp: 3.2,
-    overshoot: 6.8,
-    settling: 161,
-    peak: 8.54,
-  },
-  {
-    id: 'R-0407',
-    profile: 'Damped step',
-    result: 'pass',
-    kp: 2.8,
-    overshoot: 5.2,
-    settling: 149,
-    peak: 8.42,
-  },
-];
+// The six latest runs from the synthetic run history, newest first.
+const runs = runHistory.slice(0, 6);
 
 const resultBadge = {
   fail: { variant: 'destructive', Icon: CircleXIcon, word: 'Failed' },
-  warn: { variant: 'warning', Icon: TriangleAlertIcon, word: 'Near limit' },
+  review: { variant: 'warning', Icon: TriangleAlertIcon, word: 'Near limit' },
   pass: { variant: 'success', Icon: CircleCheckIcon, word: 'Passed' },
 } as const;
 
@@ -92,7 +37,7 @@ export default function TableExample() {
             <TableHead numeric>Kp</TableHead>
             <TableHead numeric>Overshoot (%)</TableHead>
             <TableHead numeric>Settling (ms)</TableHead>
-            <TableHead numeric>Peak torque (N·m)</TableHead>
+            <TableHead numeric>Peak current (A)</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -108,10 +53,10 @@ export default function TableExample() {
                     {badge.word}
                   </Badge>
                 </TableCell>
-                <TableCell numeric>{run.kp.toFixed(2)}</TableCell>
-                <TableCell numeric>{run.overshoot.toFixed(1)}</TableCell>
-                <TableCell numeric>{run.settling}</TableCell>
-                <TableCell numeric>{run.peak.toFixed(2)}</TableCell>
+                <TableCell numeric>{fmt.n2.format(run.kp)}</TableCell>
+                <TableCell numeric>{fmt.n1.format(run.overshoot)}</TableCell>
+                <TableCell numeric>{fmt.n0.format(run.settle)}</TableCell>
+                <TableCell numeric>{fmt.n1.format(run.current)}</TableCell>
               </TableRow>
             );
           })}

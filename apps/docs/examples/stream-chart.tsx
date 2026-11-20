@@ -4,7 +4,7 @@ import * as React from 'react';
 import { PauseIcon, PlayIcon } from 'lucide-react';
 import { StreamChart, createStream } from '@dtheo/charts';
 import { Button } from '@dtheo/ui/components/button';
-import { createBench } from '@/lib/lab-data';
+import { TARGET, TORQUE_LIMIT, createBench, fmt } from '@/lib/lab-data';
 
 // A 1 kHz bench feed, simulated in the page. In an app this would be a WebSocket pushing into the same stream.
 export default function StreamChartExample() {
@@ -52,9 +52,15 @@ export default function StreamChartExample() {
           { channel: 'command', label: 'Command', tone: 'faint', width: 1, unit: 'N·m' },
           { channel: 'torque', label: 'Measured', unit: 'N·m', digits: 2 },
         ]}
-        limits={[{ value: 13.2, label: 'Overshoot limit 13.2 N·m', channel: 'torque' }]}
+        limits={[
+          {
+            value: TORQUE_LIMIT,
+            label: `Overshoot limit ${fmt.n1.format(TORQUE_LIMIT)} N·m`,
+            channel: 'torque',
+          },
+        ]}
         height={200}
-        ariaLabel="Live torque on Bench 3: a 12 N·m step every 1.5 seconds; each step overshoots past the 13.2 N·m limit."
+        ariaLabel={`Live torque on Bench 3: a ${TARGET} N·m step every 1.5 seconds; each step overshoots past the ${fmt.n1.format(TORQUE_LIMIT)} N·m limit.`}
       />
     </div>
   );

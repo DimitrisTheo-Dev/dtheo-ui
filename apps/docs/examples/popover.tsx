@@ -12,10 +12,11 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from '@dtheo/ui/components/popover';
+import { OVERSHOOT_LIMIT, SETTLE_LIMIT } from '@/lib/lab-data';
 
 export default function PopoverExample() {
   const [open, setOpen] = React.useState(false);
-  const [limits, setLimits] = React.useState({ overshoot: 15, settling: 250 });
+  const [limits, setLimits] = React.useState({ overshoot: OVERSHOOT_LIMIT, settling: SETTLE_LIMIT });
   const [draft, setDraft] = React.useState(limits);
 
   return (
@@ -35,7 +36,7 @@ export default function PopoverExample() {
           <div className="flex flex-col gap-1">
             <PopoverTitle>Acceptance limits</PopoverTitle>
             <PopoverDescription>
-              Runs on Bench 3 that exceed a limit are flagged for review.
+              Runs on Bench 3 fail above a limit and need review above 90 % of it.
             </PopoverDescription>
           </div>
           <div className="grid grid-cols-2 gap-3">

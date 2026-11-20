@@ -1,18 +1,19 @@
 'use client';
 
 import { BarChart, type Bar } from '@dtheo/charts';
+import { OVERSHOOT_LIMIT, fmt, runHistory } from '@/lib/lab-data';
 
-// Overshoot of the last eight step tests on Bench 3, oldest first. The limit is 10 %.
-const runs: Bar[] = [
-  { id: 'R-0405', label: '0405', value: 4.1 },
-  { id: 'R-0406', label: '0406', value: 3.6 },
-  { id: 'R-0407', label: '0407', value: 5.2 },
-  { id: 'R-0408', label: '0408', value: 6.8 },
-  { id: 'R-0409', label: '0409', value: 3.8 },
-  { id: 'R-0410', label: '0410', value: 7.9 },
-  { id: 'R-0411', label: '0411', value: 11.2 },
-  { id: 'R-0412', label: '0412', value: 17.6, current: true },
-];
+// Overshoot of the last eight step tests on Bench 3, oldest first.
+const history = runHistory.toReversed();
+const runs: Bar[] = history.map((r) => ({
+  id: r.id,
+  label: r.id.slice(2),
+  value: r.overshoot,
+  current: r.id === 'R-0412',
+}));
+const over = history
+  .filter((r) => r.overshoot > OVERSHOOT_LIMIT)
+  .map((r) => `${r.id} at ${fmt.n1.format(r.overshoot)} %`);
 
 export default function BarChartExample() {
   return (
@@ -25,12 +26,12 @@ export default function BarChartExample() {
       </div>
       <BarChart
         bars={runs}
-        limit={10}
-        limitLabel="Limit 10 %"
-        yDomain={[0, 20]}
+        limit={OVERSHOOT_LIMIT}
+        limitLabel={`Limit ${OVERSHOOT_LIMIT} %`}
+        yDomain={[0, 25]}
         unit=" %"
         height={220}
-        ariaLabel="Overshoot per run on Bench 3. Two runs exceed the 10 % limit: R-0411 at 11.2 % and R-0412 at 17.6 %. R-0405 to R-0410 stay between 3.6 % and 7.9 %."
+        ariaLabel={`Overshoot per run on Bench 3. ${over.length} runs exceed the ${OVERSHOOT_LIMIT} % limit: ${over.join(', ')}.`}
       />
     </div>
   );
