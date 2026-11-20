@@ -16,6 +16,7 @@ import { Button } from '@dtheo/ui/components/button';
 import { Kbd } from '@dtheo/ui/components/kbd';
 import { CommandDialog, type CommandItemData } from '@dtheo/ui/components/command';
 import { ThemeToggle } from './theme-controls';
+import { GithubLink } from './github-link';
 import { Logo } from './logo';
 import { allPages } from '@/lib/nav';
 
@@ -103,6 +104,7 @@ export function SiteHeader() {
             <span className="hidden flex-1 text-left font-normal sm:inline">Search docs…</span>
             <Kbd className="hidden sm:inline-flex">⌘K</Kbd>
           </Button>
+          <GithubLink />
           <ThemeToggle />
         </div>
       </div>
