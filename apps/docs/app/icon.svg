@@ -1,5 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <!-- The mark: a white north star on a black tile. The path and tile come from lib/brand.ts; a test keeps them equal. -->
-  <rect width="24" height="24" rx="5.4" fill="#000000" />
-  <path d="M12 0.8C12 9.536 13.672 12 19.6 12C13.672 12 12 14.464 12 23.2C12 14.464 10.328 12 4.4 12C10.328 12 12 9.536 12 0.8Z" transform="translate(1.92 1.92) scale(0.84)" fill="#ffffff" />
+  <!-- The mark at tab size: the north star on its enamel tile, without the rim and glow, which would blur it. The
+       paths, colors and star placement come from lib/brand.tsx; a test keeps them equal. -->
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#26272b" />
+      <stop offset="0.55" stop-color="#0b0b0d" />
+      <stop offset="1" stop-color="#000000" />
+    </linearGradient>
+  </defs>
+  <path d="M24 12C24 23.94 23.94 24 12 24C0.06 24 0 23.94 0 12C0 0.06 0.06 0 12 0C23.94 0 24 0.06 24 12Z" fill="url(#tile)" />
+  <path d="M12 0.6C12.6 9.036 13.82 11.4 19 12C13.82 12.6 12.6 14.964 12 23.4C11.4 14.964 10.18 12.6 5 12C10.18 11.4 11.4 9.036 12 0.6Z" transform="translate(1.92 1.92) scale(0.84)" fill="#ffffff" />
 </svg>

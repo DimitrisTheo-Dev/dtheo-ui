@@ -22,7 +22,7 @@ function Tile({
 }) {
   return (
     <li
-      className={`flex min-w-0 flex-col gap-5 overflow-hidden rounded-card border border-border bg-card p-5 sm:p-6 ${className ?? ''}`}
+      className={`flex min-w-0 flex-col gap-5 overflow-hidden rounded-card border border-border bg-card p-5 shadow-lift sm:p-6 ${className ?? ''}`}
     >
       <div className="flex flex-col gap-1">
         <h3 className="text-title-3">{title}</h3>

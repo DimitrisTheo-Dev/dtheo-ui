@@ -10,6 +10,7 @@ import { ComponentTeaser } from '@/components/component-gallery';
 import { ChartShowcase } from '@/components/home/chart-showcase';
 import { Stats } from '@/components/home/stats';
 import { SpaceBackdrop } from '@/components/space-backdrop';
+import { StarTrails } from '@/components/star-trails';
 import { site } from '@/lib/site';
 import runReviewShot from '@/assets/screens/run-review.png';
 import motorMapShot from '@/assets/screens/motor-map.png';
@@ -101,9 +102,11 @@ export default function Home() {
   return (
     <main className="flex flex-col">
       <section className="relative overflow-hidden">
+        {/* The same sky in both themes: a night sky in dark, a long exposure in ink in light. */}
+        <StarTrails className="dark:hidden" />
         <SpaceBackdrop
           alive
-          className="opacity-50 [mask-image:linear-gradient(to_bottom,black_30%,transparent_80%)] dark:opacity-90"
+          className="hidden opacity-90 [mask-image:linear-gradient(to_bottom,black_30%,transparent_80%)] dark:block"
           starsClassName="[mask-image:radial-gradient(ellipse_34%_20%_at_50%_24%,transparent_45%,black)] max-md:opacity-60"
         />
         <div
@@ -187,7 +190,7 @@ export default function Home() {
             <li key={e.href}>
               <Link
                 href={e.href}
-                className="group flex flex-col overflow-hidden rounded-card border border-border bg-card transition-[border-color] duration-150 hover:border-border-strong"
+                className="group flex flex-col overflow-hidden rounded-card border border-border bg-card shadow-lift transition-[border-color] duration-150 hover:border-border-strong"
               >
                 <span className="relative block aspect-[16/10] overflow-hidden border-b border-border bg-background">
                   <Image
@@ -228,15 +231,19 @@ export default function Home() {
         </Accordion>
       </section>
 
-      <section
-        className={`mx-auto flex w-full max-w-2xl flex-col items-center gap-6 pt-10 pb-28 text-center ${gutter}`}
-      >
-        <h2 className="text-large-title text-balance">Start in one command.</h2>
-        <CommandTabs label="Who installs it" ways={start} className="text-left shadow-raised" />
-        <Button variant="primary" size="lg" render={<Link href="/docs" />}>
-          Read the docs
-          <ArrowRightIcon aria-hidden="true" />
-        </Button>
+      <section className="relative overflow-hidden">
+        <StarTrails variant="closing" className="dark:hidden" />
+        <SpaceBackdrop className="hidden opacity-80 [mask-image:linear-gradient(to_bottom,transparent,black_35%,black_55%,transparent)] dark:block" />
+        <div
+          className={`relative mx-auto flex w-full max-w-2xl flex-col items-center gap-6 pt-36 pb-28 text-center ${gutter}`}
+        >
+          <h2 className="text-large-title text-balance">Start in one command.</h2>
+          <CommandTabs label="Who installs it" ways={start} className="text-left shadow-raised" />
+          <Button variant="primary" size="lg" render={<Link href="/docs" />}>
+            Read the docs
+            <ArrowRightIcon aria-hidden="true" />
+          </Button>
+        </div>
       </section>
     </main>
   );

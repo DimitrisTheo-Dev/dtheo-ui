@@ -106,7 +106,7 @@ export function ChartShowcase() {
           return (
             <li
               key={c.id}
-              className="flex min-w-0 flex-col overflow-hidden rounded-card border border-border bg-card"
+              className="flex min-w-0 flex-col overflow-hidden rounded-card border border-border bg-card shadow-lift"
             >
               <div className="flex flex-col gap-2 p-5 pb-0 sm:p-6 sm:pb-0">
                 <div className="flex items-center justify-between gap-3">

@@ -39,7 +39,7 @@ function Tile({ meta, height = 240 }: { meta: ComponentMeta; height?: number }) 
   const Example = id ? examples[id] : undefined;
   return (
     <li
-      className={`group flex min-w-0 flex-col overflow-hidden rounded-card border border-border bg-card transition-[border-color] duration-150 hover:border-border-strong ${wide.has(meta.slug) ? 'md:col-span-2' : ''}`}
+      className={`group flex min-w-0 flex-col overflow-hidden rounded-card border border-border bg-card shadow-lift transition-[border-color] duration-150 hover:border-border-strong ${wide.has(meta.slug) ? 'md:col-span-2' : ''}`}
     >
       <div
         data-slot="preview"
