@@ -65,20 +65,23 @@ Set the mode with a class and the preset with an attribute on \`<html>\` (or on 
 ## 4. Add components
 
 \`\`\`bash
-npx ${site.cli} add button field select table line-chart
+npx ${site.cli}@latest add button field select table line-chart tooltip toast
 \`\`\`
 
-Components are copied into \`components/ui\` (charts into \`components/charts\`). You own the code. The command prints what to install: the npm packages, and for charts the TypeScript types they need.
+Components are copied into \`components/ui\` (charts into \`components/charts\`). You own the code. The command prints what to install: the npm packages, and for charts the TypeScript types they need. Run those install commands before you build.
 
 ## 5. Mount the providers
 
+The root layout wraps the app in the tooltip and toast providers you added in step 4, and keeps the mode and preset from step 3. In Next.js, make \`app/layout.tsx\`:
+
 \`\`\`tsx
+import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toast";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" data-preset="graphite">
       <body>
         <TooltipProvider>
           <Toaster>{children}</Toaster>
@@ -88,6 +91,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 }
 \`\`\`
+
+In a Vite app, wrap \`<App />\` the same way in \`src/main.tsx\`.
 
 ## Using the shadcn CLI instead
 
@@ -111,10 +116,10 @@ Finish with steps 3 and 5: the mode and preset on \`<html>\`, and the providers 
 ## Check your UI code
 
 \`\`\`bash
-npx ${site.cli} check src
+npx ${site.cli}@latest check app components
 \`\`\`
 
-It flags raw colors, palette classes, \`transition-all\`, unlabeled icon buttons and other mistakes, with the fix for each. Add it to CI; it exits with 1 on errors.
+Name the folders that hold your UI code (\`src\` in a Vite app). It flags raw colors, palette classes, \`transition-all\`, unlabeled icon buttons and other mistakes, with the fix for each. Add it to CI; it exits with 1 on errors.
 `,
 
   theming: `# Theming
