@@ -108,6 +108,14 @@ const baseItems = (): RegistryItem[] => [
     description: 'Tokens for three presets in light and dark, the Tailwind v4 theme mapping and base styles.',
     dependencies: [],
     registryDependencies: [],
+    // The shadcn CLI prints this after an install, once however many items needed the stylesheet.
+    docs: [
+      `${site.name}: import the stylesheet once, right after Tailwind, in your global CSS. In app/globals.css:`,
+      '  @import "tailwindcss";',
+      '  @import "../styles/dtheo.css";',
+      'Delete any other theme in that file (shadcn init adds :root, .dark, @theme inline and @layer base); it overrides this one.',
+      `Guide: ${site.url}/docs/installation#using-the-shadcn-cli-instead`,
+    ].join('\n'),
     files: [
       {
         path: 'registry/dtheo/styles/dtheo.css',
@@ -133,7 +141,9 @@ function componentItem(meta: ComponentMeta, withContent: boolean): RegistryItem 
         ...(withContent ? { content: charts ? raw : rewriteUi(raw) } : {}),
       };
     });
-  const deps = new Set(meta.registryDependencies.filter((d) => d !== meta.slug));
+  // Every item needs the stylesheet: it defines the classes components use (h-control-md, rounded-control,
+  // text-body, bg-card). Without it they render unstyled. Both CLIs skip a dependency's file when it exists.
+  const deps = new Set(['styles', ...meta.registryDependencies.filter((d) => d !== meta.slug)]);
   // d3 ships no TypeScript types, so a TypeScript build fails on the chart imports without these.
   const types = meta.dependencies.filter((d) => d.startsWith('d3-')).map((d) => `@types/${d}`);
   if (!charts) {
@@ -151,7 +161,7 @@ function componentItem(meta: ComponentMeta, withContent: boolean): RegistryItem 
     ...(types.length ? { devDependencies: types } : {}),
     registryDependencies: [...deps].map(itemUrl),
     files,
-    docs: `${site.url}/docs/${charts ? 'charts' : 'components'}/${meta.slug}`,
+    docs: `${meta.title} docs: ${site.url}/docs/${charts ? 'charts' : 'components'}/${meta.slug}`,
     meta: { category: meta.category, level: meta.level, exports: meta.exports },
   };
 }

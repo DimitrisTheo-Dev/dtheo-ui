@@ -22,6 +22,8 @@ const registryItems = {
     name: 'line-chart',
     dependencies: ['d3-scale'],
     devDependencies: ['@types/d3-scale'],
+    // Like the real registry: dependencies are absolute URLs, fetched from the registry the CLI was given.
+    registryDependencies: ['https://ui.dtheo.dev/r/styles.json'],
     files: [registryFile('components/charts/line-chart.tsx')],
   },
 };
@@ -240,6 +242,28 @@ describe('dtheo CLI', () => {
     const report = JSON.parse(stdout);
     expect(report.install).toBe('npm install d3-scale');
     expect(report.installDev).toBe('npm install -D @types/d3-scale');
+  });
+
+  it('brings the stylesheet with a component, and keeps the one already there', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dtheo-add-'));
+    const add = () =>
+      withRegistry((url) =>
+        runCli(process.execPath, [bin, 'add', 'line-chart', '--json', '--registry', url, '--cwd', dir]),
+      );
+    expect(JSON.parse((await add()).stdout)).toMatchObject({
+      items: ['line-chart', 'styles'],
+      written: ['components/charts/line-chart.tsx', 'styles/dtheo.css'],
+      skipped: [],
+    });
+
+    writeFileSync(join(dir, 'styles/dtheo.css'), '/* the copy init wrote, or one you edited */');
+    expect(JSON.parse((await add()).stdout)).toMatchObject({
+      written: [],
+      skipped: ['components/charts/line-chart.tsx', 'styles/dtheo.css'],
+    });
+    expect(readFileSync(join(dir, 'styles/dtheo.css'), 'utf8')).toBe(
+      '/* the copy init wrote, or one you edited */',
+    );
   });
 
   it('refuses plain-HTTP registries that are not local', () => {

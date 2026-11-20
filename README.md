@@ -39,7 +39,8 @@ npx dtheo add button table line-chart
 claude mcp add --transport http dtheo https://ui.dtheo.dev/mcp
 ```
 
-Components are copied into your project, so you own the code. Every item also installs with the shadcn CLI.
+Components are copied into your project, so you own the code. Every item also installs with the shadcn CLI
+([setup](https://ui.dtheo.dev/docs/installation#using-the-shadcn-cli-instead)).
 
 ## Why it is different
 
