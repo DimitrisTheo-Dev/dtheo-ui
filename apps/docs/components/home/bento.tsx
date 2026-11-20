@@ -1,13 +1,38 @@
 import * as React from 'react';
-import { CircleCheckIcon, CircleXIcon, PlayIcon } from 'lucide-react';
+import { CircleCheckIcon, CircleXIcon, PlayIcon, TriangleAlertIcon } from 'lucide-react';
 import { Badge } from '@dtheo/ui/components/badge';
 import { Button } from '@dtheo/ui/components/button';
 import { ThemeScope, type ThemePreset } from '@dtheo/ui/lib/theme';
 import contrast from '@dtheo/tokens/contrast.json';
 import { ruleList } from 'dtheo/check';
+import {
+  OVERSHOOT_LIMIT,
+  SETTLE_LIMIT,
+  checkStatus,
+  fmt,
+  measuredMetrics as M,
+  type CheckStatus,
+} from '@/lib/lab-data';
 import { A11yDemo } from './a11y-demo';
 
 const passing = contrast.filter((r) => r.ok).length;
+
+const statusBadge = {
+  fail: { variant: 'destructive', Icon: CircleXIcon, word: 'Fail' },
+  warn: { variant: 'warning', Icon: TriangleAlertIcon, word: 'Near limit' },
+  pass: { variant: 'success', Icon: CircleCheckIcon, word: 'Pass' },
+} as const;
+
+/** R-0412's checks, worded the way the run review words them. */
+function CheckBadge({ status }: { status: CheckStatus }) {
+  const { variant, Icon, word } = statusBadge[status];
+  return (
+    <Badge variant={variant}>
+      <Icon aria-hidden="true" />
+      {word}
+    </Badge>
+  );
+}
 
 function Tile({
   title,
@@ -157,16 +182,15 @@ export function Bento() {
             <div className="flex flex-col gap-2.5 px-1 pb-1">
               <span className="flex items-center justify-between">
                 <span className="font-mono text-caption text-muted-foreground">R-0412</span>
-                <Badge variant="destructive">
-                  <CircleXIcon aria-hidden="true" />
-                  Fail
-                </Badge>
+                <CheckBadge status={checkStatus(M.overshoot, OVERSHOOT_LIMIT)} />
               </span>
               <span className="flex items-baseline gap-1">
-                <span className="text-title-1 tabular-nums">17.6</span>
+                <span className="text-title-1 tabular-nums">{fmt.n1.format(M.overshoot)}</span>
                 <span className="text-label font-normal text-muted-foreground">% overshoot</span>
               </span>
-              <span className="text-caption text-muted-foreground">Limit 10 %. Lower Kp, then rerun.</span>
+              <span className="text-caption text-muted-foreground">
+                Limit {OVERSHOOT_LIMIT} %. Lower Kp, then rerun.
+              </span>
               <Button variant="primary" size="lg" className="w-full" tabIndex={-1} aria-hidden="true">
                 <PlayIcon aria-hidden="true" />
                 Queue retune
@@ -207,13 +231,10 @@ export function Bento() {
             >
               <span className="flex items-center justify-between gap-2">
                 <span className="text-label">{p.name}</span>
-                <Badge variant="success">
-                  <CircleCheckIcon aria-hidden="true" />
-                  Pass
-                </Badge>
+                <CheckBadge status={checkStatus(M.settle, SETTLE_LIMIT)} />
               </span>
               <span className="flex items-baseline gap-1">
-                <span className="text-title-2 tabular-nums">203</span>
+                <span className="text-title-2 tabular-nums">{fmt.n0.format(M.settle)}</span>
                 <span className="text-label font-normal text-muted-foreground">ms settling</span>
               </span>
               <Button variant="primary" size="sm" className="w-fit" tabIndex={-1} aria-hidden="true">

@@ -43,7 +43,7 @@ import { Radio, RadioGroup } from '@dtheo/ui/components/radio-group';
 import { Label } from '@dtheo/ui/components/field';
 import { useToast } from '@dtheo/ui/components/toast';
 import { Sparkline } from '@dtheo/charts';
-import { fmt, runHistory, type RunRow } from '@/lib/actuator';
+import { OVERSHOOT_LIMIT, fmt, runHistory, type RunRow } from '@/lib/lab-data';
 
 type Sort = { key: 'id' | 'overshoot' | 'settle' | 'current'; dir: 'asc' | 'desc' };
 type View = 'data' | 'loading' | 'empty' | 'error';
@@ -344,14 +344,16 @@ export function DataTableDemo() {
                         <TableCell className="max-w-44 truncate">{r.profile}</TableCell>
                         <TableCell
                           numeric
-                          className={r.overshoot > 10 ? 'font-medium text-destructive-foreground' : ''}
+                          className={
+                            r.overshoot > OVERSHOOT_LIMIT ? 'font-medium text-destructive-foreground' : ''
+                          }
                         >
                           {fmt.n1.format(r.overshoot)} %
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <Sparkline
                             values={trend(r)}
-                            tone={r.overshoot > 10 ? 'critical' : 'muted'}
+                            tone={r.overshoot > OVERSHOOT_LIMIT ? 'critical' : 'muted'}
                             height={20}
                             ariaLabel={`${r.id} overshoot trend`}
                           />
