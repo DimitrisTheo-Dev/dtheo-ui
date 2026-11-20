@@ -561,7 +561,14 @@ export const components: ComponentMeta[] = [
       {
         name: 'items',
         type: 'CommandItemData[]',
-        description: 'value, label, group, optional hint, shortcut, icon and onSelect.',
+        description:
+          'value, label, group, optional hint, keywords, shortcut, icon and onSelect. Search matches every word of the query against the label, hint and keywords (words people search for that the label does not say); label matches are listed first.',
+      },
+      {
+        name: 'emptyMessage',
+        type: 'ReactNode',
+        default: "'No matching commands.'",
+        description: 'Shown when nothing matches. Say what to try next; it can hold an action.',
       },
       {
         name: 'shortcut',

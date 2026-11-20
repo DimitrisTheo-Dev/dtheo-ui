@@ -45,6 +45,7 @@ export function SiteHeader() {
         label: p.title,
         group: p.section,
         hint: p.description,
+        keywords: p.keywords,
         icon: sectionIcon[p.section] ?? <SquareTerminalIcon />,
         onSelect: () => router.push(p.href),
       })),
@@ -53,6 +54,7 @@ export function SiteHeader() {
         label: 'llms.txt',
         group: 'For agents',
         hint: 'The index agents read first',
+        keywords: ['AI', 'LLM', 'Markdown'],
         icon: <BotIcon />,
         onSelect: () => router.push('/llms.txt'),
       },
@@ -113,6 +115,20 @@ export function SiteHeader() {
         onOpenChange={setOpen}
         items={items}
         placeholder="Search components, foundations and examples…"
+        emptyMessage={
+          <>
+            <p>No pages match. Try a component name, or a topic such as limits, Bode or contrast.</p>
+            <Button
+              size="sm"
+              onClick={() => {
+                setOpen(false);
+                router.push('/docs/components');
+              }}
+            >
+              Browse all components
+            </Button>
+          </>
+        }
       />
     </header>
   );
