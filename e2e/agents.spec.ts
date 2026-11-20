@@ -58,6 +58,13 @@ test('the MCP server lists its tools and checks code', async ({ request }) => {
     3,
   );
   expect(JSON.stringify(check.result)).toContain('palette-color');
+  // The two tools that read source files when called: a component's code, and a chart's contract.
+  const source = await call('tools/call', { name: 'get_component_source', arguments: { slug: 'button' } }, 4);
+  expect(source.result.isError).toBeFalsy();
+  expect(source.result.content[0].text).toContain('export function Button');
+  const chart = await call('tools/call', { name: 'get_component', arguments: { slug: 'line-chart' } }, 5);
+  expect(chart.result.isError).toBeFalsy();
+  expect(chart.result.content[0].text).toContain("from '@/components/charts/line-chart'");
 });
 
 test('the ARD manifest and robots are published', async ({ request }) => {

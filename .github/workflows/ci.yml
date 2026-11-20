@@ -25,6 +25,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
+      # The MCP route reads component sources per request; fail if the build would deploy it without them.
+      - run: node scripts/check-trace.mjs
 
   e2e:
     runs-on: ubuntu-latest
