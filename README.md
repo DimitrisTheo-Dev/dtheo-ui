@@ -49,8 +49,9 @@ Components are copied into your project, so you own the code. Every item also in
   readable with the arrow keys.
 - **Your agent already knows it.** An MCP server with 7 tools, `llms.txt`, and a Markdown copy of every page. The
   page you read, the Markdown an agent reads and the MCP answer all come from one component contract.
-- **Mistakes caught before review.** `npx dtheo check` runs 17 rules for what agents get wrong (raw colors,
-  `transition-all`, icon buttons without a name, off-system radii…), each with the fix. It exits 1 in CI.
+- **Mistakes caught before review.** `npx dtheo check` runs 18 rules for what agents get wrong (raw colors,
+  status text on its own fill, `transition-all`, icon buttons without a name, off-system radii…), each with the fix.
+  It exits 1 in CI.
 - **Contrast is proven, not promised.** 116 text and UI color pairs are measured on every token build, layered
   surfaces included. The build fails below WCAG AA.
 - **Feels native.** System type, Mac materials, one accent, a focus ring you can always see. Three presets

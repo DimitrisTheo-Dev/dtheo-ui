@@ -6,7 +6,7 @@ system. Built for people and coding agents.
 ```bash
 npx dtheo init                      # utils, theme scope and the stylesheet
 npx dtheo add button table line-chart
-npx dtheo check src                 # 17 rules, each with the fix; exits 1 on errors
+npx dtheo check src                 # 18 rules, each with the fix; exits 1 on errors
 ```
 
 | Command | What it does |
