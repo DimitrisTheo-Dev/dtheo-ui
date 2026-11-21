@@ -34,6 +34,7 @@ export const components: ComponentMeta[] = [
       'Icon-only buttons need an `aria-label` that names the action ("Delete run"), not the icon.',
       '`loading` keeps the button focusable and sets `aria-busy`, so focus is not lost mid-action.',
       'Disabled buttons are skipped by Tab; prefer explaining why an action is unavailable.',
+      'A disabled link-button (`render={<a />}` with `disabled`) stays a link, leaves the tab order, is announced as disabled and does not navigate.',
     ],
     props: [
       {
@@ -142,7 +143,8 @@ export const components: ComponentMeta[] = [
       {
         name: 'match',
         type: 'boolean | ValidityState key',
-        description: 'FieldError: when to show the message; `true` shows it whenever the field is invalid.',
+        description:
+          'FieldError: which validity state shows the message (`valueMissing`, `rangeOverflow`…). `true` always shows it, so pass your own check: `match={invalid}`.',
       },
     ],
     a11y: [
