@@ -40,7 +40,7 @@ describe('tokens', () => {
     // --check rebuilds in memory, fails on any contrast miss, and fails if the generated CSS is stale.
     const tsx = fileURLToPath(new URL('../node_modules/.bin/tsx', import.meta.url));
     const out = execFileSync(tsx, ['scripts/build.ts', '--check'], { cwd: pkg, encoding: 'utf8' });
-    expect(out).toMatch(/contrast pairs pass/);
+    expect(out).toMatch(/contrast checks pass: \d+ pairs in \d+ themes/);
   });
 
   it('exports native hex values for React Native', () => {

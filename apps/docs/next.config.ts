@@ -30,6 +30,9 @@ const securityHeaders = [
 ];
 
 const config: NextConfig = {
+  // NEXT_BUILD_CPUS caps the build's workers. Next counts every core it can see, and in a memory-limited container
+  // (the Linux visual baselines, scripts/visual-linux.sh) one worker per core runs out of memory. Unset: Next's default.
+  ...(process.env.NEXT_BUILD_CPUS ? { experimental: { cpus: Number(process.env.NEXT_BUILD_CPUS) } } : {}),
   transpilePackages: ['@dtheo/ui', '@dtheo/charts', '@dtheo/tokens'],
   // The floating dev badge sits over the sidebar footer and would end up in visual baselines.
   devIndicators: false,
@@ -44,10 +47,23 @@ const config: NextConfig = {
       '../../packages/charts/src/**/*.{ts,tsx}',
       './examples/*.tsx',
       './lib/lab-data.ts',
+      // get_guidelines serves the writing rules from the design principles.
+      '../../DESIGN.md',
     ],
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
+  },
+  // Section addresses people type or trim a URL down to. Each lands where the nav starts that section; temporary, so
+  // a real index page can take the address later.
+  async redirects() {
+    return [
+      { source: '/examples', destination: '/examples/run-review', permanent: false },
+      { source: '/docs/foundations', destination: '/docs/foundations/color', permanent: false },
+      { source: '/docs/patterns', destination: '/docs/patterns/data-table', permanent: false },
+      // Charts have no page of their own: the component index shows every chart, live, in its Charts section.
+      { source: '/docs/charts', destination: '/docs/components#cat-charts', permanent: false },
+    ];
   },
   async rewrites() {
     return [

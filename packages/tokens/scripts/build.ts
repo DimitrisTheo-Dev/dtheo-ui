@@ -8,7 +8,15 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { converter, formatHex, parse, toGamut, wcagContrast, type Oklch, type Rgb } from 'culori';
-import { colorRoles, contrastPairs, foundation, presets, type ColorScheme, type Mode } from '../src/index';
+import {
+  colorRoles,
+  contrastPairs,
+  foundation,
+  pairLabel,
+  presets,
+  type ColorScheme,
+  type Mode,
+} from '../src/index';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../../..');
@@ -58,6 +66,8 @@ function resolveStack(scheme: ColorScheme, layers: (keyof ColorScheme)[], tint?:
 type Row = {
   preset: string;
   mode: Mode;
+  /** Position in contrastPairs: labels can repeat (the ring against its halo on several surfaces). */
+  index: number;
   pair: string;
   ratio: number;
   min: number;
@@ -67,7 +77,8 @@ type Row = {
 const rows: Row[] = [];
 for (const preset of presets) {
   for (const [mode, scheme] of Object.entries(preset.modes) as [Mode, ColorScheme][]) {
-    for (const p of contrastPairs) {
+    for (const [index, p] of contrastPairs.entries()) {
+      if (p.modes && !p.modes.includes(mode)) continue;
       const bg =
         Array.isArray(p.over) || p.tint !== undefined
           ? resolveStack(scheme, [p.bg, ...(Array.isArray(p.over) ? p.over : p.over ? [p.over] : [])], p.tint)
@@ -78,7 +89,8 @@ for (const preset of presets) {
       rows.push({
         preset: preset.id,
         mode,
-        pair: `${p.fg} on ${p.bg}`,
+        index,
+        pair: pairLabel(p),
         ratio,
         min: p.min,
         ok: ratio >= p.min,
@@ -93,8 +105,10 @@ for (const row of rows.filter((r) => r.preset === 'graphite')) {
     `${row.ok ? 'ok  ' : 'FAIL'} ${row.preset}/${row.mode.padEnd(5)} ${row.pair.padEnd(42)} ${row.ratio.toFixed(2)} (min ${row.min})`,
   );
 }
+// Every pair is measured in every theme (preset and mode), so the total counts checks: pairs × themes.
+const themes = presets.reduce((n, p) => n + Object.keys(p.modes).length, 0);
 console.log(
-  `\n${rows.length - failures.length}/${rows.length} contrast pairs pass across ${presets.length} presets.`,
+  `\n${rows.length - failures.length}/${rows.length} contrast checks pass: ${contrastPairs.length} pairs in ${themes} themes (${presets.length} presets).`,
 );
 if (failures.length) {
   console.error('\nContrast failures:');

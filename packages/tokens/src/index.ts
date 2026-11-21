@@ -111,7 +111,8 @@ const graphiteDark: ColorScheme = {
   border: 'oklch(1 0 0 / 0.085)',
   'border-strong': 'oklch(1 0 0 / 0.15)',
   input: 'oklch(1 0 0 / 0.36)',
-  ring: 'oklch(0.66 0.17 257)',
+  // Lighter than primary so the 2px focus line clears 3:1 on the lit segment of a segmented control.
+  ring: 'oklch(0.72 0.15 257)',
   overlay: 'oklch(0 0 0 / 0.5)',
   sidebar: 'oklch(0.235 0.004 265 / 0.78)',
   'sidebar-foreground': 'oklch(0.955 0.002 265)',
@@ -333,6 +334,11 @@ export const foundation = {
   },
 } as const;
 
+/** How a pair reads in reports: "muted-foreground on card", or "ring on ring 12 %" for a tinted layer. */
+export function pairLabel(p: { fg: string; bg: string; tint?: number }) {
+  return `${p.fg} on ${p.bg}${p.tint === undefined ? '' : ` ${Math.round(p.tint * 100)} %`}`;
+}
+
 /** Foreground/background pairs that must meet WCAG AA. `min` is the required ratio. */
 export const contrastPairs: Array<{
   fg: ColorRole | 'white';
@@ -341,6 +347,8 @@ export const contrastPairs: Array<{
   over?: ColorRole | ColorRole[];
   /** Draw `bg` at this opacity (a status badge is its role at 15 %). */
   tint?: number;
+  /** Check only these modes, for a combination the UI draws in one mode only. Default: every mode. */
+  modes?: Mode[];
   min: number;
   note: string;
 }> = [
@@ -363,6 +371,55 @@ export const contrastPairs: Array<{
   { fg: 'sidebar-foreground', bg: 'sidebar', over: 'background', min: 4.5, note: 'Sidebar text' },
   { fg: 'input', bg: 'card', over: 'background', min: 3, note: 'Field boundary (non-text, 1.4.11)' },
   { fg: 'ring', bg: 'background', min: 3, note: 'Focus ring (non-text)' },
+  // The focus line against everything it touches: the surface, and its own halo (the ring at 12 %) on that surface.
+  // Inside a segmented track the line sits on the segment's edge, next to the track and the lit segment.
+  { fg: 'ring', bg: 'card', over: 'background', min: 3, note: 'Focus ring on a card' },
+  { fg: 'ring', bg: 'sidebar', over: 'background', min: 3, note: 'Focus ring in the sidebar' },
+  { fg: 'ring', bg: 'secondary', over: 'card', min: 3, note: 'Focus ring in a segmented track' },
+  {
+    fg: 'ring',
+    bg: 'foreground',
+    tint: 0.15,
+    over: ['secondary', 'card'],
+    modes: ['dark'],
+    min: 3,
+    note: 'Focus ring on the lit segment (dark draws it as foreground at 15 %; light uses card)',
+  },
+  { fg: 'ring', bg: 'selection', over: 'card', min: 3, note: 'Focus ring on a selected row' },
+  { fg: 'ring', bg: 'ring', tint: 0.12, min: 3, note: 'Focus ring against its halo' },
+  { fg: 'ring', bg: 'ring', tint: 0.12, over: 'card', min: 3, note: 'Focus ring against its halo on a card' },
+  {
+    fg: 'ring',
+    bg: 'ring',
+    tint: 0.12,
+    over: 'popover',
+    min: 3,
+    note: 'Focus ring against its halo in a popover',
+  },
+  {
+    fg: 'ring',
+    bg: 'ring',
+    tint: 0.12,
+    over: 'sidebar',
+    min: 3,
+    note: 'Focus ring against its halo in the sidebar',
+  },
+  {
+    fg: 'ring',
+    bg: 'ring',
+    tint: 0.12,
+    over: ['secondary', 'card'],
+    min: 3,
+    note: 'Focus ring against its halo in a segmented track',
+  },
+  {
+    fg: 'ring',
+    bg: 'ring',
+    tint: 0.12,
+    over: ['selection', 'card'],
+    min: 3,
+    note: 'Focus ring against its halo on a selected row',
+  },
   { fg: 'chart-1', bg: 'card', over: 'background', min: 3, note: 'Primary series (graphical object)' },
   { fg: 'link', bg: 'background', min: 4.5, note: 'Links and primary-tinted text' },
   { fg: 'link', bg: 'card', over: 'background', min: 4.5, note: 'Links on cards' },

@@ -99,7 +99,12 @@ function Folder({
           className={`size-3.5 shrink-0 text-subtle-foreground transition-transform duration-150 ease-out ${open ? 'rotate-90' : ''}`}
         />
         <span className="flex-1 truncate">{title}</span>
-        <span className="text-caption text-subtle-foreground tabular-nums">{items.length}</span>
+        {/* Seen as a bare number, heard as "Actions 2 items" rather than "Actions2". The name keeps the visible
+            words in order, so voice control still finds it (WCAG 2.5.3). */}
+        <span className="text-caption text-subtle-foreground tabular-nums">
+          {items.length}
+          <span className="sr-only"> {items.length === 1 ? 'item' : 'items'}</span>
+        </span>
       </button>
       {/* Opens instantly: people toggle these often, and motion would only slow them down. */}
       <ul
@@ -127,6 +132,10 @@ export function DocsSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const [toggled, setToggled] = React.useState<Record<string, boolean>>({});
   const filterRef = React.useRef<HTMLInputElement>(null);
   const navRef = React.useRef<HTMLElement>(null);
+  // Group labels need ids that are unique on the page (the sheet and the sidebar can both be mounted) and valid as
+  // an aria-labelledby IDREF, which cannot hold a space: "nav-Get started" pointed at two ids that do not exist.
+  const idBase = React.useId();
+  const groupId = (title: string) => `${idBase}-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
   const q = query.trim().toLowerCase();
 
   // "/" jumps to the filter, unless you are already typing somewhere.
@@ -184,10 +193,17 @@ export function DocsSidebar({ onNavigate }: { onNavigate?: () => void }) {
             .map((f) => ({ ...f, items: f.items.filter(match) }))
             .filter((f) => f.items.length);
           if (!items.length && !folders.length) return null;
+          // A labelled group, not a region or a heading: six landmarks and six h2s before the page's h1 made the
+          // sidebar louder than the page for screen-reader users.
           return (
-            <section key={g.title} aria-labelledby={`nav-${g.title}`} className="flex flex-col gap-1">
-              <h2
-                id={`nav-${g.title}`}
+            <div
+              key={g.title}
+              role="group"
+              aria-labelledby={groupId(g.title)}
+              className="flex flex-col gap-1"
+            >
+              <div
+                id={groupId(g.title)}
                 className="flex items-center gap-2 px-2 pb-1 text-label font-semibold text-sidebar-foreground"
               >
                 <span
@@ -197,7 +213,7 @@ export function DocsSidebar({ onNavigate }: { onNavigate?: () => void }) {
                   {g.icon}
                 </span>
                 {g.title}
-              </h2>
+              </div>
               {items.length ? (
                 <ul className="flex flex-col gap-px">
                   {items.map((it) => (
@@ -226,7 +242,7 @@ export function DocsSidebar({ onNavigate }: { onNavigate?: () => void }) {
                   })}
                 </ul>
               ) : null}
-            </section>
+            </div>
           );
         })}
         {q && !groups.some((g) => g.items?.some(match) || g.folders?.some((f) => f.items.some(match))) ? (

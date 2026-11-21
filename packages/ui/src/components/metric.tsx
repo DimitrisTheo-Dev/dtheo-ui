@@ -24,7 +24,7 @@ export function MetricGroup({ className, ...props }: React.ComponentProps<'div'>
     <div
       data-slot="metric-group"
       className={cn(
-        // Each cell draws its left and top hairline over the neighbour painted before it; the container clips the outer ones,
+        // Each cell draws its left and top hairline over the neighbor painted before it; the container clips the outer ones,
         // so an incomplete last row stays the card color instead of showing a gap.
         'grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] overflow-hidden rounded-card border border-border bg-card',
         className,

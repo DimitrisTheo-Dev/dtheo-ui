@@ -53,7 +53,8 @@ export function Preview({
             {effective === 'dark' ? <SunIcon aria-hidden="true" /> : <MoonIcon aria-hidden="true" />}
           </Button>
         </div>
-        <TabsPanel value="preview">
+        {/* The card clips anything outside it, so a focused panel draws its ring just inside the edge. */}
+        <TabsPanel value="preview" className="[--focus-offset:-2px]">
           <ThemeScope
             mode={effective}
             data-slot="preview"
@@ -65,7 +66,9 @@ export function Preview({
             </div>
           </ThemeScope>
         </TabsPanel>
-        <TabsPanel value="code">{codeHtml}</TabsPanel>
+        <TabsPanel value="code" className="[--focus-offset:-2px]">
+          {codeHtml}
+        </TabsPanel>
       </Tabs>
     </section>
   );

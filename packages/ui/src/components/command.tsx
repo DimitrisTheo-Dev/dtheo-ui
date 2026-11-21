@@ -57,7 +57,7 @@ function search(groups: CommandGroup[], query: string, contains: Contains): Comm
 
 /**
  * A ⌘K palette: type to filter, arrows to move, Enter to run. It opens and closes instantly; something used
- * a hundred times a day should never make you wait for an animation.
+ * a hundred times a day should never make you wait for an animation. Other props go to Base UI's Dialog root.
  */
 export function CommandDialog({
   open,
@@ -66,7 +66,8 @@ export function CommandDialog({
   placeholder = 'Search commands and pages…',
   emptyMessage = 'No matching commands.',
   shortcut = true,
-}: {
+  ...props
+}: Omit<DialogPrimitive.Root.Props, 'open' | 'defaultOpen' | 'onOpenChange' | 'children'> & {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: CommandItemData[];
@@ -96,7 +97,7 @@ export function CommandDialog({
   }, [open, onOpenChange, shortcut]);
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root {...props} open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal container={container}>
         <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-overlay" />
         <DialogPrimitive.Viewport className="fixed inset-0 z-50 flex items-start justify-center px-3 pt-[12dvh] pb-3">

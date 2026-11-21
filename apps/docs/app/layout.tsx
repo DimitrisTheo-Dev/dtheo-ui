@@ -30,15 +30,22 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  // Browser chrome color, read from the tokens so it always matches --background in each mode.
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)', color: colors.graphite.dark.background },
-    { media: '(prefers-color-scheme: light)', color: colors.graphite.light.background },
-  ],
+  // No themeColor here: the browser chrome follows the theme the page renders, not the OS (see themeScript).
 };
 
-// Applies the saved theme before first paint, so there is no light flash in dark mode.
-const themeScript = `(()=>{try{var t=localStorage.getItem('dtheo-theme')||'dark';var p=localStorage.getItem('dtheo-preset');var d=document.documentElement;d.classList.toggle('dark',t==='dark');if(p&&p!=='graphite')d.dataset.preset=p}catch(e){document.documentElement.classList.add('dark')}})()`;
+// Browser chrome color per preset and mode, read from the tokens so it always matches --background.
+const chrome = Object.fromEntries(
+  Object.entries(colors).map(([preset, modes]) => [
+    preset,
+    Object.fromEntries(Object.entries(modes).map(([mode, c]) => [mode, c.background])),
+  ]),
+);
+
+// Applies the saved theme before first paint, so there is no light flash in dark mode, and writes the theme-color
+// meta for the theme the page renders: the site defaults to dark, so a light OS with no saved choice still gets a dark
+// bar. It watches <html>, so every later switch (the toggle, a preset) updates the bar too. The script owns the meta
+// (React does not render it): React would add a second one on hydration once the script had changed its content.
+const themeScript = `(()=>{var C=${JSON.stringify(chrome)},d=document.documentElement;try{var t=localStorage.getItem('dtheo-theme')||'dark';var p=localStorage.getItem('dtheo-preset');d.classList.toggle('dark',t==='dark');if(p&&p!=='graphite')d.dataset.preset=p}catch(e){d.classList.add('dark')}var sync=function(){var s=C[d.dataset.preset||'graphite']||C.graphite,c=s[d.classList.contains('dark')?'dark':'light']||s.dark,m=document.querySelector('meta[name="theme-color"]');if(!m){m=document.createElement('meta');m.name='theme-color';document.head.appendChild(m)}m.content=c};sync();new MutationObserver(sync).observe(d,{attributes:true,attributeFilter:['class','data-preset']})})()`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

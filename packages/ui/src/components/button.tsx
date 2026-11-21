@@ -11,8 +11,11 @@ export const buttonVariants = cva(
   [
     'relative inline-flex shrink-0 cursor-default items-center justify-center gap-1.5 whitespace-nowrap rounded-control',
     'text-body font-medium select-none',
-    'transition-[transform,background-color,box-shadow,color] duration-150 ease-out active:scale-97',
-    // Pressing scales the button down; this keeps a release at its original edge on the button, so it still clicks.
+    // Press scales in 120ms, hover colors in 150ms. Box shadow stays out of the list: the focus ring is a shadow and
+    // an outline, and it appears at once because it answers a key press.
+    'transition-[scale,background-color,color] [transition-duration:120ms,150ms,150ms] ease-out active:scale-97',
+    // The hit area. Pressing scales the button down; growing the hit area keeps a release at the original edge on the
+    // button, so it still clicks. On touch screens small icon buttons reach at least 36px (sizes below).
     'after:absolute after:inset-0 active:after:-inset-2',
     'disabled:pointer-events-none disabled:opacity-45 data-disabled:pointer-events-none data-disabled:opacity-45',
     '[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
@@ -28,14 +31,16 @@ export const buttonVariants = cva(
         link: 'h-auto px-0 text-link underline-offset-4 hover:underline active:scale-100',
       },
       size: {
-        xs: 'h-control-xs px-2 text-caption [&_svg:not([class*=size-])]:size-3.5',
+        // 22px tall: the hit area reaches 24 (WCAG 2.5.8) without changing the layout.
+        xs: 'h-control-xs px-2 text-caption after:-inset-y-px [&_svg:not([class*=size-])]:size-3.5',
         sm: 'h-control-sm px-2.5 text-label [&_svg:not([class*=size-])]:size-3.5',
         md: 'h-control-md px-3',
         lg: 'h-control-lg px-4 text-callout',
-        'icon-xs': 'size-control-xs [&_svg:not([class*=size-])]:size-3.5',
-        'icon-sm': 'size-control-sm [&_svg:not([class*=size-])]:size-3.5',
-        icon: 'size-control-md',
-        'icon-lg': 'size-control-lg',
+        'icon-xs':
+          'size-control-xs after:-inset-px pointer-coarse:after:-inset-[7px] [&_svg:not([class*=size-])]:size-3.5',
+        'icon-sm': 'size-control-sm pointer-coarse:after:-inset-1.5 [&_svg:not([class*=size-])]:size-3.5',
+        icon: 'size-control-md pointer-coarse:after:-inset-1',
+        'icon-lg': 'size-control-lg pointer-coarse:after:-inset-0.5',
       },
     },
     compoundVariants: [{ variant: 'link', className: 'h-auto px-0' }],

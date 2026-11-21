@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { sitemapPaths } from './helpers';
 
 const pages = [
   '/',
@@ -53,8 +54,7 @@ for (const theme of ['dark', 'light'] as const) {
 // outline that never skips a level (axe files these under best practices, which the WCAG run above leaves out).
 test('every page has a whole outline', async ({ page, request }) => {
   test.setTimeout(240_000);
-  const sitemap = await (await request.get('/sitemap.xml')).text();
-  const paths = [...sitemap.matchAll(/<loc>https?:\/\/[^/<]+(\/[^<]*)?<\/loc>/g)].map((m) => m[1] || '/');
+  const paths = await sitemapPaths(request);
   expect(paths.length).toBeGreaterThan(20);
   const problems: string[] = [];
   for (const path of paths) {

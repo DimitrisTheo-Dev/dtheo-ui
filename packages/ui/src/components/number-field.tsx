@@ -30,6 +30,7 @@ export function NumberField({
           <label htmlFor={id} className="cursor-ew-resize text-label text-foreground select-none">
             {label}
           </label>
+          {/* dtheo-check-ignore-next-line (black at low alpha is depth under the cursor, not a color role; there is no drop-shadow token) */}
           <NumberFieldPrimitive.ScrubAreaCursor className="drop-shadow-[0_1px_1px_oklch(0_0_0/0.4)]">
             <svg width="20" height="10" viewBox="0 0 20 10" fill="currentColor" aria-hidden="true">
               <path d="M0 5 6 0v10L0 5Zm20 0-6 5V0l6 5Z" />
@@ -38,10 +39,10 @@ export function NumberField({
         </NumberFieldPrimitive.ScrubArea>
       ) : null}
       <NumberFieldPrimitive.Group
+        data-slot="number-field-group"
         className={cn(
           'flex h-control-md w-full items-center rounded-control border border-input bg-card text-body',
-          'transition-[border-color,box-shadow] duration-150 ease-out',
-          'has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/25',
+          'has-[input:focus-visible]:border-ring has-[input:focus-visible]:inset-ring has-[input:focus-visible]:inset-ring-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/12',
           'data-invalid:border-destructive-foreground data-disabled:opacity-45',
         )}
       >
