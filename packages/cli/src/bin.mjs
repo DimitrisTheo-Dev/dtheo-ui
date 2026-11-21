@@ -9,7 +9,7 @@
  *   dtheo mcp                      print MCP client config for your editor or agent
  *
  * Options: --registry <url> (default https://ui.dtheo.dev or $DTHEO_REGISTRY), --cwd <dir>,
- *          --overwrite, --dry-run, --json, --help
+ *          --overwrite, --dry-run, --json, --help (-h), --version (-v)
  */
 import { existsSync, globSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
@@ -17,6 +17,7 @@ import { checkSource, ruleList } from './check.mjs';
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith('--') && !a.includes('=')));
+const shortFlags = new Set(args.filter((a) => /^-[a-z]$/i.test(a)));
 const opt = (name) => {
   const i = args.indexOf(`--${name}`);
   if (i >= 0 && args[i + 1] && !args[i + 1].startsWith('--')) return args[i + 1];
@@ -24,7 +25,7 @@ const opt = (name) => {
   return eq ? eq.split('=').slice(1).join('=') : undefined;
 };
 const positional = args.filter(
-  (a, i) => !a.startsWith('--') && !['--registry', '--cwd'].includes(args[i - 1]),
+  (a, i) => !a.startsWith('-') && !['--registry', '--cwd'].includes(args[i - 1]),
 );
 const [command, ...rest] = positional;
 const json = flags.has('--json');
@@ -43,6 +44,7 @@ const c =
     : { dim: (s) => s, bold: (s) => s, red: (s) => s, yellow: (s) => s, green: (s) => s };
 
 const out = (data, text) => (json ? console.log(JSON.stringify(data, null, 2)) : console.log(text));
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 // Never call process.exit() after writing: on a pipe it drops output that has not flushed (anything past 64 KB).
 // Set the exit code and unwind instead.
 class CliExit extends Error {}
@@ -121,6 +123,8 @@ async function copyItems(names) {
   const deps = new Set();
   // Type packages, such as @types/d3-scale: without them a TypeScript build fails on the chart imports.
   const devDeps = new Set();
+  // Items share files (field and select both ship input.tsx): write or report each target once.
+  const seen = new Set();
   for (const item of items) {
     for (const d of item.dependencies ?? []) deps.add(d);
     for (const d of item.devDependencies ?? []) devDeps.add(d);
@@ -128,6 +132,8 @@ async function copyItems(names) {
       if (typeof file.content !== 'string') fail(`Item "${item.name}" has a file without content.`);
       const target = targetFor(file);
       const rel = relative(cwd, target);
+      if (seen.has(target)) continue;
+      seen.add(target);
       if (existsSync(target) && !flags.has('--overwrite')) {
         skipped.push(rel);
         continue;
@@ -241,13 +247,44 @@ async function init() {
   out({ ...result, css }, lines.join('\n'));
 }
 
+/**
+ * Every word of the query must match an item's name, title, category (Charts, Inputs, Overlays…) or kind (ui,
+ * component, lib, file). Descriptions are searched only when nothing matches by name, so `list chart` lists the
+ * charts and not every item that mentions one.
+ */
+function matchItems(items, query) {
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return items;
+  const matches = (text) => words.every((w) => text.toLowerCase().includes(w));
+  const byName = items.filter((i) =>
+    matches(
+      `${i.name} ${i.title ?? ''} ${i.meta?.category ?? ''} ${String(i.type ?? '').replace(/^registry:/, '')}`,
+    ),
+  );
+  return byName.length
+    ? byName
+    : items.filter((i) => matches(`${i.name} ${i.title ?? ''} ${i.description ?? ''}`));
+}
+
 async function list(query) {
   const index = await fetchJson('r/registry.json');
-  const items = (index.items ?? []).filter(
-    (i) => !query || `${i.name} ${i.title} ${i.description}`.toLowerCase().includes(query.toLowerCase()),
-  );
+  const all = index.items ?? [];
+  const items = matchItems(all, query);
+  if (!items.length) {
+    // Like grep: nothing found is a failed lookup for a script, so exit 1. JSON stays an array.
+    process.exitCode = 1;
+    if (json) console.log('[]');
+    else console.error(`No items match "${query}". Run \`dtheo list\` to see all ${all.length}.`);
+    return;
+  }
   out(
-    items.map(({ name, title, description, type }) => ({ name, title, description, type })),
+    items.map(({ name, title, description, type, meta }) => ({
+      name,
+      title,
+      description,
+      type,
+      ...(meta?.category ? { category: meta.category } : {}),
+    })),
     items.map((i) => `${c.bold(i.name.padEnd(16))} ${c.dim(i.description ?? '')}`).join('\n'),
   );
 }
@@ -298,30 +335,56 @@ function check(paths) {
       );
     }
     console.log(
-      `\n${files.length} files checked: ${errors ? c.red(`${errors} errors`) : c.green('0 errors')}, ${warnings} warnings.`,
+      `\n${plural(files.length, 'file')} checked: ${errors ? c.red(plural(errors, 'error')) : c.green('0 errors')}, ${plural(warnings, 'warning')}.`,
     );
   }
   process.exitCode = errors ? 1 : 0;
 }
 
+const indentJson = (value) => JSON.stringify(value, null, 2).replace(/^/gm, '  ');
+
+const mcpTools = [
+  'list_components',
+  'get_component',
+  'get_component_source',
+  'search_docs',
+  'get_tokens',
+  'get_guidelines',
+  'check_ui_code',
+];
+
 function mcp() {
   const url = `${registry}/mcp`;
+  const claudeCode = `claude mcp add --transport http dtheo ${url}`;
+  // VS Code reads `servers`, with the transport type; Cursor, Windsurf and most other clients read `mcpServers`.
+  const vscode = { servers: { dtheo: { type: 'http', url } } };
+  const vscodeCommand = `code --add-mcp '${JSON.stringify({ name: 'dtheo', type: 'http', url })}'`;
+  const mcpServers = { mcpServers: { dtheo: { url } } };
   out(
     {
       url,
-      claudeCode: `claude mcp add --transport http dtheo ${url}`,
-      json: { mcpServers: { dtheo: { url } } },
+      claudeCode,
+      vscode: { file: '.vscode/mcp.json', command: vscodeCommand, json: vscode },
+      cursor: { file: '.cursor/mcp.json', json: mcpServers },
+      windsurf: { file: '~/.codeium/windsurf/mcp_config.json', json: mcpServers },
+      // The mcpServers shape most other clients read.
+      json: mcpServers,
+      tools: mcpTools,
     },
     [
       `${c.bold('dtheo/ui MCP server')} ${c.dim(url)}`,
       '',
       'Claude Code:',
-      `  claude mcp add --transport http dtheo ${url}`,
+      `  ${claudeCode}`,
       '',
-      'Cursor, VS Code, Windsurf (mcp.json):',
-      JSON.stringify({ mcpServers: { dtheo: { url } } }, null, 2).replace(/^/gm, '  '),
+      'VS Code (.vscode/mcp.json):',
+      indentJson(vscode),
+      `  or run: ${vscodeCommand}`,
       '',
-      `Tools: list_components, get_component, get_component_source, search_docs, get_tokens, get_guidelines, check_ui_code`,
+      'Cursor (.cursor/mcp.json), Windsurf (~/.codeium/windsurf/mcp_config.json) and most other clients:',
+      indentJson(mcpServers),
+      '',
+      `Tools: ${mcpTools.join(', ')}`,
     ].join('\n'),
   );
 }
@@ -333,13 +396,28 @@ const help = `${c.bold('dtheo')} ${c.dim('· add components and check UI code ag
   dtheo list [query]          list registry items
   dtheo check [paths...]      check UI code offline (${ruleList.length} rules); exits 1 on errors
   dtheo rules                 explain every check rule
-  dtheo mcp                   print MCP config for Claude Code, Cursor and others
+  dtheo mcp                   print MCP config for Claude Code, VS Code, Cursor and others
 
-Options: --registry <url>  --cwd <dir>  --overwrite  --dry-run  --json
+Options: --registry <url>  --cwd <dir>  --overwrite  --dry-run  --json  --help (-h)  --version (-v)
 Docs: ${registry}/docs/cli`;
 
+const version = () => JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
+
+const unknownShort = [...shortFlags].find((f) => f !== '-v' && f !== '-h');
+// --version and --help win over a command, so `dtheo add --help` prints help instead of adding nothing.
+const action =
+  flags.has('--version') || shortFlags.has('-v')
+    ? '--version'
+    : flags.has('--help') || shortFlags.has('-h')
+      ? 'help'
+      : command;
+
 try {
-  switch (command) {
+  if (unknownShort) fail(`Unknown option "${unknownShort}". Run \`dtheo help\`.`);
+  switch (action) {
+    case '--version':
+      out({ version: version() }, version());
+      break;
     case 'init':
       await init();
       break;
@@ -371,8 +449,7 @@ try {
       console.log(help);
       break;
     default:
-      if (flags.has('--help')) console.log(help);
-      else fail(`Unknown command "${command}". Run \`dtheo help\`.`);
+      fail(`Unknown command "${command}". Run \`dtheo help\`.`);
   }
 } catch (error) {
   if (!(error instanceof CliExit)) throw error;
