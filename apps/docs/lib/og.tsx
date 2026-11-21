@@ -298,6 +298,12 @@ export function HomeCard() {
   );
 }
 
+/**
+ * The images carry Inter's Latin subset, which has no ⌘. A missing glyph makes next/og fetch a font from the network
+ * at build time; that fails offline and leaves a blank in the card. Spell the key out instead.
+ */
+const ogText = (text: string) => text.replace(/⌘\s?/g, 'Cmd+');
+
 /** A docs page's card: where it sits, what it is, and the one line that installs it. */
 export function DocCard({
   eyebrow,
@@ -337,9 +343,11 @@ export function DocCard({
               color: c.foreground,
             }}
           >
-            {title}
+            {ogText(title)}
           </span>
-          <span style={{ fontSize: 30, lineHeight: 1.35, color: c['muted-foreground'] }}>{description}</span>
+          <span style={{ fontSize: 30, lineHeight: 1.35, color: c['muted-foreground'] }}>
+            {ogText(description)}
+          </span>
         </div>
         {command ? (
           <div style={{ display: 'flex' }}>

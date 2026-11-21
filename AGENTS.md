@@ -56,8 +56,9 @@ committed, the CI job records them and uploads them as the `visual-baselines-lin
 
 After an intended visual change, update both sets and commit them with the change: `pnpm test:visual
 --update-snapshots` on a Mac, then `pnpm test:visual:linux`, which records the Linux set in that same image (Docker
-needs about 6 GB free for the build), or take the Linux set from the CI artifact. When `@playwright/test` is
-upgraded, change the image tag in `ci.yml` to match; the script refuses to run until they agree.
+needs about 6 GB free for the build), or run the "Record visual baselines" workflow on the branch and take its
+artifact. When `@playwright/test` is upgraded, change the image tag in `ci.yml` and `visual-baselines.yml` to match;
+the script refuses to run until they agree.
 
 ## Tokens
 

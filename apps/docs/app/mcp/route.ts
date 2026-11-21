@@ -13,7 +13,7 @@ import { repoFile } from '@/lib/source';
 
 /**
  * dtheo/ui MCP server (Streamable HTTP). Read-only: it describes the design system and checks code; it never
- * writes, fetches other hosts or runs anything. Inputs are validated; requests are rate limited per client.
+ * writes, fetches other hosts or runs anything. Inputs are validated; each client gets a best-effort rate limit.
  */
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 const docsPage = (slug: string) =>
@@ -319,19 +319,26 @@ const handler = createMcpHandler(
   },
 );
 
-// Per-client rate limit (in memory, per instance): 120 requests per minute.
+// Best-effort per-client limit, 120 requests per minute. It lives in this instance's memory, so it slows a runaway
+// agent loop rather than stopping a determined client; abuse protection belongs to the platform's firewall.
 const hits = new Map<string, { n: number; reset: number }>();
+let swept = 0;
 async function limited(req: Request) {
   const id = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
   const now = Date.now();
+  // Forget windows that have ended, at most once a second, so many one-off clients can neither grow the map without
+  // bound nor reset everyone's count (clearing the whole map would).
+  if (hits.size > 5000 && now - swept > 1000) {
+    swept = now;
+    for (const [key, h] of hits) if (h.reset < now) hits.delete(key);
+  }
   const h = hits.get(id);
   if (!h || h.reset < now) hits.set(id, { n: 1, reset: now + 60_000 });
   else if (++h.n > 120)
     return new Response('Too many requests. Try again in a minute.', {
       status: 429,
-      headers: { 'retry-after': '60' },
+      headers: { 'retry-after': String(Math.ceil((h.reset - now) / 1000)) },
     });
-  if (hits.size > 5000) hits.clear();
   return handler(req);
 }
 

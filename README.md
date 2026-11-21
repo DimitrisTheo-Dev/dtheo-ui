@@ -50,8 +50,9 @@ Components are copied into your project, so you own the code. Every item also in
   with the arrow keys.
 - **Your agent already knows it.** An MCP server with 7 tools, `llms.txt` and a Markdown copy of every docs
   page. The page you read, the Markdown an agent reads and the MCP answer all come from one component contract.
-- **Mistakes caught before review.** `npx dtheo check` runs 21 rules for what agents get wrong (raw colors,
-  `transition-all`, icon buttons without a name, off-system radii…), each with the fix. It exits 1 in CI.
+- **Mistakes caught before review.** `npx dtheo check` runs 22 rules for what agents get wrong (raw colors,
+  status text on its own fill, `transition-all`, icon buttons without a name, off-system radii…), each with the fix.
+  It exits 1 in CI.
 - **Contrast is proven, not promised.** 40 text, UI and focus-ring color pairs are measured in every theme they
   appear in (Graphite light and dark, Flight deck, Deep space) on every token build: 159 checks, layered surfaces
   included. The build fails below WCAG AA.
@@ -87,9 +88,9 @@ Every change runs through:
 | --- | --- |
 | `pnpm tokens:check` | Token outputs are current and every contrast pair passes AA |
 | `pnpm lint` · `pnpm typecheck` | oxlint with React Compiler rules, strict TypeScript across the workspace |
-| `pnpm test` | Contracts, registry, usage graph, CLI and every design-check rule |
+| `pnpm test` | Components, charts, contracts, registry, usage graph, CLI and every design-check rule |
 | `pnpm design:check` | The repo passes its own design check, with every exception explained |
-| `pnpm test:e2e` | No errors or sideways scroll on any route, one heading outline per page, no serious axe violations on 16 routes in both themes, real interactions |
+| `pnpm test:e2e` | On the production build: no errors or sideways scroll on any route, one heading outline per page, no serious axe violations on 16 routes in both themes, real interactions |
 | `pnpm test:visual` | Pixel diffs of the screens that define the look: macOS baselines locally, Linux baselines in CI (until those are committed, CI records them instead of comparing) |
 
 ## Develop

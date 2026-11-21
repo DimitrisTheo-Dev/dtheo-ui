@@ -28,6 +28,15 @@ interface CommandGroup {
 type Contains = (text: string, query: string) => boolean;
 
 /**
+ * The K of ⌘K. A Latin layout reports the letter it types, so Dvorak and AZERTY users press their own K. A Greek,
+ * Cyrillic or Hebrew layout reports its own letter (κ, л, ל), so fall back to the physical key there.
+ */
+export function isKKey(event: Pick<KeyboardEvent, 'key' | 'code'>) {
+  if (/^[a-z]$/i.test(event.key)) return event.key.toLowerCase() === 'k';
+  return event.code === 'KeyK';
+}
+
+/**
  * Every word of the query must appear in the item's label, hint or keywords. Items whose label is the query come
  * first, then those whose label has every word, and their groups move up with them, so typing a name and pressing
  * Enter opens that item even when other items mention the word.
@@ -87,7 +96,7 @@ export function CommandDialog({
   React.useEffect(() => {
     if (!shortcut) return;
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      if ((e.metaKey || e.ctrlKey) && isKKey(e)) {
         e.preventDefault();
         onOpenChange(!open);
       }

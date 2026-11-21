@@ -2,29 +2,45 @@
 /* oxlint-disable jsx-a11y/no-noninteractive-tabindex, jsx-a11y/no-noninteractive-element-interactions -- the chart is a focusable reading region: arrow keys move between bins and the bin is announced through aria-live. */
 
 import * as React from 'react';
-import { mean as meanOf, thresholdFreedmanDiaconis, tickStep } from 'd3-array';
+import { thresholdFreedmanDiaconis, tickStep } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 import {
   CAPABLE,
   CAPTION_CHAR_W,
+  ChartEmpty,
   axisGutter,
   capability,
   crisp,
+  finiteExtent,
   formatNumber,
   haloText,
   stepIndex,
   tickFormat,
   toneFill,
+  useClipId,
   useWidth,
 } from './core';
 
 export interface HistogramProps {
-  /** Raw measurements, one per run or part, in run order (Cpk's short-term σ reads consecutive runs). */
+  /**
+   * Raw measurements, one per run or part, in run order: Cpk estimates the short-term spread from neighboring values
+   * (or from consecutive subgroups, see `subgroupSize`). A non-finite value (NaN for a missing reading) is left out of
+   * the bins and every statistic.
+   */
   values: number[];
   /** The x range. Defaults to the data's range, widened to whole bins. */
   domain?: [number, number];
-  /** Bin width in the values' unit. Defaults to a round width near the Freedman–Diaconis rule. */
+  /**
+   * Bin width in the values' unit. Defaults to a round width (1, 2 or 5 × 10ⁿ) near the Freedman–Diaconis rule. At
+   * most 200 bins are drawn: a narrower width is widened to a whole multiple of itself that fits.
+   */
   binWidth?: number;
+  /**
+   * How many consecutive values form one rational subgroup, for Cpk. Leave it out (or 1) for individual readings: σ
+   * within is then the average moving range over d₂ (MR̄ / 1.128). Above 1, σ within is the pooled standard deviation
+   * of consecutive groups of this many values. Ppk always uses the overall σ.
+   */
+  subgroupSize?: number;
   /** Specification limits. Values past them count as out of spec, and Cpk and Ppk are computed from them. */
   lower?: number;
   upper?: number;
@@ -45,6 +61,8 @@ export interface HistogramProps {
 const M = { top: 18, right: 16, bottom: 40 };
 /** Spacing of the limit-label rows, so labels that would touch stack instead of overlapping. */
 const LABEL_ROW = 12;
+/** At most this many bins, whatever the width asked for: past it, bars are thinner than a pixel. */
+const MAX_BINS = 200;
 
 /** Cpk carries a word next to its number: capable at 1.33 and up, marginal from 1, not capable below. */
 function cpkStatus(cpk: number) {
@@ -61,34 +79,53 @@ interface HistogramBin {
   out: number;
 }
 
+/** The bin width: `binWidth`, or a round step near the Freedman–Diaconis width (5–60 bins). */
+function binStep(finite: number[], [d0, d1]: [number, number], binWidth?: number) {
+  let step = binWidth !== undefined && binWidth > 0 && Number.isFinite(binWidth) ? binWidth : 0;
+  if (!step && d1 > d0) {
+    const count = Math.min(60, Math.max(5, thresholdFreedmanDiaconis(finite, d0, d1) || 10));
+    step = tickStep(d0, d1, count);
+  }
+  // One value, or every value the same: a round width a tenth of its magnitude, one bin around it.
+  if (!(step > 0) || !Number.isFinite(step)) step = d0 ? 10 ** Math.floor(Math.log10(Math.abs(d0))) / 10 : 1;
+  return step;
+}
+
 /**
- * Bins on round edges: `binWidth`, or a round step near the Freedman–Diaconis width (5–60 bins), over the domain
- * widened to whole bins. A value exactly on the upper limit is in spec, so it counts in the bin that ends there:
- * when a limit falls on an edge every bin is wholly in or out of spec, and the critical bars hold exactly the values
- * past the limit. A bin a limit cuts through keeps both counts.
+ * Whole-width bins on round edges (multiples of the width) over the domain widened to whole bins, so no bin at
+ * either end is cut short; never more than MAX_BINS. Each bin holds [x0, x1), the last one its end too. A value
+ * past a limit counts as out of spec and one exactly on it does not, so the critical part of each bar holds exactly
+ * the values past the limits; a bin a limit cuts through keeps both counts.
  */
 function computeBins(
-  values: number[],
+  finite: number[],
   [d0, d1]: [number, number],
   { binWidth, lower, upper }: { binWidth?: number; lower?: number; upper?: number },
 ) {
-  const count = Math.min(60, Math.max(5, thresholdFreedmanDiaconis(values, d0, d1) || 10));
-  const step = binWidth ?? (tickStep(d0, d1, count) || 1);
-  const start = Math.floor(d0 / step + 1e-9) * step;
-  const end = Math.max(start + step, Math.ceil(d1 / step - 1e-9) * step);
-  const n = Math.round((end - start) / step);
-  const edge = (i: number) => Number((start + i * step).toFixed(10));
+  let step = binStep(finite, [d0, d1], binWidth);
+  const span = (s: number) => {
+    const k0 = Math.floor(d0 / s + 1e-9);
+    return { k0, k1: Math.max(k0 + 1, Math.ceil(d1 / s - 1e-9)) };
+  };
+  let { k0, k1 } = span(step);
+  if (k1 - k0 > MAX_BINS) {
+    step *= Math.ceil((k1 - k0) / MAX_BINS);
+    ({ k0, k1 } = span(step));
+  }
+  const n = k1 - k0;
+  // Round each edge, so 0.1 × 3 is an edge at 0.3, not 0.30000000000000004.
+  const edge = (k: number) => Number((k * step).toPrecision(15));
   const bins: HistogramBin[] = Array.from({ length: n }, (_, i) => ({
-    x0: edge(i),
-    x1: edge(i + 1),
+    x0: edge(k0 + i),
+    x1: edge(k0 + i + 1),
     count: 0,
     out: 0,
   }));
-  for (const v of values) {
-    if (!Number.isFinite(v) || v < start || v > end) continue;
-    let i = Math.min(n - 1, Math.floor((v - start) / step + 1e-9));
-    if (upper !== undefined && i > 0 && near(v, upper) && near(bins[i]!.x0, upper)) i--;
-    const bin = bins[i]!;
+  const start = bins[0]!.x0;
+  const end = bins[n - 1]!.x1;
+  for (const v of finite) {
+    if (v < start || v > end) continue;
+    const bin = bins[Math.min(n - 1, Math.floor((v - start) / step + 1e-9))]!;
     bin.count++;
     if ((upper !== undefined && v > upper) || (lower !== undefined && v < lower)) bin.out++;
   }
@@ -97,7 +134,8 @@ function computeBins(
 
 type Scale = (v: number) => number;
 
-const near = (a: number, b: number) => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b));
+const validDomain = (r?: [number, number]): r is [number, number] =>
+  r !== undefined && Number.isFinite(r[0]) && Number.isFinite(r[1]) && r[1] >= r[0];
 
 /** The normal curve with the sample's mean and deviation, scaled to counts per bin. Eighty points is smooth. */
 function normalCurvePath(
@@ -359,6 +397,7 @@ export function Histogram({
   target,
   marker,
   normal = false,
+  subgroupSize,
   xLabel,
   unit = '',
   digits = 1,
@@ -370,20 +409,27 @@ export function Histogram({
   const [active, setActive] = React.useState<number | null>(null);
   const [announce, setAnnounce] = React.useState('');
   const descId = React.useId();
+  const clipId = useClipId();
   const w = width ?? 0;
 
-  const [r0, r1] = domain ?? [Math.min(...values), Math.max(...values)];
+  // Everything that walks the data is memoized on it, so hovering a bin never reads the values again.
+  const finite = React.useMemo(() => values.filter((v) => Number.isFinite(v)), [values]);
+  const extent = React.useMemo(() => finiteExtent(finite), [finite]);
+  const hasData = finite.length > 0;
+  const [r0, r1] = validDomain(domain) ? domain : (extent ?? [0, 1]);
   const { bins, step, domain: [d0, d1] } = React.useMemo(
-    () => computeBins(values, [r0, r1], { binWidth, lower, upper }),
-    [values, r0, r1, binWidth, lower, upper],
+    () => computeBins(finite, [r0, r1], { binWidth, lower, upper }),
+    [finite, r0, r1, binWidth, lower, upper],
   );
   const stats = React.useMemo<Stats>(() => {
-    const c = capability(values, lower, upper);
-    return { n: c.n, mu: meanOf(values) ?? 0, sigma: c.sigmaOverall, cpk: c.cpk, ppk: c.ppk };
-  }, [values, lower, upper]);
+    const c = capability(values, lower, upper, subgroupSize);
+    return { n: c.n, mu: c.mean, sigma: c.n > 1 ? c.sigmaOverall : Number.NaN, cpk: c.cpk, ppk: c.ppk };
+  }, [values, lower, upper, subgroupSize]);
 
+  let tallest = 1;
+  for (const b of bins) tallest = Math.max(tallest, b.count);
   const yMax = scaleLinear()
-    .domain([0, Math.max(1, ...bins.map((b) => b.count)) * 1.12])
+    .domain([0, tallest * 1.12])
     .nice()
     .domain()[1]!;
   const yt = scaleLinear().domain([0, yMax]).ticks(4);
@@ -400,7 +446,8 @@ export function Histogram({
     plotB,
   };
 
-  const fmt = (v: number) => `${formatNumber(v, digits)}${unit ? ` ${unit}` : ''}`;
+  const fmt = (v: number) =>
+    Number.isFinite(v) ? `${formatNumber(v, digits)}${unit ? ` ${unit}` : ''}` : '–';
   const describe = (i: number) => {
     const b = bins[i]!;
     const spec = !b.out ? '' : b.out === b.count ? ', out of spec' : `, ${b.out} out of spec`;
@@ -408,14 +455,17 @@ export function Histogram({
   };
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    const next = stepIndex(e.key, e.shiftKey, active, bins.length);
+    const next = stepIndex(e.key, e.shiftKey, active, hasData ? bins.length : 0);
     if (next === undefined) return;
     e.preventDefault();
     setActive(next);
     if (next !== null) setAnnounce(describe(next));
   };
 
-  const curve = normal && stats.sigma && plotW ? normalCurvePath(stats, step, [d0, d1], f.sx, f.sy) : '';
+  const curve =
+    normal && stats.sigma && Number.isFinite(stats.sigma) && plotW
+      ? normalCurvePath(stats, step, [d0, d1], f.sx, f.sy)
+      : '';
   const lines = labelRows(
     [
       ...[
@@ -459,6 +509,11 @@ export function Histogram({
       <div className="relative" style={{ height }}>
         {w ? (
           <svg width={w} height={height} aria-hidden="true" className="block overflow-visible">
+            <defs>
+              <clipPath id={clipId}>
+                <rect x={left - 2} y={M.top - 2} width={plotW + 4} height={plotB - M.top + 4} />
+              </clipPath>
+            </defs>
             <Axes
               f={f}
               xTicks={scaleLinear()
@@ -475,6 +530,7 @@ export function Histogram({
                 fill="none"
                 strokeWidth={1.5}
                 strokeDasharray="4 3"
+                clipPath={`url(#${clipId})`}
                 className="stroke-foreground/55"
               />
             ) : null}
@@ -493,6 +549,7 @@ export function Histogram({
             ) : null}
           </svg>
         ) : null}
+        {hasData ? null : <ChartEmpty />}
       </div>
     </div>
   );

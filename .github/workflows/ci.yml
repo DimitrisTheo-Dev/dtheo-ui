@@ -39,7 +39,11 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      # Test what ships: a production build behind `next start`, with the production headers (CSP) dev leaves out.
+      - run: pnpm build
       - run: pnpm test:e2e
+        env:
+          E2E_SERVER: production
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

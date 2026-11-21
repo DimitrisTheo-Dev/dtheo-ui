@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
-import { toneFill, toneStroke, useWidth, type Tone } from './core';
+import { createLinePath, finiteExtent, imageLabel, toneFill, toneStroke, useWidth, type Tone } from './core';
 
 /** Index ranges of finite values. A NaN (a dropout) ends a range, and the line breaks there. */
 function finiteRuns(values: number[]) {
@@ -43,8 +43,7 @@ export function Sparkline({
   const [ref, width] = useWidth<HTMLDivElement>();
   const w = width ?? 0;
   const pad = 3;
-  const finite = values.filter((v) => Number.isFinite(v));
-  const [min, max] = domain ?? (finite.length ? [Math.min(...finite), Math.max(...finite)] : [0, 1]);
+  const [min, max] = domain ?? finiteExtent(values) ?? [0, 1];
   const sx = scaleLinear()
     .domain([0, values.length - 1])
     .range([pad, Math.max(pad, w - pad)]);
@@ -57,7 +56,13 @@ export function Sparkline({
     for (let i = a; i <= b; i++) d += `${i > a ? 'L' : 'M'}${sx(i).toFixed(1)} ${sy(values[i]!).toFixed(1)}`;
     return d;
   };
-  const line = runs.map(segment).join('');
+  // The line draws a value alone between two gaps as a dot (a zero-length segment with round caps).
+  const path = createLinePath(1);
+  for (const [a, b] of runs) {
+    for (let i = a; i <= b; i++) path.to(sx(i), sy(values[i]!));
+    path.gap();
+  }
+  const line = path.done();
   // Each run closes its own area down to the baseline, so a gap stays empty.
   const fill = runs.map((r) => `${segment(r)}L${sx(r[1])} ${height}L${sx(r[0])} ${height}Z`).join('');
   const last = runs.at(-1)?.[1];
@@ -65,7 +70,7 @@ export function Sparkline({
     <div
       ref={ref}
       role="img"
-      aria-label={ariaLabel}
+      aria-label={imageLabel(ariaLabel, last === undefined)}
       className={`w-full ${className ?? ''}`}
       style={{ height }}
     >

@@ -2,7 +2,19 @@
 
 import * as React from 'react';
 import { scaleBand, scaleLinear } from 'd3-scale';
-import { axisGutter, crisp, formatNumber, haloText, tickFormat, toneFill, useWidth, type Tone } from './core';
+import {
+  ChartEmpty,
+  axisGutter,
+  crisp,
+  finiteExtent,
+  formatNumber,
+  haloText,
+  imageLabel,
+  tickFormat,
+  toneFill,
+  useWidth,
+  type Tone,
+} from './core';
 
 export interface Bar {
   id: string;
@@ -58,10 +70,16 @@ export function BarChart({
   const [hover, setHover] = React.useState<string | null>(null);
   const w = width ?? 0;
   const top = TOP + (unit ? UNIT_ROW : 0);
-  const low = Math.min(0, ...bars.map((b) => b.value));
-  const max = yDomain?.[1] ?? Math.max(limit ?? 0, ...bars.map((b) => b.value)) * 1.15;
+  // Without spreading the values into Math.min/max, and leaving out a missing (NaN) value.
+  const extent = React.useMemo(() => finiteExtent(bars.map((b) => b.value)), [bars]);
+  const hasData = extent !== undefined;
+  const low = Math.min(limit ?? 0, extent?.[0] ?? 0);
+  const lo = yDomain?.[0] ?? (low < 0 ? low * 1.15 : 0);
+  let hi = yDomain?.[1] ?? Math.max(limit ?? 0, extent?.[1] ?? 0) * 1.15;
+  // Nothing above zero (no data, or every bar at zero): a unit range, so the axis sits at the bottom, not mid-air.
+  if (!(hi > lo)) hi = lo + 1;
   const sy = scaleLinear()
-    .domain([yDomain?.[0] ?? (low < 0 ? low * 1.15 : 0), max])
+    .domain([lo, hi])
     .nice()
     .range([height - 28, top]);
   const ticks = sy.ticks(4);
@@ -82,7 +100,7 @@ export function BarChart({
     <div
       ref={ref}
       role="img"
-      aria-label={ariaLabel}
+      aria-label={imageLabel(ariaLabel, !hasData)}
       className={`relative w-full ${className ?? ''}`}
       style={{ height }}
     >
@@ -122,7 +140,8 @@ export function BarChart({
           <line x1={left} x2={w - 8} y1={crisp(zero)} y2={crisp(zero)} className="stroke-chart-axis" />
           {bars.map((b) => {
             const x = (sx(b.id) ?? 0) + (sx.bandwidth() - bw) / 2;
-            const y = sy(b.value);
+            const finite = Number.isFinite(b.value);
+            const y = finite ? sy(b.value) : zero;
             const over = limit !== undefined && b.value > limit;
             const tone: Tone = b.tone ?? (over ? 'critical' : b.current ? 'primary' : 'muted');
             const h = Math.abs(zero - y);
@@ -151,7 +170,7 @@ export function BarChart({
                 >
                   {b.label}
                 </text>
-                {hover === b.id || over || b.current ? (
+                {finite && (hover === b.id || over || b.current) ? (
                   <text
                     x={x + bw / 2}
                     y={b.value < 0 ? y + 14 : y - 6}
@@ -188,6 +207,7 @@ export function BarChart({
           ) : null}
         </svg>
       ) : null}
+      {hasData ? null : <ChartEmpty />}
     </div>
   );
 }

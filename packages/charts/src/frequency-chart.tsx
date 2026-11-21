@@ -5,16 +5,20 @@ import * as React from 'react';
 import { scaleLinear, scaleLog, type ScaleLinear, type ScaleLogarithmic } from 'd3-scale';
 import {
   CAPTION_CHAR_W,
+  ChartEmpty,
   axisGutter,
+  createLinePath,
   crisp,
   formatNumber,
   haloText,
+  hasFinite,
   nearestIndex,
   stepIndex,
+  tickFormat,
   toneBg,
   toneFill,
   toneStroke,
-  tickFormat,
+  useClipId,
   useTooltipPlacement,
   useWidth,
   type Tone,
@@ -46,7 +50,10 @@ export interface FrequencySpan {
 }
 
 export interface FrequencyChartProps {
-  /** Frequencies in Hz, ascending and above zero. Plotted on a log axis. */
+  /**
+   * Frequencies in Hz, ascending. Plotted on a log axis, so samples at or below zero (an FFT's 0 Hz bin) are left
+   * out of the plot and the readout.
+   */
   frequency: ArrayLike<number>;
   magnitude: FrequencySeries[];
   magnitudeDomain: [number, number];
@@ -75,17 +82,33 @@ const none: never[] = [];
 type XScale = ScaleLogarithmic<number, number>;
 type YScale = ScaleLinear<number, number>;
 
-/** 1, 10, 100, 1k, 10k: decades are labeled, the steps between them are faint grid lines. */
-const formatHz = (f: number) =>
-  f >= 1000 ? `${formatNumber(f / 1000, f % 1000 ? 1 : 0)}k` : formatNumber(f, f < 10 && f % 1 ? 1 : 0);
+/**
+ * 0.01, 0.1, 1, 10, 100, 1k, 1M: decades are labeled, the steps between them are faint grid lines. Below 1 Hz a
+ * value keeps two significant digits (0.25, 0.01); from 1 kHz it is in k, from 1 MHz in M.
+ */
+function formatHz(f: number) {
+  const a = Math.abs(f);
+  if (a >= 999_950) return `${formatNumber(f / 1e6, f % 1e6 ? 1 : 0)}M`;
+  if (a >= 1000) return `${formatNumber(f / 1000, f % 1000 ? 1 : 0)}k`;
+  if (a >= 1 || !Number.isFinite(a) || a === 0) return formatNumber(f, a < 10 && f % 1 ? 1 : 0);
+  return formatNumber(f, 1 - Math.floor(Math.log10(a)))
+    .replace(/(\.\d*?)0+$/, '$1')
+    .replace(/\.$/, '');
+}
 
-/** A frequency with its unit, in kHz from 1,000 Hz: "7.4 Hz", "182 Hz", "1 kHz", never "1k Hz". */
-const withHz = (f: number) =>
-  f >= 1000 ? `${formatNumber(f / 1000, f % 1000 ? 1 : 0)} kHz` : `${formatNumber(f, f < 10 && f % 1 ? 1 : 0)} Hz`;
+/** A frequency with its unit, in kHz from 1,000 Hz and MHz from 1 MHz: "7.4 Hz", "0.25 Hz", "1 kHz", never "1k Hz". */
+function withHz(f: number) {
+  const label = formatHz(f);
+  if (label.endsWith('M')) return `${label.slice(0, -1)} MHz`;
+  if (label.endsWith('k')) return `${label.slice(0, -1)} kHz`;
+  return `${label} Hz`;
+}
 
+/** Decade and minor grid lines between two positive frequencies; none for a range a log axis cannot show. */
 function logGrid(min: number, max: number) {
   const decades: number[] = [];
   const minors: number[] = [];
+  if (!(min > 0) || !(max >= min) || !Number.isFinite(max)) return { decades, minors };
   for (let e = Math.floor(Math.log10(min)); e <= Math.ceil(Math.log10(max)); e++) {
     const d = 10 ** e;
     if (d >= min && d <= max) decades.push(d);
@@ -94,20 +117,34 @@ function logGrid(min: number, max: number) {
   return { decades, minors };
 }
 
+/** A frequency a log axis can place. */
+const plottable = (f: number) => f > 0 && Number.isFinite(f);
+
+/** First and last index of a frequency the log axis can show; [-1, -1] when there is none. */
+function validRange(freq: ArrayLike<number>): [number, number] {
+  let first = -1;
+  let last = -1;
+  for (let i = 0; i < freq.length; i++) {
+    if (!plottable(freq[i]!)) continue;
+    if (first < 0) first = i;
+    last = i;
+  }
+  return [first, last];
+}
+
 function linePath(freq: ArrayLike<number>, values: ArrayLike<number>, sx: XScale, sy: YScale) {
-  let d = '';
-  let pen = false;
+  const path = createLinePath(1);
   for (let i = 0; i < freq.length; i++) {
     const v = values[i]!;
-    if (!Number.isFinite(v)) {
-      pen = false;
-      continue;
-    }
-    d += `${pen ? 'L' : 'M'}${sx(freq[i]!).toFixed(1)} ${sy(v).toFixed(1)}`;
-    pen = true;
+    const f = freq[i]!;
+    if (Number.isFinite(v) && plottable(f)) path.to(sx(f), sy(v));
+    else path.gap();
   }
-  return d;
+  return path.done();
 }
+
+/** Space a clipped trace keeps around its pane, so a 2 px stroke on the edge is never cut. */
+const CLIP_PAD = 2;
 
 interface PaneProps {
   kind: 'magnitude' | 'phase';
@@ -149,14 +186,34 @@ function Pane({
   cursor,
 }: PaneProps) {
   const plotBottom = height - M.bottom - (xAxis ? M.axis : 0);
-  const sy = scaleLinear().domain(domain).range([plotBottom, M.top]);
+  const [d0, d1] = domain;
+  const sy = React.useMemo(
+    () => scaleLinear().domain([d0, d1]).range([plotBottom, M.top]),
+    [d0, d1, plotBottom],
+  );
   const yTicks = ticks ?? sy.ticks(4);
   const fy = tickFormat(yTicks);
   const [f0, f1] = sx.domain() as [number, number];
-  const { decades, minors } = logGrid(f0, f1);
+  const { decades, minors } = React.useMemo(() => logGrid(f0, f1), [f0, f1]);
   const right = width - M.right;
+  // Paths depend on the data and the scales, not on the cursor, so moving the pointer never rebuilds them.
+  const paths = React.useMemo(
+    () => series.map((s) => ({ s, d: linePath(freq, s.values, sx, sy) })),
+    [series, freq, sx, sy],
+  );
+  const clipId = useClipId();
   return (
     <svg width={width} height={height} aria-hidden="true" className="block overflow-visible">
+      <defs>
+        <clipPath id={clipId}>
+          <rect
+            x={left - CLIP_PAD}
+            y={M.top - CLIP_PAD}
+            width={Math.max(0, right - left) + 2 * CLIP_PAD}
+            height={plotBottom - M.top + 2 * CLIP_PAD}
+          />
+        </clipPath>
+      </defs>
       <text x={left} y={12} className="fill-muted-foreground text-caption">
         {title}
       </text>
@@ -204,40 +261,44 @@ function Pane({
           className="stroke-subtle-foreground/80"
         />
       ))}
-      {markers.map((m) => (
-        <g key={m.label}>
-          <line
-            x1={crisp(sx(m.frequency))}
-            x2={crisp(sx(m.frequency))}
-            y1={M.top}
-            y2={plotBottom}
-            strokeDasharray="2 3"
-            className="stroke-muted-foreground/60"
+      {markers
+        .filter((m) => plottable(m.frequency))
+        .map((m) => (
+          <g key={m.label}>
+            <line
+              x1={crisp(sx(m.frequency))}
+              x2={crisp(sx(m.frequency))}
+              y1={M.top}
+              y2={plotBottom}
+              strokeDasharray="2 3"
+              className="stroke-muted-foreground/60"
+            />
+            {kind === 'magnitude' ? (
+              <text
+                x={sx(m.frequency) + 5}
+                y={M.top + 10}
+                className={`fill-muted-foreground text-caption ${haloText}`}
+              >
+                {m.label}
+              </text>
+            ) : null}
+          </g>
+        ))}
+      <g clipPath={`url(#${clipId})`}>
+        {paths.map(({ s, d }) => (
+          <path
+            key={s.id}
+            d={d}
+            fill="none"
+            strokeWidth={s.width ?? 2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            className={toneStroke[s.tone ?? 'primary']}
           />
-          {kind === 'magnitude' ? (
-            <text
-              x={sx(m.frequency) + 5}
-              y={M.top + 10}
-              className={`fill-muted-foreground text-caption ${haloText}`}
-            >
-              {m.label}
-            </text>
-          ) : null}
-        </g>
-      ))}
-      {series.map((s) => (
-        <path
-          key={s.id}
-          d={linePath(freq, s.values, sx, sy)}
-          fill="none"
-          strokeWidth={s.width ?? 2}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          className={toneStroke[s.tone ?? 'primary']}
-        />
-      ))}
+        ))}
+      </g>
       {spans
-        .filter((sp) => sp.pane === kind)
+        .filter((sp) => sp.pane === kind && plottable(sp.frequency))
         .map((sp) => {
           const x = sx(sp.frequency);
           const y0 = sy(sp.from);
@@ -272,25 +333,27 @@ function Pane({
           );
         })}
       {kind === 'magnitude'
-        ? peaks.map((p) => (
-            <g key={p.label}>
-              <circle
-                cx={sx(p.frequency)}
-                cy={sy(p.value)}
-                r={3.5}
-                strokeWidth={2}
-                className="fill-foreground stroke-card"
-              />
-              <text
-                x={sx(p.frequency)}
-                y={sy(p.value) - 9}
-                textAnchor="middle"
-                className={`fill-foreground text-caption font-semibold tabular-nums ${haloText}`}
-              >
-                {p.label}
-              </text>
-            </g>
-          ))
+        ? peaks
+            .filter((p) => plottable(p.frequency) && Number.isFinite(p.value))
+            .map((p) => (
+              <g key={p.label}>
+                <circle
+                  cx={sx(p.frequency)}
+                  cy={sy(p.value)}
+                  r={3.5}
+                  strokeWidth={2}
+                  className="fill-foreground stroke-card"
+                />
+                <text
+                  x={sx(p.frequency)}
+                  y={sy(p.value) - 9}
+                  textAnchor="middle"
+                  className={`fill-foreground text-caption font-semibold tabular-nums ${haloText}`}
+                >
+                  {p.label}
+                </text>
+              </g>
+            ))
         : null}
       {cursor != null ? (
         <g>
@@ -422,8 +485,10 @@ export function FrequencyChart({
     ...(phase ? (phaseTicks ?? scaleLinear().domain(phaseDomain).ticks(4)) : []),
   ];
   const left = axisGutter(allTicks.map(tickFormat(allTicks)));
-  const f0 = frequency[0] ?? 1;
-  const f1 = frequency[frequency.length - 1] ?? 10;
+  // A log axis starts above zero: an FFT's 0 Hz bin, or any frequency at or below zero, is left out.
+  const [first, last] = React.useMemo(() => validRange(frequency), [frequency]);
+  const f0 = first < 0 ? 1 : frequency[first]!;
+  const f1 = first < 0 ? 10 : frequency[last]!;
   const sx = React.useMemo(
     () =>
       scaleLog()
@@ -433,13 +498,27 @@ export function FrequencyChart({
   );
   const hasPhase = Boolean(phase?.length);
   const total = paneHeight + (hasPhase ? paneHeight : 0) + M.axis;
+  const hasData = React.useMemo(
+    () => first >= 0 && [...magnitude, ...(phase ?? [])].some((s) => hasFinite(s.values, first, last)),
+    [first, last, magnitude, phase],
+  );
+  const count = hasData ? last - first + 1 : 0;
 
   const readout = (i: number) => readoutRows(i, magnitude, phase, magnitudeUnit);
 
+  /** The sample nearest the pointer, for a mouse moving over the chart or a finger tapping it. */
+  const readAt = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!w || !hasData) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const f = sx.invert(Math.min(w - M.right, Math.max(left, e.clientX - rect.left)));
+    setCursor(Math.min(last, Math.max(first, nearestIndex(frequency, f))));
+  };
+
   const onKeyDown = (e: React.KeyboardEvent) => {
-    const next = stepIndex(e.key, e.shiftKey, cursor, frequency.length);
-    if (next === undefined) return;
+    const step = stepIndex(e.key, e.shiftKey, cursor == null ? null : cursor - first, count);
+    if (step === undefined) return;
     e.preventDefault();
+    const next = step === null ? null : first + step;
     setCursor(next);
     if (next === null) return;
     setAnnounce(
@@ -462,17 +541,8 @@ export function FrequencyChart({
       tabIndex={0}
       className={`relative w-full touch-pan-y rounded-control select-none ${className ?? ''}`}
       style={{ height: total }}
-      onPointerDown={(e) => {
-        if (!w) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        setCursor(nearestIndex(frequency, sx.invert(Math.min(w - M.right, Math.max(left, e.clientX - rect.left)))));
-      }}
-      onPointerMove={(e) => {
-        if (!w) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const f = sx.invert(Math.min(w - M.right, Math.max(left, e.clientX - rect.left)));
-        setCursor(nearestIndex(frequency, f));
-      }}
+      onPointerDown={(e) => readAt(e)}
+      onPointerMove={(e) => readAt(e)}
       onPointerLeave={(e) => {
         // A tap ends with the finger leaving: keep its reading until the next tap or until focus moves on.
         if (e.pointerType !== 'touch') setCursor(null);
@@ -519,6 +589,7 @@ export function FrequencyChart({
       {cursor != null && w ? (
         <FrequencyReadout title={withHz(frequency[cursor]!)} rows={readout(cursor)} x={cx} width={w} />
       ) : null}
+      {hasData ? null : <ChartEmpty />}
     </div>
   );
 }

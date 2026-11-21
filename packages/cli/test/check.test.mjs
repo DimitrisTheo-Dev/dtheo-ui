@@ -11,6 +11,7 @@ import { checkSource, ruleList } from '../src/check.mjs';
 const bin = fileURLToPath(new URL('../src/bin.mjs', import.meta.url));
 const count = (src, rule, file = 'x.tsx') => checkSource(src, { file }).filter((f) => f.rule === rule).length;
 const runCli = promisify(execFile);
+const clash = (cls) => count(`<span className="${cls}" />`, 'status-text-on-fill');
 
 /** A registry on localhost, so `init` and `add` run without the network. */
 const registryFile = (target) => ({ path: `registry/dtheo/${target}`, target, content: '' });
@@ -118,6 +119,10 @@ const cases = {
     '<a className="text-link" href="/runs"><SparklesIcon className="text-primary" aria-hidden="true" /> Runs</a>',
   ],
   'text-size-token': ['<p className="text-sm" />', '<p className="text-body" />'],
+  'status-text-on-fill': [
+    '<span className="bg-destructive text-destructive-foreground" />',
+    '<span className="bg-destructive/15 text-destructive-foreground" />',
+  ],
   'radius-token': ['<div className="rounded-lg" />', '<div className="rounded-card rounded-full" />'],
   'arbitrary-radius': [
     '<div className="rounded-[5px]" />',
@@ -324,6 +329,96 @@ describe('design check rules', () => {
     expect(count(classes[5][0], 'radius-token', 'page.mdx')).toBe(1);
   });
 
+  // Real code puts handlers before labels, spreads props and imports icons without an Icon suffix. Each of these
+  // once ended a tag at the ">" of "=>", or missed a name the button really has.
+  describe('reads whole JSX tags', () => {
+    it('finds the label after an arrow-function prop', () => {
+      const src =
+        '<Button size="icon" onClick={() => remove(run)} aria-label="Delete run"><TrashIcon /></Button>';
+      expect(count(src, 'icon-button-label')).toBe(0);
+      expect(
+        count('<Button size="icon" onClick={() => remove(run)}><TrashIcon /></Button>', 'icon-button-label'),
+      ).toBe(1);
+    });
+
+    it('takes the name of the element a button renders as', () => {
+      const src = '<Button size="icon" render={<a href="/repo" aria-label="Repository" />} />';
+      expect(count(src, 'icon-button-label')).toBe(0);
+      expect(count('<Button size="icon" render={<a href="/repo" />} />', 'icon-button-label')).toBe(1);
+    });
+
+    it('trusts spread props and text children, and sees through wrappers', () => {
+      expect(count('<Button size="icon" {...props}><TrashIcon /></Button>', 'icon-button-label')).toBe(0);
+      expect(count('<Button size="icon-sm">{label}</Button>', 'icon-button-label')).toBe(0);
+      expect(
+        count('<Button size="icon"><span aria-hidden><TrashIcon /></span></Button>', 'icon-button-label'),
+      ).toBe(1);
+      expect(count('<Button size={"icon"}><TrashIcon /></Button>', 'icon-button-label')).toBe(1);
+      // Not an icon size, and it has text: the text is the name. With only an icon it has none, whatever its size.
+      expect(count('<Button size="sm"><TrashIcon /> Delete</Button>', 'icon-button-label')).toBe(0);
+      expect(count('<Button size="sm"><TrashIcon /></Button>', 'icon-button-label')).toBe(1);
+    });
+
+    it('knows icons imported without an Icon suffix', () => {
+      const lucide = "import { Trash2, Pencil as Edit } from 'lucide-react';\n";
+      expect(count(`${lucide}<button onClick={go}><Trash2 /></button>`, 'icon-button-label')).toBe(1);
+      expect(count(`${lucide}<button onClick={go}><Edit size={14} /></button>`, 'icon-button-label')).toBe(1);
+      const ns = "import * as Icons from 'lucide-react';\n<button><Icons.Trash2 /></button>";
+      expect(count(ns, 'icon-button-label')).toBe(1);
+      // A component that is not an icon may render text, so it is not assumed to be one.
+      expect(count('<button><RunName id={id} /></button>', 'icon-button-label')).toBe(0);
+    });
+
+    it('finds a click handler after an arrow-function prop, but not one inside a child prop', () => {
+      expect(count('<div onKeyDown={() => go()} onClick={open}>Open</div>', 'clickable-div')).toBe(1);
+      expect(count('<div title={x > 1 ? "a" : "b"}\n  onClick={open}>Open</div>', 'clickable-div')).toBe(1);
+      expect(count('<div render={<Button onClick={open} />}>Open</div>', 'clickable-div')).toBe(0);
+    });
+
+    it('needs an alt on the image itself', () => {
+      expect(count('<img src={src} onLoad={() => a > b} />', 'img-alt')).toBe(1);
+      expect(count('<img src={src} onLoad={() => a > b} alt="Bench 3" />', 'img-alt')).toBe(0);
+      expect(count('<img {...imageProps} />', 'img-alt')).toBe(0);
+    });
+
+    it('only lets an id stand in for a label when a label points at it', () => {
+      expect(count('<Input id="q" placeholder="Search runs" />', 'placeholder-as-label')).toBe(1);
+      expect(
+        count(
+          '<label htmlFor="q">Search</label>\n<Input id="q" placeholder="Search runs" />',
+          'placeholder-as-label',
+        ),
+      ).toBe(0);
+      expect(count('<Input id={id} placeholder="Search runs" />', 'placeholder-as-label')).toBe(0);
+      expect(count('<label>Search <input placeholder="Search runs" /></label>', 'placeholder-as-label')).toBe(
+        0,
+      );
+      expect(
+        count('<Input onChange={(e) => set(e.target.value)} placeholder="Tag" />', 'placeholder-as-label'),
+      ).toBe(1);
+    });
+  });
+
+  describe('status text on a status fill', () => {
+    it('catches the shadcn on-fill pair, in any state', () => {
+      expect(clash('bg-success text-success-foreground')).toBe(1);
+      expect(clash('hover:bg-destructive hover:text-destructive-foreground')).toBe(1);
+      // The fill shows on hover and nothing changes the red text then.
+      expect(clash('text-destructive-foreground hover:bg-destructive')).toBe(1);
+      expect(clash('bg-warning/90 text-warning-foreground')).toBe(1);
+    });
+
+    it('passes tints, other text and a state that swaps the text', () => {
+      expect(clash('bg-warning/15 text-warning-foreground')).toBe(0);
+      expect(clash('bg-destructive text-white')).toBe(0);
+      expect(
+        clash('text-destructive-foreground data-highlighted:bg-destructive data-highlighted:text-white'),
+      ).toBe(0);
+      expect(clash('bg-destructive-foreground')).toBe(0);
+      expect(clash('bg-destructive text-body text-white')).toBe(0);
+    });
+  });
+
   it('lets token files define colors', () => {
     expect(count('--primary: oklch(0.55 0.2 257);', 'raw-color', 'tokens.css')).toBe(0);
   });
@@ -455,10 +550,16 @@ describe('dtheo CLI', () => {
     mkdirSync(join(dir, 'app'));
     writeFileSync(join(dir, 'app/globals.css'), nextStarterCss);
     const init = () =>
-      withRegistry((url) => runCli(process.execPath, [bin, 'init', '--json', '--registry', url, '--cwd', dir]));
+      withRegistry((url) =>
+        runCli(process.execPath, [bin, 'init', '--json', '--registry', url, '--cwd', dir]),
+      );
 
     const report = JSON.parse((await init()).stdout);
-    expect(report.css).toMatchObject({ file: 'app/globals.css', specifier: '../styles/dtheo.css', imported: true });
+    expect(report.css).toMatchObject({
+      file: 'app/globals.css',
+      specifier: '../styles/dtheo.css',
+      imported: true,
+    });
     expect(report.css.overrides.map((o) => o.selector)).toEqual([
       ':root',
       '@theme inline',

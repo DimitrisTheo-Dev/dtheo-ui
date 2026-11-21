@@ -8,10 +8,12 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 version="$(node -p "require('$root/node_modules/@playwright/test/package.json').version")"
 image="mcr.microsoft.com/playwright:v$version-noble"
-if ! grep -q "$image" "$root/.github/workflows/ci.yml"; then
-  echo "ci.yml must run the visual job in $image, the installed Playwright version." >&2
-  exit 1
-fi
+for workflow in ci.yml visual-baselines.yml; do
+  if ! grep -q "$image" "$root/.github/workflows/$workflow"; then
+    echo "$workflow must run in $image, the installed Playwright version." >&2
+    exit 1
+  fi
+done
 docker run --rm --platform linux/arm64 \
   -v "$root":/src:ro -v "$root/e2e/visual.spec.ts-snapshots":/out "$image" bash -c '
   set -e

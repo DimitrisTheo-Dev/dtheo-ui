@@ -7,7 +7,7 @@ import { cn } from '../lib/utils';
 
 /**
  * A number with steppers and an optional unit. Drag the label horizontally to scrub the value,
- * use arrow keys (Shift for ×10), or type. Formats with the user's locale.
+ * use arrow keys (Shift steps by `largeStep`, 10 unless you set it), or type. Formats with the user's locale.
  */
 export function NumberField({
   className,

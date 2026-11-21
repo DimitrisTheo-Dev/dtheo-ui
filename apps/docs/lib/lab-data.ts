@@ -455,13 +455,16 @@ export const runs: LabRun[] = (() => {
 
 /**
  * Overshoot statistics across all runs: the numbers the histogram states, for metrics elsewhere on the page.
- * Cpk uses the short-term σ from the moving range of consecutive runs (MR̄ / 1.128); Ppk uses the overall σ.
  */
 export const overshootStats = (() => {
   const o = runs.map((r) => r.overshoot);
   const mean = o.reduce((a, b) => a + b, 0) / o.length;
   const sd = Math.sqrt(o.reduce((a, b) => a + (b - mean) ** 2, 0) / (o.length - 1));
-  const sdWithin = o.slice(1).reduce((a, v, i) => a + Math.abs(v - o[i]!), 0) / (o.length - 1) / 1.128;
+  // Cpk uses the within-process spread: the average moving range between consecutive runs over d₂ (1.128), as the
+  // Histogram computes it. Ppk uses the overall deviation, which also holds the drift between runs.
+  let movingRange = 0;
+  for (let i = 1; i < o.length; i++) movingRange += Math.abs(o[i]! - o[i - 1]!);
+  const sdWithin = movingRange / (o.length - 1) / 1.128;
   const over = runs.filter((r) => r.overshoot > OVERSHOOT_USL);
   return {
     n: o.length,

@@ -35,6 +35,7 @@ export const components: ComponentMeta[] = [
       'Icon-only buttons need an `aria-label` that names the action ("Delete run"), not the icon.',
       '`loading` keeps the button focusable and sets `aria-busy`, so focus is not lost mid-action.',
       'Disabled buttons are skipped by Tab; prefer explaining why an action is unavailable.',
+      'A disabled link-button (`render={<a />}` with `disabled`) stays a link, leaves the tab order, is announced as disabled and does not navigate.',
     ],
     props: [
       {
@@ -147,7 +148,8 @@ export const components: ComponentMeta[] = [
       {
         name: 'match',
         type: 'boolean | ValidityState key',
-        description: 'FieldError: when to show the message; `true` shows it whenever the field is invalid.',
+        description:
+          'FieldError: which validity state shows the message (`valueMissing`, `rangeOverflow`…). `true` always shows it, so pass your own check: `match={invalid}`.',
       },
     ],
     a11y: [
@@ -1259,9 +1261,9 @@ export const components: ComponentMeta[] = [
     registryDependencies: [],
     examples: ['line-chart'],
     keyboard: [
-      ['Arrow left / right', 'Move the readout by 1% of the range'],
-      ['Shift + arrow', 'Move by 5%'],
-      ['Home / End', 'Jump to the start or end'],
+      ['Arrow left / right', 'Move the readout to the next drawn point'],
+      ['Shift + arrow', 'Move by a tenth of the points'],
+      ['Home / End', 'Jump to the first or last point'],
       ['Escape', 'Hide the readout'],
     ],
     a11y: [
@@ -1324,7 +1326,7 @@ export const components: ComponentMeta[] = [
     category: 'Charts',
     level: 'organism',
     description:
-      'Comparison across a few categories; bars past the limit turn critical so the outlier reads first.',
+      'Comparison across a few categories; bars past the limit turn critical so the outlier reads first. Negative values grow down from a zero line.',
     use: ['Overshoot per run, failures per actuator'],
     avoid: ['Continuous data over time: use Line chart', 'More than ~20 bars: use a table or a heatmap'],
     files: ['bar-chart.tsx', 'core.ts'],
@@ -1496,7 +1498,7 @@ export const components: ComponentMeta[] = [
     aliases: ['stream'],
     examples: ['stream-chart'],
     a11y: [
-      'The latest values are text above the plot, with the word "over limit" when one is, never color alone.',
+      'The latest values are text above the plot, with the words "over limit" or "below limit" when one is, never color alone.',
       'Crossing a limit is announced politely, at most once every ten seconds.',
       'With reduced motion on, the chart updates four times a second instead of scrolling smoothly.',
       'Drawing stops while the chart is off screen or the tab is hidden.',
@@ -1541,7 +1543,8 @@ export const components: ComponentMeta[] = [
         name: 'paused',
         type: 'boolean',
         default: 'false',
-        description: 'Freeze the view while samples keep buffering.',
+        description:
+          'Freeze the view at the moment it pauses, across theme changes, resizes and scrolling; samples keep buffering, and resuming goes live.',
       },
       {
         name: 'ariaLabel',
@@ -1580,7 +1583,7 @@ export const components: ComponentMeta[] = [
     ],
     a11y: [
       'Both panes share one crosshair and one readout, announced politely as you move.',
-      'Decades are labeled (10, 100, 1k Hz); the steps between them are faint grid lines.',
+      'Decades are labeled (0.1, 1, 10, 1k up to 1M), the last with its unit (1 kHz); the steps between them are faint grid lines.',
       'Margins are labeled with their value, not shown by color.',
     ],
     props: [
@@ -1588,7 +1591,8 @@ export const components: ComponentMeta[] = [
         name: 'frequency',
         type: 'ArrayLike<number>',
         required: true,
-        description: 'Frequencies in Hz, ascending and above zero.',
+        description:
+          'Frequencies in Hz, ascending. Samples at or below zero (an FFT’s 0 Hz bin) are left out.',
       },
       {
         name: 'magnitude',
@@ -1744,7 +1748,7 @@ export const components: ComponentMeta[] = [
       ['Escape', 'Clear the readout'],
     ],
     a11y: [
-      'Values past a limit draw critical and the readout counts them ("7 values, 5 out of spec"); a value exactly on a limit is in spec.',
+      'Values past a limit draw critical, so a bin that straddles a limit shows both tones, and the readout counts them ("7 values, 5 out of spec"); a value exactly on a limit is in spec.',
       'Cpk carries a word (capable, marginal, not capable) next to its number.',
       'Cpk uses the short-term σ from the moving range of consecutive values (MR̄ / 1.128), so pass values in run order; Ppk uses the overall σ.',
     ],
@@ -1753,7 +1757,7 @@ export const components: ComponentMeta[] = [
         name: 'values',
         type: 'number[]',
         required: true,
-        description: 'Raw measurements, one per run or part, in run order.',
+        description: 'Raw measurements, one per run or part, in run order: Cpk depends on it. NaN is left out.',
       },
       {
         name: 'xLabel',
@@ -1764,7 +1768,14 @@ export const components: ComponentMeta[] = [
       {
         name: 'binWidth',
         type: 'number',
-        description: 'Bin width in the values’ unit. Defaults to a round width near the Freedman–Diaconis rule.',
+        description:
+          'Bin width in the values’ unit. Defaults to a round width near the Freedman–Diaconis rule; at most 200 bins.',
+      },
+      {
+        name: 'subgroupSize',
+        type: 'number',
+        description:
+          'Consecutive values per rational subgroup, for Cpk (pooled σ). Leave it out for individuals (moving range / 1.128). Ppk always uses the overall σ.',
       },
       {
         name: 'lower',

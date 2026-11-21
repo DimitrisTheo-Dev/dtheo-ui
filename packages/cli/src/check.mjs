@@ -446,6 +446,59 @@ function wholeClassToken(source, index) {
   return classToken(source, index) + source.slice(index, b);
 }
 
+/**
+ * An opening tag with the inside of every {expression} blanked, so an attribute only counts when it belongs to this
+ * element: `onClick` inside render={<Button onClick={…} />} is not the div's. `spread` is true when the tag spreads
+ * props ({...props}), which may carry any attribute.
+ */
+function topLevel(opening) {
+  let top = '';
+  let depth = 0;
+  let quote = null;
+  let spread = false;
+  for (let i = 0; i < opening.length; i++) {
+    const ch = opening[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+    } else if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+    else if (ch === '{') {
+      if (depth === 0 && /^\{\s*\.\.\./.test(opening.slice(i))) spread = true;
+      depth++;
+      top += ch;
+      continue;
+    } else if (ch === '}') depth--;
+    top += depth > 0 ? ' ' : ch;
+  }
+  return { top, spread };
+}
+
+const hasAttr = (top, names) => new RegExp(`(?<![\\w-])(?:${names})=`).test(top);
+
+/** Icon libraries whose components are named after the picture (Trash2, ChevronDown), with no Icon suffix. */
+const ICON_MODULE =
+  /^(?:lucide-react|@radix-ui\/react-icons|@heroicons\/react(?:\/.*)?|react-icons(?:\/.*)?|@phosphor-icons\/react|@tabler\/icons-react)$/;
+
+/** The JSX names a file imports from an icon library: `Trash2`, and `Icons` for `import * as Icons`. */
+function iconImports(source) {
+  const names = new Set();
+  const namespaces = new Set();
+  for (const m of source.matchAll(/import\s+(?:type\s+)?([^'";]*?)\s+from\s*['"]([^'"]+)['"]/g)) {
+    if (!ICON_MODULE.test(m[2])) continue;
+    const named = /\{([^}]*)\}/.exec(m[1]);
+    for (const part of named?.[1].split(',') ?? []) {
+      const local = part
+        .trim()
+        .replace(/^type\s+/, '')
+        .split(/\s+as\s+/)
+        .at(-1);
+      if (local && /^[A-Z]\w*$/.test(local)) names.add(local);
+    }
+    const namespace = /\*\s+as\s+(\w+)/.exec(m[1]);
+    if (namespace) namespaces.add(namespace[1]);
+  }
+  return { names, namespaces };
+}
+
 const NAME_ATTRIBUTE = /\b(?:aria-label|aria-labelledby|title)=/;
 /**
  * Elements that render a button: <button>, <Button>, <IconButton>, <Dialog.Close>. Not triggers: a select or combobox
@@ -458,8 +511,32 @@ const TEXT_COMPONENT =
 
 const stripJsxComments = (s) => s.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
 
-/** True when `inner` is nothing but icons: one or more <svg>…</svg> or self-closing <PascalCase /> elements. */
-function iconOnly(inner) {
+/** Props an icon takes. A component with any other prop (<RunName id={id} />) may render text. */
+const ICON_PROPS = /^(?:className|size|strokeWidth|absoluteStrokeWidth|color|width|height|fill|stroke|aria-hidden|focusable|data-[\w-]+)$/;
+
+/**
+ * Whether a self-closing component is an icon: named *Icon, imported from an icon library (Trash2, Icons.Trash2), or,
+ * when the file does not say where it comes from, a bare component with only the props an icon takes (<Trash2 />).
+ */
+function isIcon(name, tag, icons) {
+  if (name.endsWith('Icon') || icons.names.has(name) || icons.namespaces.has(name.split('.')[0])) return true;
+  if (TEXT_COMPONENT.test(name)) return false;
+  const local = name.split('.')[0];
+  if (icons.imported.has(local)) return false;
+  const props = [...topLevel(tag).top.matchAll(/(?<![\w-])([A-Za-z][\w-]*)(?==)/g)].map((m) => m[1]);
+  return props.every((p) => ICON_PROPS.test(p));
+}
+
+/** The names a file imports from anywhere, to tell an unknown component from one whose source is known. */
+const importedNames = (source) =>
+  new Set(
+    [...source.matchAll(/import\s+(?:type\s+)?([^'";]*?)\s+from\s*['"][^'"]+['"]/g)].flatMap((m) =>
+      [...m[1].matchAll(/(?:\bas\s+)?\b([A-Z]\w*)\b(?!\s+as\b)/g)].map((n) => n[1]),
+    ),
+  );
+
+/** True when `inner` is nothing but icons: one or more <svg>…</svg> or self-closing icon components. */
+function iconOnly(inner, known) {
   let rest = stripJsxComments(inner).trim();
   let icons = 0;
   while (rest) {
@@ -469,9 +546,9 @@ function iconOnly(inner) {
       rest = rest.slice(e + 6).trim();
     } else {
       const m = /^<([A-Z][\w.]*)/.exec(rest);
-      if (!m || TEXT_COMPONENT.test(m[1])) return false;
+      if (!m) return false;
       const end = tagEnd(rest, 1);
-      if (end === -1 || rest[end - 1] !== '/') return false;
+      if (end === -1 || rest[end - 1] !== '/' || !isIcon(m[1], rest.slice(0, end + 1), known)) return false;
       rest = rest.slice(end + 1).trim();
     }
     icons++;
@@ -479,7 +556,10 @@ function iconOnly(inner) {
   return icons > 0;
 }
 
-/** Visible or screen-reader text in `inner`, outside tags and expressions. */
+/**
+ * Visible or screen-reader text in `inner`, outside tags. An {expression} child counts: it may well be the label
+ * ({label}, {t('delete')}), and the check cannot tell.
+ */
 function hasText(inner) {
   const rest = stripJsxComments(inner);
   let text = '';
@@ -488,11 +568,8 @@ function hasText(inner) {
       const e = tagEnd(rest, i + 1);
       if (e === -1) break;
       i = e;
-    } else if (rest[i] === '{') {
-      let depth = 1;
-      while (++i < rest.length && depth) depth += rest[i] === '{' ? 1 : rest[i] === '}' ? -1 : 0;
-      i--;
-    } else text += rest[i];
+    } else if (rest[i] === '{') return true;
+    else text += rest[i];
   }
   return /[\p{L}\p{N}]/u.test(text);
 }
@@ -500,25 +577,94 @@ function hasText(inner) {
 /** Buttons with no accessible name: icon-only content, or an icon-size Button with no text, and no aria-label. */
 function unnamedIconButtons(ctx) {
   const found = [];
+  const icons = { ...iconImports(ctx.source), imported: importedNames(ctx.source) };
   for (const tag of ctx.tags) {
     if (!BUTTON_TAG.test(tag.name)) continue;
     const opening = ctx.source.slice(tag.start, tag.end);
+    // The whole tag, expressions included: a name on the element it renders as
+    // (render={<a href="…" aria-label="Repository" />}) names the button too.
     if (NAME_ATTRIBUTE.test(opening)) continue;
-    const iconSize = /\bsize=["']icon[^"']*["']/.test(opening);
-    // A spread can carry the name in (a wrapper's {...props}); only an icon-size Button is certain to need one.
-    if (/\{\s*\.\.\./.test(opening) && !iconSize) continue;
+    const { top, spread } = topLevel(opening);
+    // A spread can carry the name in (a wrapper passing {...props} through).
+    if (spread) continue;
+    const iconSize = /(?<![\w-])size=["']icon/.test(top) || /(?<![\w-])size=\{\s*["'`]icon/.test(opening);
     const inner = tag.selfClosing ? '' : ctx.source.slice(tag.end, tag.closeStart);
-    if (iconSize ? !hasText(inner) : !tag.selfClosing && iconOnly(inner))
+    if (iconSize ? !hasText(inner) : !tag.selfClosing && iconOnly(inner, icons))
       found.push({ index: tag.start, text: opening });
   }
   return found;
 }
 
-/** JSX opening tags named `name` whose text passes `test`, as findings. */
+/**
+ * JSX opening tags named `name` that `test` flags, as findings. `test` gets the tag's own attributes (`top`, with
+ * expressions blanked), whether it spreads props, the tag's text and the source before it.
+ */
 const tagsWhere = (name, test) => (ctx) =>
   ctx.tags
-    .filter((tag) => name.test(tag.name) && test(ctx.source.slice(tag.start, tag.end)))
+    .filter((tag) => {
+      if (!name.test(tag.name)) return false;
+      const opening = ctx.source.slice(tag.start, tag.end);
+      return test({ ...topLevel(opening), opening, before: ctx.source.slice(0, tag.start), ctx });
+    })
     .map((tag) => ({ index: tag.start, text: ctx.source.slice(tag.start, tag.end) }));
+
+/** Whether the text before a point leaves a <name> element open, optionally one that already contains `inner`. */
+function insideOpen(before, name, inner) {
+  const open = [...before.matchAll(new RegExp(`<${name}[\\s>]`, 'g'))].at(-1)?.index ?? -1;
+  if (open === -1 || before.lastIndexOf(`</${name}>`) > open) return false;
+  return inner ? inner.test(before.slice(open)) : true;
+}
+
+/**
+ * An input whose placeholder is its only label. It is named another way when it has aria-label or aria-labelledby,
+ * sits inside a <Field> with a <FieldLabel> or inside a <label>, or has an id that a <label htmlFor> in the file points
+ * at (an id built from an expression could be pointed at from anywhere, so it is trusted).
+ */
+function placeholderOnly({ top, spread, before, ctx }) {
+  if (spread || !hasAttr(top, 'placeholder') || hasAttr(top, 'aria-label|aria-labelledby')) return false;
+  if (/(?<![\w-])type=["'](?:hidden|submit|button|reset)["']/.test(top)) return false;
+  const id = /(?<![\w-])id=(?:"([^"]*)"|'([^']*)'|(\{))/.exec(top);
+  if (id) {
+    if (id[3]) return false;
+    const value = (id[1] ?? id[2]).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp(`htmlFor=(?:["']|\\{\\s*["'\`])${value}["'\`]`).test(ctx.source)) return false;
+  }
+  return !(insideOpen(before, 'Field', /<(FieldLabel|label)\b/) || insideOpen(before, 'label'));
+}
+
+/** text-* utilities that set size, alignment or wrapping rather than color. */
+const TEXT_NOT_COLOR =
+  /^(?:caption|label|body|callout|prose|headline|title-[123]|large-title|display|hero|xs|sm|base|lg|\d?xl|left|right|center|justify|start|end|wrap|nowrap|balance|pretty|ellipsis|clip|\[.*\])$/;
+
+/**
+ * `text-destructive-foreground` (and success, warning, info) is the status color as text on a card. On a solid
+ * `bg-destructive` fill the two are the same hue: about 2:1. Agents reach for the pair because shadcn names its
+ * on-fill text that way. Within one class string, each fill is checked against the text color that applies in the
+ * same state: `hover:bg-destructive` meets `hover:text-…` if there is one, else the plain text color. A light tint
+ * (bg-destructive/15, the badge) is fine.
+ */
+function statusTextOnFill(ctx) {
+  const found = [];
+  for (const s of ctx.source.matchAll(/(["'`])((?:\\.|(?!\1)[^\\\n])*)\1/g)) {
+    if (ctx.kind[s.index] !== CLASS) continue;
+    const textIn = new Map();
+    const fills = [];
+    for (const cls of s[2].split(/\s+/)) {
+      const m = /^(.*:)?(bg|text)-([^:]+)$/.exec(cls);
+      if (!m) continue;
+      const [, state = '', kind, value] = m;
+      if (kind === 'text') {
+        if (!TEXT_NOT_COLOR.test(value)) textIn.set(state, value);
+        continue;
+      }
+      const fill = /^(destructive|success|warning|info)(?:\/(\d+))?$/.exec(value);
+      if (fill && (fill[2] === undefined || Number(fill[2]) >= 40)) fills.push({ state, role: fill[1] });
+    }
+    const clash = fills.some((f) => (textIn.get(f.state) ?? textIn.get('')) === `${f.role}-foreground`);
+    if (clash) found.push({ index: s.index, text: s[0] });
+  }
+  return found;
+}
 
 const FOCUS_TREATMENT =
   /focus-visible:|focus-within:|focus:|data-highlighted|data-focused|has-\[[^\]]*focus|has-focus|group-focus|peer-focus|focus-within-ring|\bdata-focus=/;
@@ -665,6 +811,14 @@ const rules = [
     fix: 'Use text-link for blue text and links. On a decorative icon text-primary is fine: mark the icon aria-hidden="true".',
   },
   {
+    id: 'status-text-on-fill',
+    severity: 'error',
+    find: statusTextOnFill,
+    message:
+      'Status text on its own solid fill: text-destructive-foreground on bg-destructive is red on red, about 2:1. In dtheo/ui the -foreground of a status color is that color as text on a card, unlike shadcn.',
+    fix: 'For a badge or banner use the tint: bg-destructive/15 text-destructive-foreground. On a solid destructive fill use text-white, as the destructive Button does.',
+  },
+  {
     id: 'text-size-token',
     severity: 'error',
     patterns: [{ in: 'class', re: /(?<![\w-])text-(?:xs|sm|base|lg|xl|[2-9]xl)(?![\w-])/g }],
@@ -781,14 +935,14 @@ const rules = [
   {
     id: 'img-alt',
     severity: 'error',
-    find: tagsWhere(/^img$/, (tag) => !/\balt=/.test(tag)),
+    find: tagsWhere(/^img$/, ({ top, spread }) => !spread && !hasAttr(top, 'alt')),
     message: 'Image without alt text.',
     fix: 'Describe the image, or use alt="" if it is decorative.',
   },
   {
     id: 'clickable-div',
     severity: 'error',
-    find: tagsWhere(/^(?:div|span)$/, (tag) => /\bonClick=/.test(tag)),
+    find: tagsWhere(/^(?:div|span)$/, ({ top }) => hasAttr(top, 'onClick')),
     message:
       'Click handler on a non-interactive element: unreachable by keyboard and invisible to screen readers.',
     fix: 'Use <Button> (or a link for navigation).',
@@ -817,18 +971,9 @@ const rules = [
   {
     id: 'placeholder-as-label',
     severity: 'warning',
-    find: tagsWhere(
-      /^(?:Input|input)$/,
-      (tag) => /\bplaceholder=/.test(tag) && !/\b(?:aria-label|aria-labelledby|id)=/.test(tag),
-    ),
+    find: tagsWhere(/^(?:Input|input)$/, placeholderOnly),
     message: 'Input with a placeholder but no label: the placeholder disappears as soon as someone types.',
     fix: 'Wrap it in <Field> with a <FieldLabel>, or add aria-label.',
-    // Inside a <Field> that already has a <FieldLabel> (or <label>), Base UI names the input.
-    contextSkip: (before) => {
-      const open = [...before.matchAll(/<Field[\s>]/g)].at(-1)?.index ?? -1;
-      if (open === -1 || before.lastIndexOf('</Field>') > open) return false;
-      return /<(FieldLabel|label)\b/.test(before.slice(open));
-    },
   },
   {
     id: 'ignore-reason',
@@ -915,7 +1060,7 @@ export function checkSource(source, options = {}) {
         column: index - lineStarts[li] + 1,
         message: rule.message,
         fix: rule.fix,
-        excerpt: (text ?? lines[li].trim()).slice(0, 120),
+        excerpt: (text ?? lines[li].trim()).replace(/\s+/g, ' ').slice(0, 120),
       });
     }
   }

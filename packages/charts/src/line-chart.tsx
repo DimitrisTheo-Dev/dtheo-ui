@@ -5,17 +5,22 @@ import * as React from 'react';
 import { scaleLinear, type ScaleLinear } from 'd3-scale';
 import {
   CAPTION_CHAR_W,
+  ChartEmpty,
   axisGutter,
+  createLinePath,
   crisp,
   formatNumber,
   haloText,
+  hasFinite,
   lttb,
   nearestIndex,
   sharedUnit,
+  stepIndex,
   tickFormat,
   toneBg,
   toneFill,
   toneStroke,
+  useClipId,
   useSyncedCursor,
   useTooltipPlacement,
   useWidth,
@@ -178,22 +183,35 @@ function downsample(x: ArrayLike<number>, values: ArrayLike<number>, i0: number,
 
 /**
  * A series as an SVG path through its downsampled samples. A non-finite value (NaN for a dropout) lifts the pen,
- * so a gap in the data is a gap in the line, never a straight line across it.
+ * so a gap in the data is a gap in the line, never a straight line across it; a sample alone between two gaps is a
+ * dot.
  */
 function seriesPath(x: ArrayLike<number>, values: ArrayLike<number>, idx: number[], f: Frame) {
-  let d = '';
-  let pen = false;
+  const path = createLinePath(2);
   for (const j of idx) {
     const v = values[j]!;
-    if (!Number.isFinite(v)) {
-      pen = false;
-      continue;
-    }
-    d += `${pen ? 'L' : 'M'}${f.sx(x[j]!).toFixed(2)} ${f.sy(v).toFixed(2)}`;
-    pen = true;
+    if (Number.isFinite(v)) path.to(f.sx(x[j]!), f.sy(v));
+    else path.gap();
   }
-  return d;
+  return path.done();
 }
+
+/** Every sample index some series draws, in order, once: the points the keyboard steps through. */
+function drawnPoints(lists: number[][]) {
+  if (lists.length === 1) return lists[0]!;
+  const out: number[] = [];
+  const at = lists.map(() => 0);
+  for (;;) {
+    let next = Infinity;
+    for (const [k, list] of lists.entries()) if (at[k]! < list.length) next = Math.min(next, list[at[k]!]!);
+    if (next === Infinity) return out;
+    out.push(next);
+    for (const [k, list] of lists.entries()) while (at[k]! < list.length && list[at[k]!] === next) at[k]!++;
+  }
+}
+
+/** Space around the plot that a clipped line keeps, so a 2 px stroke with round caps on the edge is never cut. */
+const CLIP_PAD = 2;
 
 /**
  * The area between a threshold and the part of a series beyond it: the failure, visible before any number. It
@@ -241,31 +259,8 @@ function exceedancePath(
   return d;
 }
 
-/** Where a key moves the reading cursor: a value, null to clear, or undefined when the key is not ours. */
-function stepCursor(key: string, shift: boolean, cursor: number | null, x0: number, x1: number) {
-  const step = ((x1 - x0) / 100) * (shift ? 5 : 1);
-  const from = cursor ?? (x0 + x1) / 2;
-  let next: number;
-  switch (key) {
-    case 'ArrowRight':
-      next = from + step;
-      break;
-    case 'ArrowLeft':
-      next = from - step;
-      break;
-    case 'Home':
-      next = x0;
-      break;
-    case 'End':
-      next = x1;
-      break;
-    case 'Escape':
-      return null;
-    default:
-      return undefined;
-  }
-  return Math.min(x1, Math.max(x0, next));
-}
+/** The keys that move the reading cursor. Up and down are left to the page, so it still scrolls. */
+const readingKeys = new Set(['ArrowLeft', 'ArrowRight', 'Home', 'End', 'Escape']);
 
 function AxesLayer({
   f,
@@ -402,12 +397,14 @@ function ContextLayer({
   shades,
   thresholds,
   verticals,
+  clip,
 }: {
   f: Frame;
   bands: Band[];
   shades: Array<{ key: string; d: string; tone: Tone }>;
   thresholds: Threshold[];
   verticals: VerticalMarker[];
+  clip: string;
 }) {
   return (
     <>
@@ -424,9 +421,11 @@ function ContextLayer({
           />
         );
       })}
-      {shades.map((s) => (
-        <path key={s.key} d={s.d} className={`${toneFill[s.tone]} opacity-30`} />
-      ))}
+      <g clipPath={clip}>
+        {shades.map((s) => (
+          <path key={s.key} d={s.d} className={`${toneFill[s.tone]} opacity-30`} />
+        ))}
+      </g>
       {thresholds.map((t) => (
         <g key={`${t.value}-${t.label ?? ''}`}>
           <line
@@ -675,6 +674,7 @@ export function LineChart({
   const [owner, setOwner] = React.useState(false);
   const [announce, setAnnounce] = React.useState('');
   const descId = React.useId();
+  const clipId = useClipId();
   // A press focuses the chart; the reading should start where the finger or pointer is, not at the midpoint.
   const pressed = React.useRef(false);
   const yUnit = yUnitProp ?? sharedUnit(series);
@@ -698,6 +698,10 @@ export function LineChart({
   });
   const { x0, x1, plotW } = f;
   const [i0, i1] = React.useMemo(() => visibleRange(x, x0, x1), [x, x0, x1]);
+  const hasData = React.useMemo(
+    () => i1 >= i0 && series.some((s) => hasFinite(s.values, i0, i1)),
+    [series, i0, i1],
+  );
 
   // Downsample each series once; its line and its shaded exceedance both follow the same samples.
   const sampled = React.useMemo(
@@ -708,6 +712,9 @@ export function LineChart({
     () => (sampled ? series.map((s) => ({ s, d: seriesPath(x, s.values, sampled.get(s.id)!, f) })) : []),
     [sampled, series, x, f],
   );
+  // The points the keyboard reads: each sample some series draws a vertex at.
+  const grid = React.useMemo(() => (sampled ? drawnPoints([...sampled.values()]) : []), [sampled]);
+  const gridX = React.useMemo(() => Float64Array.from(grid, (i) => x[i]!), [grid, x]);
   const shades = React.useMemo(() => {
     if (!sampled) return [];
     return thresholds.flatMap((t) => {
@@ -726,7 +733,8 @@ export function LineChart({
 
   const readout = useReadout(series, thresholds, extraReadout);
 
-  const cursorIndex = cursor == null ? null : nearestIndex(x, cursor);
+  const nearest = cursor == null || !hasData ? -1 : nearestIndex(x, cursor);
+  const cursorIndex = nearest < 0 ? null : nearest;
   const cx = cursorIndex != null ? f.sx(x[cursorIndex]!) : 0;
   const tooltipRows = owner && cursorIndex != null ? readout(cursorIndex) : null;
 
@@ -735,14 +743,20 @@ export function LineChart({
     return Math.min(x1, Math.max(x0, f.sx.invert(clientX - rect.left)));
   };
 
+  // Arrows step one drawn point (a kept sample after downsampling), Shift steps a tenth of them.
   const onKeyDown = (e: React.KeyboardEvent) => {
-    const next = stepCursor(e.key, e.shiftKey, cursor, x0, x1);
+    if (!readingKeys.has(e.key)) return;
+    const at = cursor == null || !hasData ? -1 : nearestIndex(gridX, cursor);
+    const next = stepIndex(e.key, e.shiftKey, at < 0 ? null : at, hasData ? grid.length : 0);
     if (next === undefined) return;
     e.preventDefault();
     setOwner(true);
-    setCursor(next);
-    if (next === null) return;
-    const i = nearestIndex(x, next);
+    if (next === null) {
+      setCursor(null);
+      return;
+    }
+    const i = grid[next]!;
+    setCursor(x[i]!);
     const values = readout(i)
       .map((r) => `${r.label} ${r.value}${r.status ? `, ${r.status}` : ''}`)
       .join(', ');
@@ -760,13 +774,13 @@ export function LineChart({
       className={`relative w-full touch-pan-y rounded-control select-none ${className ?? ''}`}
       style={{ height }}
       onPointerDown={(e) => {
-        if (!plotW) return;
+        if (!plotW || !hasData) return;
         pressed.current = true;
         setOwner(true);
         setCursor(xFromPointer(e.clientX));
       }}
       onPointerMove={(e) => {
-        if (!plotW) return;
+        if (!plotW || !hasData) return;
         setOwner(true);
         setCursor(xFromPointer(e.clientX));
       }}
@@ -778,7 +792,7 @@ export function LineChart({
       }}
       onFocus={() => {
         setOwner(true);
-        if (!pressed.current && cursor == null) setCursor((x0 + x1) / 2);
+        if (!pressed.current && cursor == null && hasData) setCursor((x0 + x1) / 2);
         pressed.current = false;
       }}
       onBlur={() => {
@@ -801,19 +815,38 @@ export function LineChart({
           aria-hidden="true"
           className="block overflow-visible"
         >
+          <defs>
+            <clipPath id={clipId}>
+              <rect
+                x={f.left - CLIP_PAD}
+                y={f.top - CLIP_PAD}
+                width={plotW + 2 * CLIP_PAD}
+                height={f.plotH + 2 * CLIP_PAD}
+              />
+            </clipPath>
+          </defs>
           <AxesLayer f={f} yTicks={yTickValues} xTicks={xTickValues} xUnit={xUnit} yUnit={yUnit} />
-          <ContextLayer f={f} bands={bands} shades={shades} thresholds={thresholds} verticals={verticals} />
-          {paths.map(({ s, d }) => (
-            <path
-              key={s.id}
-              d={d}
-              fill="none"
-              strokeWidth={s.width ?? 2}
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              className={toneStroke[s.tone ?? 'primary']}
-            />
-          ))}
+          <ContextLayer
+            f={f}
+            bands={bands}
+            shades={shades}
+            thresholds={thresholds}
+            verticals={verticals}
+            clip={`url(#${clipId})`}
+          />
+          <g clipPath={`url(#${clipId})`}>
+            {paths.map(({ s, d }) => (
+              <path
+                key={s.id}
+                d={d}
+                fill="none"
+                strokeWidth={s.width ?? 2}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                className={toneStroke[s.tone ?? 'primary']}
+              />
+            ))}
+          </g>
           <ContextLabels f={f} thresholds={thresholds} verticals={verticals} narrow={narrow} />
           <MarkerLayer f={f} markers={markers} />
           {cursorIndex != null ? <Crosshair f={f} cx={cx} series={series} index={cursorIndex} /> : null}
@@ -823,6 +856,7 @@ export function LineChart({
       {tooltipRows && cursorIndex != null ? (
         <ReadoutTooltip title={formatX(x[cursorIndex]!)} rows={tooltipRows} x={cx} width={w} />
       ) : null}
+      {hasData ? null : <ChartEmpty />}
     </div>
   );
 }

@@ -6,13 +6,17 @@ import { Meter as MeterPrimitive } from '@base-ui/react/meter';
 import { cn } from '../lib/utils';
 
 // Values render on the server too, so they use one locale everywhere: with the browser's locale a German visitor
-// gets "64 %" where the server wrote "64%" and React discards the server HTML. Pass `locale` to change it; a value
-// with a `unit` follows the same locale.
-const valueFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
-function withUnit(value: number, unit: string, locale: Intl.LocalesArgument) {
-  const format =
-    locale === 'en-US' ? valueFormat : new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
-  return `${format.format(value)} ${unit}`;
+// gets "64 %" where the server wrote "64%" and React discards the server HTML. Pass `locale` to change it; the value
+// shown with a `unit` follows it too.
+const formats = new Map<string, Intl.NumberFormat>();
+function valueFormat(locale: Intl.LocalesArgument) {
+  const key = String(locale);
+  let format = formats.get(key);
+  if (!format) {
+    format = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
+    formats.set(key, format);
+  }
+  return format;
 }
 
 /** Task completion. Pass `value={null}` for indeterminate work; never fake a percentage. */
@@ -39,7 +43,9 @@ export function Progress({
       {label ? <ProgressPrimitive.Label className="text-label">{label}</ProgressPrimitive.Label> : null}
       {showValue ? (
         <ProgressPrimitive.Value className="col-start-2 text-label text-muted-foreground tabular-nums">
-          {unit ? (_, value) => (value === null ? '' : withUnit(value, unit, locale)) : undefined}
+          {unit
+            ? (_, value) => (value === null ? '' : `${valueFormat(locale).format(value)} ${unit}`)
+            : undefined}
         </ProgressPrimitive.Value>
       ) : null}
       <ProgressPrimitive.Track
@@ -100,7 +106,7 @@ export function Meter({
       {label ? <MeterPrimitive.Label className="text-label">{label}</MeterPrimitive.Label> : null}
       {showValue ? (
         <MeterPrimitive.Value className="col-start-2 text-label text-muted-foreground tabular-nums">
-          {unit ? (_, value) => withUnit(value, unit, locale) : undefined}
+          {unit ? (_, value) => `${valueFormat(locale).format(value)} ${unit}` : undefined}
         </MeterPrimitive.Value>
       ) : null}
       <MeterPrimitive.Track

@@ -217,16 +217,18 @@ describe('Histogram against a limit', () => {
     const { container, getByRole } = render(
       <Histogram values={values} domain={[8, 12]} binWidth={1} upper={10} xLabel="Overshoot" unit="%" ariaLabel="x" />,
     );
-    // [10, 11) and [11, 12] hold the two values past 10; the bin ending at 10 holds 9.5 and both 10.0s.
+    // Bins hold [x0, x1). The two 10.0s sit in [10, 11) as its in-spec part, under 10.5 in red; [11, 12] is all red.
     expect(critical(container)).toBe(2);
     const chart = getByRole('group');
     fireEvent.keyDown(chart, { key: 'Home' });
     expect(chart.textContent).toContain('8.0 to 9.0 %: 0 values');
     expect(chart.textContent).not.toMatch(/0 values, out of spec/);
     fireEvent.keyDown(chart, { key: 'ArrowRight' });
-    expect(chart.textContent).toContain('9.0 to 10.0 %: 3 values');
+    expect(chart.textContent).toContain('9.0 to 10.0 %: 1 value');
     fireEvent.keyDown(chart, { key: 'ArrowRight' });
-    expect(chart.textContent).toContain('10.0 to 11.0 %: 1 value, out of spec');
+    expect(chart.textContent).toContain('10.0 to 11.0 %: 3 values, 1 out of spec');
+    fireEvent.keyDown(chart, { key: 'ArrowRight' });
+    expect(chart.textContent).toContain('11.0 to 12.0 %: 1 value, out of spec');
   });
 
   it('splits a bin the limit cuts through and says how many are out', () => {

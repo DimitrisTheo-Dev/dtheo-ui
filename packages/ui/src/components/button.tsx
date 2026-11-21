@@ -72,7 +72,13 @@ export function Button({
   const isButton = !render || (React.isValidElement(render) && render.type === 'button');
   if (!isButton)
     return (
-      <ButtonLink render={render!} className={classes} data-variant={variant ?? 'secondary'} {...props}>
+      <ButtonLink
+        render={render!}
+        className={classes}
+        data-variant={variant ?? 'secondary'}
+        disabled={disabled}
+        {...props}
+      >
         {children}
       </ButtonLink>
     );
@@ -104,15 +110,30 @@ export function Button({
 /**
  * A link that looks like a button stays a link: no button role and no Space-key activation, which Base UI's Button
  * would add to any element that is not a <button>. Screen readers announce it as a link, as navigation should be.
+ * A disabled one keeps its href (Next.js <Link> requires it) but leaves the tab order, says it is disabled and does
+ * not navigate.
  */
 function ButtonLink({
   render,
   children,
+  disabled = false,
+  // Button-only options; on a link they would land in the DOM as unknown attributes.
+  focusableWhenDisabled: _focusableWhenDisabled,
+  nativeButton: _nativeButton,
   ...props
 }: Omit<ButtonProps, 'variant' | 'size' | 'loading'> & { render: NonNullable<ButtonProps['render']> }) {
   return useRender({
     render,
-    state: { disabled: false },
-    props: { 'data-slot': 'button', ...props, children },
+    state: { disabled },
+    props: {
+      'data-slot': 'button',
+      ...props,
+      ...(disabled ? { 'aria-disabled': true, tabIndex: -1, onClick: preventNavigation } : null),
+      children,
+    },
   });
+}
+
+function preventNavigation(event: React.MouseEvent) {
+  event.preventDefault();
 }
