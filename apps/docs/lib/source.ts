@@ -1,7 +1,6 @@
 import 'server-only';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { ComponentMeta } from '@dtheo/ui/meta';
 
 // Static pages call these at build time, but the MCP route calls them on every request. Whatever they read must
 // also match the '/mcp' globs in next.config.ts, or it is missing from the deployed function (test/mcp.test.ts).
@@ -30,14 +29,21 @@ function chartModule(name: string) {
 }
 
 /**
+ * The files in packages/ui/src/lib that the registry ships as their own items, to `lib/<name>`. Any other lib file
+ * (use-row-selection) travels with the component that uses it, to `components/ui/<name>`.
+ */
+export const libItems = ['utils', 'theme', 'popup'] as const;
+
+/**
  * Examples import from the workspace packages; a consumer has the files `dtheo add` copied in. Rewrite each import
  * to where the registry puts that file, so code copied from a page or an MCP answer compiles as is.
  */
 function toInstalledImports(source: string) {
   return source
     .replaceAll('@dtheo/ui/components/', '@/components/ui/')
-    .replace(/'@dtheo\/ui\/lib\/(utils|theme)'/g, "'@/lib/$1'")
-    .replace(/'@dtheo\/ui\/lib\/([\w-]+)'/g, "'@/components/ui/$1'")
+    .replace(/'@dtheo\/ui\/lib\/([\w-]+)'/g, (_, name: string) =>
+      (libItems as readonly string[]).includes(name) ? `'@/lib/${name}'` : `'@/components/ui/${name}'`,
+    )
     .replace(/import (type )?\{([^}]+)\} from '@dtheo\/charts';/g, (_, typeOnly = '', names: string) => {
       const byFile = new Map<string, string[]>();
       for (const spec of names.split(',').map((n) => n.trim()).filter(Boolean)) {
@@ -54,20 +60,14 @@ function toInstalledImports(source: string) {
     );
 }
 
-/** Read an example's source as shown on the docs page (the file a consumer would copy). */
+/**
+ * Read an example's source as shown on the docs page (the file a consumer would copy). It keeps `'use client'`:
+ * examples hold state and handle events, so in a Next.js app the pasted file must be a client component.
+ */
 export function exampleSource(id: string) {
   const file = join(docs, 'examples', `${id}.tsx`);
   if (!existsSync(file)) return `// Example "${id}" is not written yet.`;
-  return toInstalledImports(readFileSync(file, 'utf8').replace(/^'use client';\n\n?/, ''));
-}
-
-/** Read a component's source files, for the registry, the MCP server and the "Source" tab. */
-export function componentFiles(meta: ComponentMeta) {
-  const root = join(repo, 'packages', meta.package, 'src');
-  return meta.files.map((file) => ({
-    path: file,
-    content: readFileSync(join(root, file), 'utf8'),
-  }));
+  return toInstalledImports(readFileSync(file, 'utf8'));
 }
 
 export function repoFile(path: string) {

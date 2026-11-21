@@ -31,7 +31,7 @@ export default function TooltipExample() {
         </TooltipTrigger>
         <TooltipContent className="max-w-none">{tracePath}</TooltipContent>
       </Tooltip>
-      {/* Icon-only buttons: after the first tooltip opens, its neighbours open instantly. */}
+      {/* Icon-only buttons: after the first tooltip opens, its neighbors open instantly. */}
       {tools.map((group, i) => (
         <div key={group[0]?.label} className="flex shrink-0 items-center gap-0.5">
           {i > 0 ? <Separator orientation="vertical" className="mx-1 h-4" /> : null}

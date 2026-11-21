@@ -1,14 +1,18 @@
 import type { ComponentMeta } from '@dtheo/ui/meta';
 import { site } from '@/lib/site';
+import { plainText } from '@/lib/parse-markdown';
 
-/** Machine-readable facts for each component page (AgentReady AR-READ-08). The same facts are visible on the page. */
+/**
+ * Machine-readable facts for each component page, so search engines and agents can tell what the page documents
+ * and where its Markdown copy is without parsing the layout. The same facts are visible on the page.
+ */
 export function JsonLd({ meta }: { meta: ComponentMeta }) {
   const base = meta.package === 'charts' ? 'charts' : 'components';
   const data = {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
     headline: `${meta.title} · ${site.name}`,
-    description: meta.description,
+    description: plainText(meta.description),
     url: `${site.url}/docs/${base}/${meta.slug}`,
     about: {
       '@type': 'SoftwareSourceCode',

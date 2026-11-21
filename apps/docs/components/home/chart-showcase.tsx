@@ -113,8 +113,10 @@ export function ChartShowcase() {
               <div className="flex flex-col gap-2 p-5 pb-0 sm:p-6 sm:pb-0">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-title-3">{c.title}</h3>
+                  {/* Four links read "Docs"; the name starts with that word and says which chart. */}
                   <Link
                     href={`/docs/charts/${c.id}`}
+                    aria-label={`Docs for the ${c.title.toLowerCase()}`}
                     className="group inline-flex items-center gap-1 rounded-control text-label text-link"
                   >
                     Docs

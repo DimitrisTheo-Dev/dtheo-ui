@@ -54,7 +54,9 @@ export default function CardExample() {
       <CardHeader>
         <div className="flex min-w-0 flex-col gap-0.5">
           <CardTitle>Torque step response</CardTitle>
-          <CardDescription>R-0412 against the R-0409 reference, in N·m</CardDescription>
+          <CardDescription>
+            R-0412 against the <span className="whitespace-nowrap">R-0409</span> reference, in N·m
+          </CardDescription>
         </div>
         <CardAction>
           <SegmentedControl

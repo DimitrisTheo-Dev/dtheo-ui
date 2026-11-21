@@ -18,7 +18,7 @@ export const getStarted: NavItem[] = [
   {
     title: 'Introduction',
     href: '/docs',
-    description: 'Pick what you are building, get one command.',
+    description: 'Pick what you are building and who writes the code, then copy the commands.',
     keywords: ['get started', 'overview', 'quick start', 'principles', 'what is in the box'],
   },
   {

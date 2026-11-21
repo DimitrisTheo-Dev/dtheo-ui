@@ -1,6 +1,6 @@
 // dtheo-check-disable-file arbitrary-radius -- the concentric-corners demo exaggerates radii (16, 8, 4) to teach the rule.
 import * as React from 'react';
-import { colorRoles, contrastPairs, foundation, presets, type ColorScheme } from '@dtheo/tokens';
+import { colorRoles, contrastPairs, foundation, pairLabel, presets, type ColorScheme } from '@dtheo/tokens';
 import contrast from '@dtheo/tokens/contrast.json';
 import { ThemeScope } from '@dtheo/ui/lib/theme';
 import { Button } from '@dtheo/ui/components/button';
@@ -40,13 +40,20 @@ const purpose: Partial<Record<(typeof colorRoles)[number], string>> = {
   'chart-grid': 'Chart gridlines',
 };
 
+/**
+ * A role's color over its own mode's page background, so translucent roles show as they composite. The edge sits on
+ * the color itself, on top: a white card swatch on a white page still has one.
+ */
 function Swatch({ value, ground }: { value: string; ground: string }) {
   return (
     <span
-      className="inline-grid size-5 shrink-0 place-items-center rounded-item shadow-[inset_0_0_0_1px_var(--border)]"
+      className="inline-grid size-5 shrink-0 place-items-center rounded-item"
       style={{ background: ground }}
     >
-      <span className="size-5 rounded-item" style={{ background: value }} />
+      <span
+        className="size-5 rounded-item shadow-[inset_0_0_0_1px_var(--border-strong)]"
+        style={{ background: value }}
+      />
     </span>
   );
 }
@@ -72,6 +79,7 @@ export function ColorFoundation() {
   const rows = contrast as Array<{
     preset: string;
     mode: string;
+    index: number;
     pair: string;
     ratio: number;
     min: number;
@@ -79,6 +87,8 @@ export function ColorFoundation() {
     note: string;
   }>;
   const passed = rows.filter((r) => r.ok).length;
+  // Each declared pair is measured in every theme it applies to: Graphite light and dark, then the dark-only presets.
+  const themes = presets.map((p) => `${p.name} ${Object.keys(p.modes).join(' and ')}`).join(', ');
   return (
     <>
       <DocSection
@@ -180,7 +190,7 @@ export function ColorFoundation() {
 
       <DocSection
         title="Measured contrast"
-        description={`${passed} of ${rows.length} declared pairs pass across all presets and modes. The token build fails if any pair drops below its minimum; translucent colors are composited over their real surface first.`}
+        description={`${passed} of ${rows.length} checks pass: ${contrastPairs.length} declared pairs, each measured in every theme it applies to (${themes}). The table shows Graphite. The token build fails if any check drops below its minimum; translucent colors are composited over their real surface first.`}
       >
         <div className="overflow-hidden rounded-card border border-border bg-card">
           <Table>
@@ -194,12 +204,13 @@ export function ColorFoundation() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {contrastPairs.map((p) => {
-                const pair = `${p.fg} on ${p.bg}`;
-                const l = rows.find((r) => r.preset === 'graphite' && r.mode === 'light' && r.pair === pair);
-                const d = rows.find((r) => r.preset === 'graphite' && r.mode === 'dark' && r.pair === pair);
+              {contrastPairs.map((p, i) => {
+                const pair = pairLabel(p);
+                // By position: a label can repeat (the focus ring against its halo on several surfaces).
+                const l = rows.find((r) => r.preset === 'graphite' && r.mode === 'light' && r.index === i);
+                const d = rows.find((r) => r.preset === 'graphite' && r.mode === 'dark' && r.index === i);
                 return (
-                  <TableRow key={pair}>
+                  <TableRow key={i}>
                     <TableCell className="font-mono text-label">{pair}</TableCell>
                     <TableCell className="hidden text-muted-foreground sm:table-cell">{p.note}</TableCell>
                     <TableCell numeric>
@@ -231,8 +242,8 @@ export function TypographyFoundation() {
     'title-3': 'Queue a retune run',
     headline: 'Needs retune',
     prose: 'Overshoot is 7.6 points over the limit. Lower Kp, then rerun the step.',
-    callout: 'Torque command 0 → 12 N·m at 20 ms',
-    body: 'Phase current peaked at 97 % of its 32 A limit.',
+    callout: 'Torque command 0 → 12\u00a0N·m at 20\u00a0ms',
+    body: 'Phase current peaked at 97\u00a0% of its 32\u00a0A limit.',
     label: 'Peak current',
     caption: 'Sampled at 1 kHz · Bench 3',
   };
@@ -283,17 +294,17 @@ export function TypographyFoundation() {
       </DocSection>
       <DocSection
         title="Numbers"
-        description="Tabular figures where numbers stack and compare; proportional figures for a single large value. Units follow with a non-breaking space."
+        description="Tabular figures where numbers stack and compare; proportional figures for a single large value. A unit follows its value after a non-breaking space, so the two never wrap apart."
       >
         <div className="grid gap-3 sm:grid-cols-2">
           {(['proportional-nums', 'tabular-nums'] as const).map((variant) => (
             <div key={variant} className="flex flex-col gap-2 rounded-card border border-border bg-card p-4">
               <code className="text-caption text-subtle-foreground">{variant}</code>
               <div className={`flex flex-col items-end text-callout ${variant}`}>
-                <span>11.1 N·m</span>
-                <span>14.08 N·m</span>
-                <span>101.0 N·m</span>
-                <span>7.7 N·m</span>
+                <span>11.1&nbsp;N·m</span>
+                <span>14.08&nbsp;N·m</span>
+                <span>101.0&nbsp;N·m</span>
+                <span>7.7&nbsp;N·m</span>
               </div>
             </div>
           ))}

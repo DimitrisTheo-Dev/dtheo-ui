@@ -29,7 +29,7 @@ export default function CheckboxExample() {
       >
         <Label id={id} className="flex items-center gap-2.5">
           <Checkbox parent />
-          Export channels from R-0412
+          Export channels from <span className="whitespace-nowrap">R-0412</span>
         </Label>
         <div className="flex flex-col gap-2 pl-6">
           {channels.map((c) => (

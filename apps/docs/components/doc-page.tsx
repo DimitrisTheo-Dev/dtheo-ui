@@ -25,7 +25,8 @@ export function DocPage({
 }: {
   eyebrow?: React.ReactNode;
   title: string;
-  description: string;
+  /** One line. Markdown pages pass it with inline code already rendered. */
+  description: React.ReactNode;
   markdownHref?: string;
   /** What "Copy prompt for your agent" copies. Defaults to "read this page". */
   prompt?: string;

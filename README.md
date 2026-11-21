@@ -44,37 +44,41 @@ Components are copied into your project, so you own the code. Every item also in
 
 ## Why it is different
 
-- **Charts that know what a limit is.** Line, bar, heatmap, sparkline, a live 1 kHz stream, frequency response
-  (spectrum and Bode with gain and phase margins), scatter with a fit, and a histogram that states Cpk. Most are
-  readable with the arrow keys.
-- **Your agent already knows it.** An MCP server with 7 tools, `llms.txt`, and a Markdown copy of every page. The
-  page you read, the Markdown an agent reads and the MCP answer all come from one component contract.
-- **Mistakes caught before review.** `npx dtheo check` runs 17 rules for what agents get wrong (raw colors,
+- **Charts that know what a limit is.** Line, bar, live stream (1 kHz), scatter and histogram charts draw
+  limits and mark what crosses them; the histogram states Cpk. The frequency chart (spectrum and Bode) marks
+  gain and phase margins. Heatmap and sparkline make 8. Line, frequency, scatter and histogram charts read
+  with the arrow keys.
+- **Your agent already knows it.** An MCP server with 7 tools, `llms.txt` and a Markdown copy of every docs
+  page. The page you read, the Markdown an agent reads and the MCP answer all come from one component contract.
+- **Mistakes caught before review.** `npx dtheo check` runs 21 rules for what agents get wrong (raw colors,
   `transition-all`, icon buttons without a name, off-system radii…), each with the fix. It exits 1 in CI.
-- **Contrast is proven, not promised.** 116 text and UI color pairs are measured on every token build, layered
-  surfaces included. The build fails below WCAG AA.
-- **Feels native.** System type, Mac materials, one accent, a focus ring you can always see. Three presets
-  (Graphite, Flight deck, Deep space), light and dark, scoped to any element.
+- **Contrast is proven, not promised.** 40 text, UI and focus-ring color pairs are measured in every theme they
+  appear in (Graphite light and dark, Flight deck, Deep space) on every token build: 159 checks, layered surfaces
+  included. The build fails below WCAG AA.
+- **Feels native.** System type, Mac materials, one accent, a focus ring you can always see. Three presets,
+  scoped to any element: Graphite in light and dark, Flight deck and Deep space in dark.
 
 ## What is inside
 
-| | |
+| Part | What it is |
 | --- | --- |
 | **36 components** | On [Base UI](https://base-ui.com) and Tailwind CSS v4: fields, selects, menus, dialogs, sheets, toasts, tables with Shift-click range selection, metrics, an app shell… |
 | **8 charts** | SVG drawn by React, canvas for live and dense data, d3 for the math. No chart library. |
-| **Tokens** | OKLCH roles in shadcn's vocabulary, exported as CSS, DTCG JSON and hex for React Native and Expo |
+| **Tokens** | OKLCH roles in shadcn’s vocabulary: CSS through `dtheo init`, and DTCG JSON, OKLCH and hex for React Native and Expo in [`@dtheo/tokens`](packages/tokens) |
 | **4 example apps** | Run review, Motor map, Loop tuning, Lab assistant: full screens built only from the system, on synthetic data |
 | **CLI** | `dtheo init`, `add`, `list`, `check`, `rules`, `mcp` |
 
 ## How it is built
 
 ```
-packages/tokens   One OKLCH source → CSS, DTCG JSON, React Native hex and a contrast report
-packages/ui       Components on Base UI, and the component contracts (src/meta) that drive everything else
-packages/charts   Charts: SVG via React, canvas for live and dense data, d3 for scales and binning
+packages/tokens   One OKLCH source → CSS, DTCG JSON, React Native values, contrast report
+packages/ui       Components on Base UI, and the contracts (src/meta) that drive the
+                  docs, the registry, the Markdown and the MCP answers
+packages/charts   Charts: SVG via React, canvas for live and dense data, d3 for the math
 packages/cli      `dtheo`: copies components from the registry and runs the design check
-apps/docs         ui.dtheo.dev: docs, examples, the registry, the MCP server, llms.txt and Markdown mirrors
-e2e               Playwright: every route at desktop and phone width, axe in both themes, interactions, pixels
+apps/docs         ui.dtheo.dev: docs, examples, registry, MCP server, llms.txt, Markdown
+e2e               Playwright: every route at desktop and phone width, axe on 16 routes
+                  in both themes, interactions, pixels
 ```
 
 Every change runs through:
@@ -85,8 +89,8 @@ Every change runs through:
 | `pnpm lint` · `pnpm typecheck` | oxlint with React Compiler rules, strict TypeScript across the workspace |
 | `pnpm test` | Contracts, registry, usage graph, CLI and every design-check rule |
 | `pnpm design:check` | The repo passes its own design check, with every exception explained |
-| `pnpm test:e2e` | No errors or sideways scroll on any route, no serious axe violations, real interactions |
-| `pnpm test:visual` | Pixel diffs of the screens that define the look |
+| `pnpm test:e2e` | No errors or sideways scroll on any route, one heading outline per page, no serious axe violations on 16 routes in both themes, real interactions |
+| `pnpm test:visual` | Pixel diffs of the screens that define the look: macOS baselines locally, Linux baselines in CI (until those are committed, CI records them instead of comparing) |
 
 ## Develop
 

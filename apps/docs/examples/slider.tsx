@@ -26,6 +26,9 @@ export default function SliderExample() {
           min={0}
           max={OVERSHOOT_LIMIT}
           step={0.5}
+          // Announced as shown: "9.0 %".
+          format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }}
+          unit="%"
         />
         <FieldDescription>
           R-0410 peaked at {fmt.n1.format(r0410.overshoot)} %, inside the {OVERSHOOT_LIMIT} % limit:{' '}
@@ -46,6 +49,8 @@ export default function SliderExample() {
           max={SAMPLES - 1}
           step={10}
           minStepsBetweenValues={5}
+          thumbLabels={['Analysis window start', 'Analysis window end']}
+          unit="ms"
         />
         <FieldDescription>Settling time and overshoot are computed inside this window.</FieldDescription>
       </Field>

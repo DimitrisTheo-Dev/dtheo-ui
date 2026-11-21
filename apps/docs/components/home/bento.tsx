@@ -16,6 +16,9 @@ import {
 import { A11yDemo } from './a11y-demo';
 
 const passing = contrast.filter((r) => r.ok).length;
+// The report has one row per pair per theme (preset and mode): checks, not pairs.
+const pairs = new Set(contrast.map((r) => r.index)).size;
+const themes = new Set(contrast.map((r) => `${r.preset}/${r.mode}`)).size;
 
 const statusBadge = {
   fail: { variant: 'destructive', Icon: CircleXIcon, word: 'Fail' },
@@ -78,7 +81,7 @@ export function Bento() {
       <Tile
         className="lg:col-span-2"
         title="Your agent already knows it"
-        text="Seven MCP tools, llms.txt and a Markdown copy of every page."
+        text="Seven MCP tools, llms.txt and a Markdown copy of every docs page."
       >
         <div className="overflow-hidden rounded-popover border border-border bg-background/60 font-mono text-label font-normal">
           <div className="flex items-center gap-2 border-b border-border px-3.5 py-2 text-caption text-muted-foreground">
@@ -96,7 +99,10 @@ export function Bento() {
         </div>
       </Tile>
 
-      <Tile title="Contrast, proven" text="Every text pair, every theme, checked on every build.">
+      <Tile
+        title="Contrast, proven"
+        text={`${pairs} text and UI color pairs in ${themes} themes, checked on every build.`}
+      >
         <p className="flex items-baseline gap-2">
           <span className="text-hero tabular-nums">
             {passing}/{contrast.length}
@@ -104,25 +110,25 @@ export function Bento() {
         </p>
         <span className="flex items-center gap-1.5 text-label text-success-foreground">
           <CircleCheckIcon className="size-3.5" aria-hidden="true" />
-          Pass WCAG AA
+          Checks pass WCAG AA
         </span>
       </Tile>
 
       <Tile
         className="lg:col-span-3"
         title="Accessible by default"
-        text="Everything works from the keyboard and reads aloud, charts included."
+        text="Controls work from the keyboard and read aloud. Every chart has a text alternative."
       >
         <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-center lg:gap-8">
           <A11yDemo />
           <ul className="flex flex-col gap-2 text-body">
             {[
-              'Every control and chart works from the keyboard',
+              'Line, frequency, scatter and histogram charts read with the arrow keys',
               'A focus ring you can see, in every theme',
               'Status is an icon and a word, never color alone',
               'Focus traps, typeahead and roving focus from Base UI',
-              'Animations stop when reduced motion is on',
-              'axe checks the pages in both themes on every pull request',
+              'Reduced motion makes every animation instant',
+              'axe checks 16 key pages in both themes on every pull request',
             ].map((f) => (
               <li key={f} className="flex gap-2">
                 <CircleCheckIcon
@@ -147,7 +153,7 @@ export function Bento() {
           </span>
           <span className="flex items-center gap-2 text-success-foreground">
             <CircleCheckIcon className="size-3 shrink-0" aria-hidden="true" />
-            <span className="truncate">transition-[transform,opacity]</span>
+            <span className="truncate">transition-[scale,opacity]</span>
           </span>
           <span className="mt-2 flex items-center gap-2 text-destructive-foreground">
             <CircleXIcon className="size-3 shrink-0" aria-hidden="true" />
@@ -173,7 +179,7 @@ export function Bento() {
       <Tile
         className="lg:col-span-2"
         title="Works on phones"
-        text="Touch-sized controls, safe areas, and the same tokens for React Native."
+        text="Touch-sized controls, safe areas and the same tokens for React Native."
       >
         <div className="flex items-end gap-5 sm:gap-8">
           {/* dtheo-check-ignore-next-line (a phone's own corner radius, drawn to scale) */}
@@ -199,7 +205,7 @@ export function Bento() {
           </div>
           <ul className="flex flex-col gap-2 pb-1 text-body">
             {[
-              'Controls grow to 36 px on touch',
+              'On touch, default controls grow to 36 px and large ones to 40',
               'Respects notches and safe areas',
               'Every page tested at phone width',
               'Tokens for React Native and Expo',
@@ -219,7 +225,7 @@ export function Bento() {
       <Tile
         className="lg:col-span-2"
         title="Three looks, one codebase"
-        text="Change one attribute. Components, spacing and contrast come with it."
+        text="Change one attribute: colors, corner radius and material change. Components and spacing stay the same."
       >
         <div className="grid gap-2 sm:grid-cols-3">
           {presets.map((p) => (

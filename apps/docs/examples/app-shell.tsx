@@ -62,7 +62,7 @@ export default function AppShellExample() {
       <SidebarHeader>
         <span className="flex items-center gap-2 px-1 text-headline">
           <FlaskConicalIcon className="size-4 text-primary" aria-hidden="true" />
-          Bench Review
+          Actuator Lab
         </span>
       </SidebarHeader>
       <SidebarContent>

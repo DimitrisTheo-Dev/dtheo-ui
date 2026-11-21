@@ -16,7 +16,7 @@ export function ardManifest() {
         displayName: `${site.name} MCP server`,
         type: 'application/mcp-server-card+json',
         description:
-          'Read-only design system tools: look components up, copy their source, read tokens and guidelines, and check UI code against the system.',
+          'Read-only design system tools. Look components up, copy their source, read tokens and guidelines, then check UI code against the system.',
         version: site.version,
         tags: ['design-system', 'react', 'tailwindcss', 'base-ui', 'charts', 'accessibility'],
         capabilities: mcpTools.map(([name]) => name),

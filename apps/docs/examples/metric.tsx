@@ -60,8 +60,7 @@ export default function MetricExample() {
           limitLabel={`Limit ${RISE_LIMIT} ms`}
         />
         <Metric
-          label="Winding temp."
-          hint="Winding temperature"
+          label="Winding temperature"
           value={fmt.n1.format(WINDING_TEMP)}
           unit="°C"
           {...check(WINDING_TEMP, TEMP_LIMIT)}

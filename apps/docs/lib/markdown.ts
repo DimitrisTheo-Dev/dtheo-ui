@@ -1,10 +1,12 @@
 // dtheo-check-disable-file transition-all, scale-zero, ease-in -- documentation that quotes the rules.
 import 'server-only';
 import { components, type ComponentMeta } from '@dtheo/ui/meta';
-import { colorRoles, foundation, presets } from '@dtheo/tokens';
+import { colorRoles, contrastPairs, foundation, presets } from '@dtheo/tokens';
 import { ruleList } from 'dtheo/check';
+import { installItems } from './registry';
 import { exampleSource } from './source';
 import { installCommand, shadcnCommand, site } from './site';
+import { countLabel } from './counts';
 import { foundations, getStarted, patterns, examples as exampleNav } from './nav';
 import { usedIn } from './usage';
 import { pagesMarkdown } from './pages-md';
@@ -25,9 +27,9 @@ export function componentMarkdown(meta: ComponentMeta) {
     '## Install',
     '',
     '```bash',
-    installCommand(meta.slug),
+    installCommand(...installItems(meta)),
     '# or, with the shadcn CLI',
-    shadcnCommand(meta.slug),
+    shadcnCommand(...installItems(meta)),
     '```',
     '',
     `First time in this project? Run \`npx ${site.cli}@latest init\` first, or follow ${site.url}/docs/installation#using-the-shadcn-cli-instead to set up the shadcn CLI once.`,
@@ -53,7 +55,7 @@ export function componentMarkdown(meta: ComponentMeta) {
           '| --- | --- | --- | --- |',
           ...meta.props.map(
             (p) =>
-              `| \`${p.name}\` | \`${p.type.replace(/\|/g, '\\|')}\` | ${p.default ? `\`${p.default}\`` : '–'} | ${p.description} |`,
+              `| \`${p.name}\` | \`${p.type.replace(/\|/g, '\\|')}\` | ${p.default ? `\`${p.default}\`` : p.required ? 'required' : '–'} | ${p.description} |`,
           ),
         ]
       : []),
@@ -94,7 +96,7 @@ export function foundationMarkdown(slug: string) {
     return [
       '# Color',
       '',
-      '> OKLCH roles in the shadcn vocabulary, three presets, light and dark. Text pairs are contrast-checked when tokens build; the build fails below WCAG AA.',
+      `> OKLCH roles in the shadcn vocabulary and three presets: Graphite in light and dark, Flight deck and Deep space in dark. ${contrastPairs.length} text, UI and focus-ring pairs are contrast-checked in every theme they apply to when tokens build; the build fails below WCAG AA.`,
       '',
       'Rules: color marks attention, not decoration. Neutral surfaces; one accent for the primary action and selection; success, warning and critical only when something needs a person, always with a word or icon. Status text uses the `*-foreground` roles, fills use the base role.',
       '',
@@ -125,7 +127,7 @@ export function foundationMarkdown(slug: string) {
         ([k, v]) => `| ${k} | \`text-${k}\` | ${v[0]} / ${v[1]} | ${v[2]} | ${v[3]} |`,
       ),
       '',
-      'Numbers that align in columns use `tabular-nums`. Large standalone figures keep proportional digits. Units follow values with a non-breaking space (17.6 %, 30.9 A).',
+      'Numbers that align in columns use `tabular-nums`. Large standalone figures keep proportional digits. In running text, a unit follows its value after a non-breaking space (17.6 %, 30.9 A), so the two never wrap apart. Metrics set the unit in its own smaller span.',
       '',
     ].join('\n');
   }
@@ -139,7 +141,7 @@ export function foundationMarkdown(slug: string) {
       '| --- | --- |',
       ...Object.entries(foundation.control).map(([k, v]) => `| \`h-control-${k}\` | ${v} |`),
       '',
-      'Coarse pointers raise the default control (md) to 36px.',
+      `Coarse pointers (touch screens) raise \`h-control-md\` to ${foundation.control.touch} and \`h-control-lg\` to ${Number.parseInt(foundation.control.touch) + 4}px; xs and sm stay the same.`,
       '',
       '| Radius | Graphite | Flight deck | Deep space |',
       '| --- | --- | --- | --- |',
@@ -156,7 +158,7 @@ export function foundationMarkdown(slug: string) {
     return [
       '# Motion',
       '',
-      '> Fast, interruptible, and absent where it would slow people down.',
+      '> Fast, interruptible and absent where it would slow people down.',
       '',
       '| Token | Value | Use |',
       '| --- | --- | --- |',
@@ -168,7 +170,7 @@ export function foundationMarkdown(slug: string) {
       '- No animation on keyboard-triggered or 100+/day actions (the command palette opens instantly).',
       '- Never ease-in on UI; never scale from 0; name transitioned properties.',
       '- Popovers grow from their trigger (`origin-(--transform-origin)`); dialogs stay centered.',
-      '- Reduced motion keeps opacity changes and removes movement.',
+      '- Reduced motion makes every transition and animation instant (1 ms), fades included.',
       '',
     ].join('\n');
   }
@@ -180,7 +182,7 @@ export function componentsIndexMarkdown() {
   const lines = [
     '# Components',
     '',
-    `> All ${components.length} components and charts, grouped by the job they do. Install any of them with \`${installCommand('<name>')}\`.`,
+    `> All ${countLabel}, grouped by the job they do. Install any of them with \`${installCommand('<name>')}\`.`,
     '',
   ];
   for (const cat of new Set(components.map((c) => c.category))) {
@@ -234,7 +236,7 @@ export function llmsTxt() {
     '',
     ...exampleNav.map((p) => `- [${p.title}](${site.url}${p.href}): ${p.description}`),
     `- [Registry index](${site.url}/r/registry.json): every installable item as JSON`,
-    `- [Full text](${site.url}/llms-full.txt): every page in one file`,
+    `- [Full text](${site.url}/llms-full.txt): all the docs in one file`,
     '',
   ].join('\n');
 }

@@ -37,7 +37,7 @@ const faqs: Array<[string, React.ReactNode]> = [
   ['Is it free?', 'Yes, MIT. Components are copied into your project, so you own the code.'],
   [
     'Which charts are included?',
-    'Eight: line, bar, heatmap, sparkline, a live stream, frequency (spectrum and Bode), scatter and histogram. All handle limits; most read with the arrow keys. SVG and canvas drawn by React, d3 for the math, no chart library.',
+    'Eight: line, bar, heatmap, sparkline, a live stream, frequency (spectrum and Bode), scatter and histogram. Line, bar, stream, scatter and histogram draw limits; frequency marks gain and phase margins. Line, frequency, scatter and histogram read with the arrow keys. SVG and canvas drawn by React, d3 for the math, no chart library.',
   ],
   [
     'How does my agent use it?',
@@ -48,11 +48,11 @@ const faqs: Array<[string, React.ReactNode]> = [
   ],
   [
     'Does it work with shadcn and Tailwind v4?',
-    'Yes. Token names match shadcn’s, every item installs with the shadcn CLI, and styles are Tailwind v4.',
+    'Yes. Token names match shadcn’s, every item installs with the shadcn CLI and styles are Tailwind v4.',
   ],
   [
     'Is it accessible?',
-    'Behavior comes from Base UI, contrast is checked when the tokens build, and status is never color alone.',
+    'Behavior comes from Base UI, contrast is checked when the tokens build and status is never color alone.',
   ],
   [
     'Does it work with React Native?',
@@ -100,7 +100,7 @@ function SectionHead({
 
 export default function Home() {
   return (
-    <main className="flex flex-col">
+    <main id="content" tabIndex={-1} className="flex flex-col">
       <section className="relative overflow-hidden">
         {/* The same sky in both themes: a night sky in dark, a long exposure in ink in light. */}
         <StarTrails className="dark:hidden" />
@@ -153,7 +153,7 @@ export default function Home() {
         <SectionHead
           eyebrow="Why dtheo/ui"
           title="Built for you and your agent"
-          text="Your agent looks the system up, uses it, and checks its own work. You review less."
+          text="Your agent looks the system up, uses it and checks its own work. You review less."
         />
         <Bento />
       </section>
@@ -198,7 +198,7 @@ export default function Home() {
                     alt=""
                     sizes="(min-width: 1152px) 280px, (min-width: 640px) 50vw, 100vw"
                     placeholder="blur"
-                    className="size-full object-cover object-top-left transition-transform duration-300 ease-out group-hover:scale-[1.02]"
+                    className="size-full object-cover object-top-left transition-transform duration-240 ease-out group-hover:scale-[1.02]"
                   />
                 </span>
                 <span className="flex items-center gap-3 px-4 py-3">

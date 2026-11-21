@@ -23,7 +23,10 @@ import {
   reference,
 } from '@/lib/lab-data';
 
-/** The hero shows the product, not decoration: the live checks and trace from the run review example. */
+/**
+ * The hero shows the product, not decoration: the live checks and trace from the run review example. The run is
+ * synthetic and says so.
+ */
 export function HeroPreview() {
   return (
     <Card className="min-w-0 overflow-hidden shadow-raised">
@@ -66,13 +69,16 @@ export function HeroPreview() {
             limit={1 / 1.5}
           />
         </MetricGroup>
-        <ChartLegend
-          items={[
-            { label: 'R-0412', tone: 'primary' },
-            { label: 'R-0409 reference', tone: 'muted' },
-            { label: 'Over limit', tone: 'critical', kind: 'area' },
-          ]}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+          <ChartLegend
+            items={[
+              { label: 'R-0412', tone: 'primary' },
+              { label: 'R-0409 reference', tone: 'muted' },
+              { label: 'Over limit', tone: 'critical', kind: 'area' },
+            ]}
+          />
+          <span className="text-caption text-subtle-foreground">Synthetic data</span>
+        </div>
         <LineChart
           ariaLabel={`Output torque: R-0412 overshoots ${fmt.n1.format(M.overshoot)} %, above the ${OVERSHOOT_LIMIT} % limit. Phase current peaks at ${fmt.n1.format(M.peakCurrent)} A of ${CURRENT_LIMIT} A.`}
           x={measured.t}
