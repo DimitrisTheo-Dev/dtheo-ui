@@ -45,7 +45,10 @@ export function CommandTabs({
             className="flex min-h-control-md min-w-0 basis-full items-center gap-2 pl-2.5 sm:basis-auto sm:flex-1"
           >
             {w.prose ? (
-              <p className="min-w-0 flex-1 truncate text-label font-normal text-muted-foreground">{w.text}</p>
+              // A prompt to copy is read in full: it wraps instead of ending in an ellipsis.
+              <p className="min-w-0 flex-1 py-1 text-label font-normal text-pretty text-muted-foreground">
+                {w.text}
+              </p>
             ) : (
               <code className="min-w-0 flex-1 overflow-x-auto font-mono text-label font-normal whitespace-nowrap text-foreground [scrollbar-width:none]">
                 <span aria-hidden="true" className="text-subtle-foreground select-none">

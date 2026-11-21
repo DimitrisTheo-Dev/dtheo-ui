@@ -6,12 +6,17 @@ import { Kbd } from '@dtheo/ui/components/kbd';
 import { DocPage, DocSection, type TocItem } from './doc-page';
 import { CommandTabs } from './command-tabs';
 import { Preview } from './preview';
+import { installItems } from '@/lib/registry';
 import { exampleSource } from '@/lib/source';
 import { highlight } from '@/lib/highlight';
 import { installCommand, shadcnCommand, site } from '@/lib/site';
 import { usedIn } from '@/lib/usage';
+import { smartQuotes } from '@/lib/parse-markdown';
 
-/** `code` spans in contract text, rendered as code. Keyed by character offset: the text never reorders. */
+/**
+ * Contract text as people read it: `code` spans render as code, and the prose around them gets curly quotes.
+ * Keyed by character offset: the text never reorders.
+ */
 function Inline({ text }: { text: string }) {
   let offset = 0;
   return text
@@ -25,7 +30,7 @@ function Inline({ text }: { text: string }) {
           {part.slice(1, -1)}
         </code>
       ) : (
-        <React.Fragment key={at}>{part}</React.Fragment>
+        <React.Fragment key={at}>{smartQuotes(part)}</React.Fragment>
       );
     });
 }
@@ -102,8 +107,7 @@ function WhenToUse({ meta }: { meta: ComponentMeta }) {
   );
 }
 
-const baseUiSlug = (slug: string) =>
-  slug === 'sheet' ? 'drawer' : slug === 'command' ? 'autocomplete' : slug;
+const baseUiSlug = (slug: string) => (slug === 'sheet' ? 'drawer' : slug === 'command' ? 'dialog' : slug);
 
 function Api({ meta }: { meta: ComponentMeta }) {
   if (!meta.props?.length) return null;
@@ -116,10 +120,14 @@ function Api({ meta }: { meta: ComponentMeta }) {
               <code className="font-mono text-label text-foreground">{p.name}</code>
               {p.default ? (
                 <span className="font-mono text-caption text-subtle-foreground">= {p.default}</span>
+              ) : p.required ? (
+                <span className="text-caption text-subtle-foreground">Required</span>
               ) : null}
             </dt>
             <dd className="flex min-w-0 flex-col gap-1.5">
-              <span className="text-body text-muted-foreground">{p.description}</span>
+              <span className="text-body text-muted-foreground">
+                <Inline text={p.description} />
+              </span>
               <TypeCell type={p.type} />
             </dd>
           </div>
@@ -151,7 +159,9 @@ function Keyboard({ meta }: { meta: ComponentMeta }) {
                   <Kbd key={k}>{k}</Kbd>
                 ))}
               </dt>
-              <dd className="text-body text-muted-foreground max-sm:pb-2">{action}</dd>
+              <dd className="text-body text-muted-foreground max-sm:pb-2">
+                <Inline text={action} />
+              </dd>
             </React.Fragment>
           ))}
         </dl>
@@ -204,7 +214,9 @@ export async function ComponentDoc({ meta }: { meta: ComponentMeta }) {
   const base = meta.package === 'charts' ? 'charts' : 'components';
   const md = `/docs/${base}/${meta.slug}.md`;
   const [first, ...rest] = meta.examples;
-  const prompt = `Use the ${site.name} design system. Add ${meta.title} with \`${installCommand(meta.slug)}\`, then follow its contract at ${site.url}${md}.`;
+  // The component plus whatever its examples import, so the code on this page builds once pasted.
+  const items = installItems(meta);
+  const prompt = `Use the ${site.name} design system. Add ${meta.title} with \`${installCommand(...items)}\`, then follow its contract at ${site.url}${md}.`;
   const sections: Array<[string, string, boolean]> = [
     ['preview', 'Preview', true],
     ['when-to-use', 'When to use', true],
@@ -221,7 +233,7 @@ export async function ComponentDoc({ meta }: { meta: ComponentMeta }) {
     <DocPage
       eyebrow={meta.category}
       title={meta.title}
-      description={meta.description}
+      description={<Inline text={meta.description} />}
       markdownHref={md}
       prompt={prompt}
       toc={toc}
@@ -229,8 +241,8 @@ export async function ComponentDoc({ meta }: { meta: ComponentMeta }) {
         <CommandTabs
           label="Install with"
           ways={[
-            { value: 'cli', label: 'CLI', text: installCommand(meta.slug) },
-            { value: 'shadcn', label: 'shadcn', text: shadcnCommand(meta.slug) },
+            { value: 'cli', label: 'CLI', text: installCommand(...items) },
+            { value: 'shadcn', label: 'shadcn', text: shadcnCommand(...items) },
             { value: 'agent', label: 'Agent', text: prompt, prose: true },
           ]}
         />

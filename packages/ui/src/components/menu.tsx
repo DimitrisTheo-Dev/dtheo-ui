@@ -5,7 +5,7 @@ import { Menu as MenuPrimitive } from '@base-ui/react/menu';
 import { CheckIcon, ChevronRightIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { usePortalContainer } from '../lib/theme';
-import { popupItemClass, popupSurfaceClass } from './select';
+import { popupItemClass, popupSurfaceClass } from '../lib/popup';
 
 /** A list of actions or options behind a trigger (the "…" menu, a toolbar dropdown). */
 export const Menu = MenuPrimitive.Root;

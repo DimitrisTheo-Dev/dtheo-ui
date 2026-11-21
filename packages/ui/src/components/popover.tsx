@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { cn } from '../lib/utils';
 import { usePortalContainer } from '../lib/theme';
-import { popupSurfaceClass } from './select';
+import { popupSurfaceClass } from '../lib/popup';
 
 /** Non-modal floating content anchored to a trigger: filters, quick settings, details. */
 export const Popover = PopoverPrimitive.Root;

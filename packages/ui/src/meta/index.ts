@@ -1,6 +1,7 @@
 import type { ComponentMeta } from './types';
 
 export type { ComponentMeta, AtomicLevel, Category, PropDoc } from './types';
+export { categories } from './types';
 
 const base = ['@base-ui/react'];
 const styling = ['clsx', 'tailwind-merge'];
@@ -46,7 +47,8 @@ export const components: ComponentMeta[] = [
         name: 'size',
         type: "'xs' | 'sm' | 'md' | 'lg' | 'icon-xs' | 'icon-sm' | 'icon' | 'icon-lg'",
         default: "'md'",
-        description: 'Control height: 22, 24, 28 (36 on touch), 32px.',
+        description:
+          'Control height: xs 22, sm 24, md 28, lg 32px; icon sizes are squares of the same. On a coarse pointer (touch), md grows to 36px and lg to 40px.',
       },
       {
         name: 'loading',
@@ -75,6 +77,7 @@ export const components: ComponentMeta[] = [
     exports: ['Toggle', 'SegmentedControl', 'SegmentedControlItem'],
     dependencies: [...base, ...styling],
     registryDependencies: ['utils'],
+    aliases: ['toggle-group', 'segmented-control'],
     examples: ['segmented-control'],
     keyboard: [
       ['Arrow keys', 'Move between segments'],
@@ -119,6 +122,8 @@ export const components: ComponentMeta[] = [
       'FieldLabel',
       'FieldDescription',
       'FieldError',
+      'FieldControl',
+      'FieldValidity',
       'FieldItem',
       'Fieldset',
       'FieldsetLegend',
@@ -166,7 +171,7 @@ export const components: ComponentMeta[] = [
     files: ['components/input-group.tsx', 'components/input.tsx'],
     package: 'ui',
     exports: ['InputGroup', 'InputGroupAddon'],
-    dependencies: styling,
+    dependencies: [...base, ...styling],
     registryDependencies: ['utils', 'input'],
     examples: ['input-group'],
     a11y: ['Addons are decorative; the input still needs its own label.'],
@@ -201,6 +206,26 @@ export const components: ComponentMeta[] = [
     dependencies: [...base, ...styling, 'lucide-react'],
     registryDependencies: ['utils'],
     examples: ['number-field'],
+    props: [
+      {
+        name: 'label',
+        type: 'ReactNode',
+        description: 'The label above the field. Drag it sideways to scrub the value.',
+      },
+      { name: 'unit', type: 'string', description: 'Shown after the value inside the field (ms, N·m).' },
+      {
+        name: 'step',
+        type: 'number',
+        default: '1',
+        description: 'Arrow keys and the steppers move by this.',
+      },
+      { name: 'largeStep', type: 'number', default: '10', description: 'Shift + arrow moves by this.' },
+      {
+        name: 'format',
+        type: 'Intl.NumberFormatOptions',
+        description: 'How the value is shown, in the user’s locale: digits, percent, units Intl knows.',
+      },
+    ],
     keyboard: [
       ['Arrow up / down', 'Steps by `step`'],
       ['Shift + arrow', 'Steps by `largeStep`'],
@@ -234,7 +259,7 @@ export const components: ComponentMeta[] = [
       'SelectSeparator',
     ],
     dependencies: [...base, ...styling, 'lucide-react'],
-    registryDependencies: ['utils', 'input'],
+    registryDependencies: ['utils', 'input', 'popup'],
     examples: ['select'],
     keyboard: [
       ['Enter / Space / Arrow down', 'Opens the list'],
@@ -254,14 +279,49 @@ export const components: ComponentMeta[] = [
     use: ['Actuators, firmware builds, test rigs, people'],
     avoid: [
       'Fewer than ~8 options: use Select, which needs no typing',
-      'Free text with suggestions only: use Input with a datalist or Autocomplete',
+      'Free text, where a suggestion is optional: use Input. Combobox only accepts an option from its list',
     ],
-    files: ['components/combobox.tsx', 'components/select.tsx', 'components/input.tsx'],
+    files: ['components/combobox.tsx'],
     package: 'ui',
     exports: ['Combobox'],
     dependencies: [...base, ...styling, 'lucide-react'],
-    registryDependencies: ['utils', 'select'],
+    registryDependencies: ['utils', 'popup'],
     examples: ['combobox'],
+    props: [
+      {
+        name: 'items',
+        type: 'ComboboxOption[]',
+        required: true,
+        description: '`{ value, label, description? }` per option. Typing filters on the label.',
+      },
+      {
+        name: 'value',
+        type: 'ComboboxOption | null',
+        description: 'The chosen option, with `onValueChange`. Use `defaultValue` when uncontrolled.',
+      },
+      {
+        name: 'onValueChange',
+        type: '(value: ComboboxOption | null) => void',
+        description: 'Called on choose and clear.',
+      },
+      {
+        name: 'placeholder',
+        type: 'string',
+        default: "'Search…'",
+        description: 'Hint text in the empty field.',
+      },
+      {
+        name: 'emptyMessage',
+        type: 'string',
+        default: "'No matches.'",
+        description: 'Shown when nothing matches the query.',
+      },
+      {
+        name: 'aria-label',
+        type: 'string',
+        description: 'Names the field when no FieldLabel does.',
+      },
+    ],
     keyboard: [
       ['Type', 'Filters the list'],
       ['Arrow keys', 'Move the highlight'],
@@ -352,6 +412,21 @@ export const components: ComponentMeta[] = [
         description: 'A name per thumb ("Window start", "Window end") so a range is announced apart.',
       },
       {
+        name: 'unit',
+        type: 'string',
+        description: 'Announced after the value ("420 ms"), so a screen reader hears what the screen shows.',
+      },
+      {
+        name: 'format',
+        type: 'Intl.NumberFormatOptions',
+        description: 'Number format for the announced value, such as one decimal for "9.0 %".',
+      },
+      {
+        name: 'getAriaValueText',
+        type: '(formattedValue: string, value: number, index: number) => string',
+        description: 'Full control of the announced text, for values a unit cannot say ("Off", "Auto").',
+      },
+      {
         name: 'locale',
         type: 'Intl.LocalesArgument',
         default: "'en-US'",
@@ -391,6 +466,21 @@ export const components: ComponentMeta[] = [
     dependencies: [...base, ...styling, 'lucide-react'],
     registryDependencies: ['utils', 'button'],
     examples: ['dialog'],
+    props: [
+      {
+        name: 'open',
+        type: 'boolean',
+        description:
+          'Dialog: controlled open state, with `onOpenChange`. Leave both out to let DialogTrigger open it.',
+      },
+      {
+        name: 'showClose',
+        type: 'boolean',
+        default: 'true',
+        description:
+          'DialogContent: the close button in the corner. Escape and DialogClose still close it without one.',
+      },
+    ],
     keyboard: [
       ['Escape', 'Closes the dialog'],
       ['Tab', 'Cycles focus within the dialog'],
@@ -417,7 +507,7 @@ export const components: ComponentMeta[] = [
       'AlertDialogFooter',
       'AlertDialogClose',
     ],
-    dependencies: [...base, ...styling],
+    dependencies: [...base, ...styling, 'lucide-react'],
     registryDependencies: ['utils', 'dialog', 'button'],
     examples: ['alert-dialog'],
     keyboard: [['Escape', 'Cancels']],
@@ -454,6 +544,14 @@ export const components: ComponentMeta[] = [
     dependencies: [...base, ...styling, 'lucide-react'],
     registryDependencies: ['utils'],
     examples: ['sheet'],
+    props: [
+      {
+        name: 'side',
+        type: "'right' | 'left' | 'bottom'",
+        default: "'right'",
+        description: 'Sheet: the edge it slides in from, and the direction a swipe dismisses it.',
+      },
+    ],
     keyboard: [['Escape', 'Closes the sheet']],
     a11y: [
       'Swipe to dismiss follows the finger 1:1 and accepts a flick; it leaves in the direction it entered.',
@@ -468,7 +566,7 @@ export const components: ComponentMeta[] = [
     description: 'Non-modal content anchored to its trigger: filters, quick settings, details.',
     use: ['Small forms and details that relate to one control'],
     avoid: ['Information only, no interaction: use Tooltip', 'Long or multi-step forms: use Sheet or Dialog'],
-    files: ['components/popover.tsx', 'components/select.tsx'],
+    files: ['components/popover.tsx'],
     package: 'ui',
     exports: [
       'Popover',
@@ -479,7 +577,7 @@ export const components: ComponentMeta[] = [
       'PopoverClose',
     ],
     dependencies: [...base, ...styling],
-    registryDependencies: ['utils'],
+    registryDependencies: ['utils', 'popup'],
     examples: ['popover'],
     keyboard: [['Escape', 'Closes and returns focus to the trigger']],
     primitive: 'Popover',
@@ -489,7 +587,7 @@ export const components: ComponentMeta[] = [
     title: 'Tooltip',
     category: 'Overlays',
     level: 'atom',
-    description: 'A short label for an icon-only control. After the first, neighbours open instantly.',
+    description: 'A short label for an icon-only control. After the first, neighbors open instantly.',
     use: ['Naming icon buttons', 'Revealing a truncated value'],
     avoid: ['Essential information or actions: touch users never see tooltips'],
     files: ['components/tooltip.tsx'],
@@ -498,6 +596,26 @@ export const components: ComponentMeta[] = [
     dependencies: [...base, ...styling],
     registryDependencies: ['utils'],
     examples: ['tooltip'],
+    props: [
+      {
+        name: 'side',
+        type: "'top' | 'bottom' | 'left' | 'right' | 'inline-start' | 'inline-end'",
+        default: "'top'",
+        description: 'TooltipContent: which side of the trigger it opens on.',
+      },
+      {
+        name: 'align',
+        type: "'start' | 'center' | 'end'",
+        default: "'center'",
+        description: 'TooltipContent: where it lines up along that side.',
+      },
+      {
+        name: 'sideOffset',
+        type: 'number',
+        default: '6',
+        description: 'TooltipContent: gap to the trigger, in px.',
+      },
+    ],
     primitive: 'Tooltip',
   },
   {
@@ -511,7 +629,7 @@ export const components: ComponentMeta[] = [
       'Navigation between pages: use links or the sidebar',
       'Choosing a value for a form: use Select or Combobox',
     ],
-    files: ['components/menu.tsx', 'components/select.tsx'],
+    files: ['components/menu.tsx'],
     package: 'ui',
     exports: [
       'Menu',
@@ -530,8 +648,29 @@ export const components: ComponentMeta[] = [
       'MenuSubContent',
     ],
     dependencies: [...base, ...styling, 'lucide-react'],
-    registryDependencies: ['utils', 'select'],
+    registryDependencies: ['utils', 'popup'],
     examples: ['menu'],
+    props: [
+      {
+        name: 'side',
+        type: "'top' | 'bottom' | 'left' | 'right' | 'inline-start' | 'inline-end'",
+        default: "'bottom'",
+        description:
+          'MenuContent: which side of the trigger it opens on. MenuSubContent opens at inline-end.',
+      },
+      {
+        name: 'align',
+        type: "'start' | 'center' | 'end'",
+        default: "'start'",
+        description: 'MenuContent: where it lines up along that side.',
+      },
+      {
+        name: 'variant',
+        type: "'default' | 'destructive'",
+        default: "'default'",
+        description: 'MenuItem: destructive for actions that delete or discard; say what in the label.',
+      },
+    ],
     keyboard: [
       ['Arrow keys', 'Move the highlight; right opens a submenu'],
       ['Enter / Space', 'Runs the highlighted item'],
@@ -559,10 +698,30 @@ export const components: ComponentMeta[] = [
     examples: ['command'],
     props: [
       {
+        name: 'open',
+        type: 'boolean',
+        required: true,
+        description:
+          'Whether the palette is showing. Hold it in state: ⌘K asks to open it through onOpenChange.',
+      },
+      {
+        name: 'onOpenChange',
+        type: '(open: boolean) => void',
+        required: true,
+        description: 'Called with the new state on ⌘K, Escape, a click outside and after a command runs.',
+      },
+      {
         name: 'items',
         type: 'CommandItemData[]',
+        required: true,
         description:
           'value, label, group, optional hint, keywords, shortcut, icon and onSelect. Search matches every word of the query against the label, hint and keywords (words people search for that the label does not say); label matches are listed first.',
+      },
+      {
+        name: 'placeholder',
+        type: 'string',
+        default: "'Search commands and pages…'",
+        description: 'Hint text in the empty search field.',
       },
       {
         name: 'emptyMessage',
@@ -583,7 +742,10 @@ export const components: ComponentMeta[] = [
       ['Enter', 'Runs the highlighted command'],
       ['Escape', 'Closes'],
     ],
-    primitive: 'Autocomplete',
+    a11y: [
+      'The search field and list are a Base UI Autocomplete inside the dialog: arrows move, Enter runs.',
+    ],
+    primitive: 'Dialog',
   },
   {
     slug: 'toast',
@@ -610,13 +772,29 @@ export const components: ComponentMeta[] = [
     level: 'molecule',
     description: 'Switches between views of the same object, as a segmented control or an underline.',
     use: ['Overview / Traces / Notes for one run'],
-    avoid: ['Steps of a process: use a stepper or separate pages'],
+    avoid: [
+      'Steps people must take in order: use one page per step with Back and Continue; tabs let people jump',
+    ],
     files: ['components/tabs.tsx'],
     package: 'ui',
     exports: ['Tabs', 'TabsList', 'TabsTab', 'TabsPanel'],
     dependencies: [...base, ...styling],
     registryDependencies: ['utils'],
     examples: ['tabs'],
+    props: [
+      {
+        name: 'variant',
+        type: "'segmented' | 'underline'",
+        default: "'segmented'",
+        description: 'TabsList: segmented for views of one object, underline for page-level sections.',
+      },
+      {
+        name: 'value',
+        type: 'string',
+        description:
+          'TabsTab and TabsPanel: pairs a tab with its panel. Tabs takes `defaultValue`, or `value` with `onValueChange`.',
+      },
+    ],
     keyboard: [['Arrow keys', 'Move between tabs']],
     primitive: 'Tabs',
   },
@@ -641,13 +819,14 @@ export const components: ComponentMeta[] = [
       'SidebarItem',
       'PageHeader',
     ],
-    dependencies: [...base, ...styling, 'lucide-react'],
+    dependencies: [...styling, 'lucide-react'],
     registryDependencies: ['utils', 'sheet', 'button', 'scroll-area'],
     examples: ['app-shell'],
     props: [
       {
         name: 'sidebar',
         type: 'ReactNode',
+        required: true,
         description: 'AppShell: sidebar content. Below 768px it moves into a sheet.',
       },
       {
@@ -657,13 +836,19 @@ export const components: ComponentMeta[] = [
         description: 'AppShell: fill a fixed-height parent instead of the viewport.',
       },
       {
+        name: 'title',
+        type: 'ReactNode',
+        required: true,
+        description: 'PageHeader: the page title, with optional `eyebrow`, `description` and `actions`.',
+      },
+      {
         name: 'level',
         type: '1 | 2',
         default: '1',
         description: 'PageHeader: heading level of the title; use 2 when the page already has an h1.',
       },
     ],
-    a11y: ['The current page carries `aria-current="page"`. Sections are labelled navigation landmarks.'],
+    a11y: ['The current page carries `aria-current="page"`. Sections are labeled navigation landmarks.'],
   },
   // ---------------- Feedback ----------------
   {
@@ -680,6 +865,19 @@ export const components: ComponentMeta[] = [
     dependencies: [...styling, 'class-variance-authority', 'lucide-react'],
     registryDependencies: ['utils'],
     examples: ['alert'],
+    props: [
+      {
+        name: 'variant',
+        type: "'info' | 'success' | 'warning' | 'destructive' | 'neutral'",
+        default: "'info'",
+        description: 'Alert: tone, default icon and role. Warning and destructive are announced at once.',
+      },
+      {
+        name: 'icon',
+        type: 'ReactNode | false',
+        description: 'Alert: replaces the variant’s icon; `false` removes it.',
+      },
+    ],
     a11y: ['Warnings and errors use role="alert"; info and success use role="status".'],
   },
   {
@@ -755,16 +953,21 @@ export const components: ComponentMeta[] = [
     level: 'atom',
     description:
       'An Apple-style activity indicator, and placeholders shaped like the content that is loading.',
-    use: ['Waits over ~300ms', 'Skeletons that match the final layout so nothing shifts'],
+    use: [
+      'Spinner: a wait over ~300 ms with no layout to hold, such as saving or connecting',
+      'Skeleton: content whose layout is known (rows, cards), drawn in its shape so nothing shifts when it arrives',
+    ],
     avoid: [
-      'Content with a known shape: use Skeleton so nothing shifts',
-      'Waits under ~300 ms: show nothing',
+      'Waits under ~300 ms: show nothing, a flash reads as a glitch',
+      'Work with a known amount left: use Progress with a value',
+      'A button’s own action: use Button `loading`, which keeps its width',
     ],
     files: ['components/spinner.tsx', 'components/skeleton.tsx'],
     package: 'ui',
     exports: ['Spinner', 'Skeleton'],
     dependencies: styling,
     registryDependencies: ['utils'],
+    aliases: ['skeleton'],
     examples: ['loading'],
   },
   // ---------------- Data display ----------------
@@ -786,6 +989,20 @@ export const components: ComponentMeta[] = [
     dependencies: [...styling, 'class-variance-authority'],
     registryDependencies: ['utils'],
     examples: ['badge'],
+    props: [
+      {
+        name: 'variant',
+        type: "'neutral' | 'outline' | 'primary' | 'info' | 'success' | 'warning' | 'destructive'",
+        default: "'neutral'",
+        description: 'Badge: fill and text color. A status variant still needs its word ("Failed").',
+      },
+      {
+        name: 'tone',
+        type: "'neutral' | 'success' | 'warning' | 'destructive' | 'info'",
+        default: "'neutral'",
+        description: 'StatusDot: dot color. Hidden from assistive tech, so pair it with a visible label.',
+      },
+    ],
   },
   {
     slug: 'card',
@@ -838,6 +1055,44 @@ export const components: ComponentMeta[] = [
     dependencies: [...styling, 'lucide-react'],
     registryDependencies: ['utils'],
     examples: ['metric'],
+    props: [
+      {
+        name: 'label',
+        type: 'string',
+        required: true,
+        description: 'Metric: what is measured ("Overshoot").',
+      },
+      {
+        name: 'value',
+        type: 'ReactNode',
+        required: true,
+        description: 'Metric: the formatted number, without its unit.',
+      },
+      { name: 'unit', type: 'string', description: 'Metric: shown after the value, smaller (%, ms, A).' },
+      {
+        name: 'status',
+        type: "'pass' | 'warn' | 'fail' | 'none'",
+        default: "'none'",
+        description:
+          'Metric: pass stays neutral; warn and fail add color, an icon and a word (Near limit, Fail).',
+      },
+      {
+        name: 'progress',
+        type: 'number',
+        description: 'Metric: where the value sits on the meter, 0 to 1. Leave it out for no meter.',
+      },
+      {
+        name: 'limit',
+        type: 'number',
+        description: 'Metric: where the limit sits on the meter, 0 to 1. Draws a tick.',
+      },
+      { name: 'limitLabel', type: 'string', description: 'Metric: the limit in words ("Limit 10 %").' },
+      {
+        name: 'hint',
+        type: 'string',
+        description: 'Metric: how the value is measured, shown on hovering the label.',
+      },
+    ],
     a11y: ['Passing values stay neutral; only warnings and failures use color, and always with a word.'],
   },
   {
@@ -868,6 +1123,7 @@ export const components: ComponentMeta[] = [
     ],
     dependencies: styling,
     registryDependencies: ['utils'],
+    aliases: ['use-row-selection'],
     examples: ['table', 'table-selection'],
     keyboard: [
       ['Space', 'Select or clear the focused row'],
@@ -896,6 +1152,19 @@ export const components: ComponentMeta[] = [
     dependencies: [...base, ...styling],
     registryDependencies: ['utils'],
     examples: ['avatar'],
+    props: [
+      {
+        name: 'name',
+        type: 'string',
+        required: true,
+        description: 'The person or team. Names the image and gives the initials when there is none.',
+      },
+      {
+        name: 'src',
+        type: 'string',
+        description: 'Image URL. While it loads, or if it fails, initials show.',
+      },
+    ],
     primitive: 'Avatar',
   },
   {
@@ -986,7 +1255,7 @@ export const components: ComponentMeta[] = [
     files: ['line-chart.tsx', 'core.ts'],
     package: 'charts',
     exports: ['LineChart', 'ChartLegend'],
-    dependencies: ['d3-scale', 'd3-shape'],
+    dependencies: ['d3-scale'],
     registryDependencies: [],
     examples: ['line-chart'],
     keyboard: [
@@ -997,34 +1266,55 @@ export const components: ComponentMeta[] = [
     ],
     a11y: [
       'The chart has a label that states the takeaway; the keyboard readout is announced politely.',
+      'A reading past a shaded limit says "over limit" in words, in the tooltip and the announcement.',
+      'A tap reads the value under the finger and stays until the next tap.',
       'Identity is carried by the legend and line weight, never color alone.',
       'Pair it with a sample table for exact values.',
     ],
     props: [
-      { name: 'x', type: 'ArrayLike<number>', description: 'Shared, sorted x values.' },
+      { name: 'x', type: 'ArrayLike<number>', required: true, description: 'Shared, sorted x values.' },
       {
         name: 'series',
         type: 'LineSeries[]',
+        required: true,
         description:
           'id, label, values, tone, width (2 = the story, 1.5 = reference, 1 = context). A NaN in values is a gap: the line breaks there, also when downsampled, and the readout shows –.',
       },
-      { name: 'yDomain', type: '[number, number]', description: 'One y-axis. Never two.' },
+      { name: 'yDomain', type: '[number, number]', required: true, description: 'One y-axis. Never two.' },
+      {
+        name: 'yUnit',
+        type: 'string',
+        description: 'The y-axis unit, written above its ticks. Defaults to the unit the series share.',
+      },
       {
         name: 'thresholds',
         type: 'Threshold[]',
-        description: 'Dashed limit lines; `shadeSeries` shades where a series crosses.',
+        description:
+          'Dashed limit lines; `shadeSeries` shades where a series crosses, and the readout says "over limit" for it.',
       },
       { name: 'bands', type: 'Band[]', description: 'Tolerance bands, e.g. ±2 % settling.' },
       {
         name: 'markers',
         type: 'Marker[]',
-        description: 'Labelled points: the peak, the extreme, the one value the story is about.',
+        description: 'Labeled points: the peak, the extreme, the one value the story is about.',
       },
       { name: 'syncId', type: 'string', description: 'Charts with the same id share one crosshair.' },
       {
         name: 'extraReadout',
         type: '(index) => ReadoutRow[]',
         description: 'Add values from other charts to the tooltip.',
+      },
+      {
+        name: 'ariaLabel',
+        type: 'string',
+        required: true,
+        description: 'One sentence that states the takeaway, for screen readers.',
+      },
+      {
+        name: 'items',
+        type: "Array<{ label: string; tone?: Tone; kind?: 'line' | 'thin' | 'band' | 'area' }>",
+        required: true,
+        description: 'ChartLegend: one key per series, drawn the way the series is.',
       },
     ],
   },
@@ -1043,6 +1333,35 @@ export const components: ComponentMeta[] = [
     dependencies: ['d3-scale'],
     registryDependencies: [],
     examples: ['bar-chart'],
+    a11y: [
+      'One image to assistive tech (role="img"), with no keyboard readout: `ariaLabel` carries the takeaway, and exact values belong in a table or text.',
+      'Bars past the limit turn critical; name the outlier in the label or text, not by color alone.',
+    ],
+    props: [
+      {
+        name: 'bars',
+        type: 'Bar[]',
+        required: true,
+        description:
+          '`{ id, label, value, tone?, current? }` per bar; `current` bolds the label of the one under review.',
+      },
+      {
+        name: 'ariaLabel',
+        type: 'string',
+        required: true,
+        description: 'One sentence that states the takeaway, naming the outlier.',
+      },
+      { name: 'limit', type: 'number', description: 'A dashed limit line; bars past it turn critical.' },
+      { name: 'limitLabel', type: 'string', description: 'Text on the limit line ("Limit 10 %").' },
+      {
+        name: 'yDomain',
+        type: '[number, number]',
+        description:
+          'A fixed y range. Defaults to 0 (or the lowest negative value) up to a little above the tallest bar or the limit.',
+      },
+      { name: 'unit', type: 'string', description: 'Written above the y-axis and after each value.' },
+      { name: 'digits', type: 'number', default: '1', description: 'Decimal places for values.' },
+    ],
   },
   {
     slug: 'heatmap',
@@ -1058,7 +1377,53 @@ export const components: ComponentMeta[] = [
     dependencies: ['d3-scale'],
     registryDependencies: [],
     examples: ['heatmap'],
-    a11y: ['One hue, light to strong, monotonic in both themes. A scale legend shows the range.'],
+    a11y: [
+      'One hue, light to strong, monotonic in both themes. A scale legend shows the range.',
+      'One image to assistive tech (role="img"), with no keyboard readout; hovering a cell reads it with a pointer only. Put exact values in a table.',
+    ],
+    props: [
+      { name: 'xValues', type: 'number[]', required: true, description: 'Column positions, left to right.' },
+      { name: 'yValues', type: 'number[]', required: true, description: 'Row positions, bottom to top.' },
+      {
+        name: 'values',
+        type: 'number[][]',
+        required: true,
+        description:
+          '`values[row][col]`: rows follow yValues, columns follow xValues. NaN leaves a cell empty.',
+      },
+      { name: 'xLabel', type: 'string', required: true, description: 'X axis title, such as Speed.' },
+      { name: 'yLabel', type: 'string', required: true, description: 'Y axis title, such as Torque.' },
+      {
+        name: 'xUnit',
+        type: 'string',
+        description: 'X unit (rpm): added to the axis title as "Speed (rpm)" and to the hover readout.',
+      },
+      { name: 'yUnit', type: 'string', description: 'Y unit (N·m), the same way.' },
+      {
+        name: 'valueLabel',
+        type: 'string',
+        required: true,
+        description: 'What a cell measures (Efficiency), shown with the color scale.',
+      },
+      {
+        name: 'ariaLabel',
+        type: 'string',
+        required: true,
+        description: 'One sentence that states the takeaway: where the map peaks, and how high.',
+      },
+      {
+        name: 'domain',
+        type: '[number, number]',
+        description:
+          'The color range. Defaults to the data’s; share it between maps people compare. Values outside it take the end color, and the legend says so (≤ 86.0 %).',
+      },
+      {
+        name: 'marker',
+        type: '{ x: number; y: number; label: string }',
+        description: 'An operating point to mark on the map.',
+      },
+      { name: 'valueUnit', type: 'string', description: 'Shown after cell values.' },
+    ],
   },
   {
     slug: 'sparkline',
@@ -1077,10 +1442,14 @@ export const components: ComponentMeta[] = [
     dependencies: ['d3-scale'],
     registryDependencies: [],
     examples: ['sparkline'],
+    a11y: [
+      'One image to assistive tech (role="img"), with no hover and no keyboard readout: `ariaLabel` says the trend, and the number sits next to it.',
+    ],
     props: [
       {
         name: 'values',
         type: 'number[]',
+        required: true,
         description:
           'The series, oldest first. The last point is emphasized. A NaN is a gap: the line and area break there.',
       },
@@ -1093,7 +1462,14 @@ export const components: ComponentMeta[] = [
         name: 'tone',
         type: 'Tone',
         default: "'primary'",
-        description: 'Use critical only when the latest value breaks a limit.',
+        description:
+          'Line and endpoint color. The sparkline knows nothing about limits: pass critical yourself when the latest value breaks one.',
+      },
+      {
+        name: 'ariaLabel',
+        type: 'string',
+        required: true,
+        description: 'The trend in words, with the latest value.',
       },
     ],
   },
@@ -1105,7 +1481,7 @@ export const components: ComponentMeta[] = [
     description:
       'A live time series for telemetry: newest sample at the right edge, limits, and anything past a limit in red.',
     use: [
-      'Live bench and test-rig telemetry at up to a few kHz',
+      'Live bench and test-rig telemetry at up to a few kHz. The buffer must hold the whole window: `createStream` capacity (20,000 samples by default) of at least rate × window, such as 1 kHz × 10 s = 10,000',
       'Watching a signal against a limit while a test runs',
     ],
     avoid: [
@@ -1117,6 +1493,7 @@ export const components: ComponentMeta[] = [
     exports: ['StreamChart', 'createStream'],
     dependencies: ['d3-scale'],
     registryDependencies: [],
+    aliases: ['stream'],
     examples: ['stream-chart'],
     a11y: [
       'The latest values are text above the plot, with the word "over limit" when one is, never color alone.',
@@ -1128,12 +1505,14 @@ export const components: ComponentMeta[] = [
       {
         name: 'stream',
         type: 'Stream',
+        required: true,
         description:
           'A ring buffer from `createStream(channels, capacity)`. Push samples into it as fast as they arrive; the chart draws once per frame. Push NaN for a dropout: the trace breaks there and the readout shows –.',
       },
       {
         name: 'series',
         type: 'StreamSeries[]',
+        required: true,
         description: 'Which channels to draw, with label, tone, width, unit and digits.',
       },
       {
@@ -1145,7 +1524,13 @@ export const components: ComponentMeta[] = [
       {
         name: 'yDomain',
         type: '[number, number]',
+        required: true,
         description: 'A fixed y range, so the trace does not jump.',
+      },
+      {
+        name: 'yUnit',
+        type: 'string',
+        description: 'The y-axis unit, written above its ticks. Defaults to the unit the series share.',
       },
       {
         name: 'limits',
@@ -1158,6 +1543,12 @@ export const components: ComponentMeta[] = [
         default: 'false',
         description: 'Freeze the view while samples keep buffering.',
       },
+      {
+        name: 'ariaLabel',
+        type: 'string',
+        required: true,
+        description: 'What the chart shows. Limit crossings are announced separately.',
+      },
     ],
   },
   {
@@ -1169,7 +1560,7 @@ export const components: ComponentMeta[] = [
       'Frequency response on a log axis: a spectrum, or a Bode plot with gain and phase margins drawn where they are measured.',
     use: [
       'Bode plots of a control loop, with crossover and margins',
-      'Vibration and noise spectra with labelled peaks',
+      'Vibration and noise spectra with labeled peaks',
     ],
     avoid: [
       'Signals over time: use Line chart',
@@ -1189,24 +1580,38 @@ export const components: ComponentMeta[] = [
     ],
     a11y: [
       'Both panes share one crosshair and one readout, announced politely as you move.',
-      'Decades are labelled (10, 100, 1k Hz); the steps between them are faint grid lines.',
-      'Margins are labelled with their value, not shown by color.',
+      'Decades are labeled (10, 100, 1k Hz); the steps between them are faint grid lines.',
+      'Margins are labeled with their value, not shown by color.',
     ],
     props: [
       {
         name: 'frequency',
         type: 'ArrayLike<number>',
+        required: true,
         description: 'Frequencies in Hz, ascending and above zero.',
       },
       {
         name: 'magnitude',
         type: 'FrequencySeries[]',
+        required: true,
         description: 'Magnitude series in dB (or the unit in `magnitudeUnit`).',
+      },
+      {
+        name: 'magnitudeDomain',
+        type: '[number, number]',
+        required: true,
+        description: 'The magnitude axis range, fixed so runs compare.',
       },
       {
         name: 'phase',
         type: 'FrequencySeries[]',
         description: 'Phase series in degrees. Adds a second pane: a Bode plot.',
+      },
+      {
+        name: 'phaseDomain',
+        type: '[number, number]',
+        default: '[-270, 0]',
+        description: 'The phase axis range, in degrees.',
       },
       {
         name: 'spans',
@@ -1216,12 +1621,18 @@ export const components: ComponentMeta[] = [
       {
         name: 'peaks',
         type: 'FrequencyPeak[]',
-        description: 'Labelled points on the magnitude pane, such as resonances.',
+        description: 'Labeled points on the magnitude pane, such as resonances.',
       },
       {
         name: 'references',
         type: '{ magnitude?: number[]; phase?: number[] }',
         description: 'Dashed reference lines, such as 0 dB and −180°.',
+      },
+      {
+        name: 'ariaLabel',
+        type: 'string',
+        required: true,
+        description: 'One sentence that states the takeaway, such as the margins.',
       },
     ],
   },
@@ -1261,7 +1672,27 @@ export const components: ComponentMeta[] = [
       {
         name: 'points',
         type: 'ScatterPoint[]',
+        required: true,
         description: '`{ x, y, group?, label? }` for every point.',
+      },
+      {
+        name: 'xDomain',
+        type: '[number, number]',
+        required: true,
+        description: 'The x axis range, fixed so charts of the same measures compare.',
+      },
+      { name: 'yDomain', type: '[number, number]', required: true, description: 'The y axis range.' },
+      {
+        name: 'xLabel',
+        type: 'string',
+        required: true,
+        description: 'X axis title; also used in the readout.',
+      },
+      {
+        name: 'yLabel',
+        type: 'string',
+        required: true,
+        description: 'Y axis title; also used in the readout.',
       },
       {
         name: 'groups',
@@ -1280,6 +1711,12 @@ export const components: ComponentMeta[] = [
         default: 'false',
         description: 'Draw a least-squares line and its r².',
       },
+      {
+        name: 'ariaLabel',
+        type: 'string',
+        required: true,
+        description: 'One sentence that states the takeaway, such as the trend and the outlier.',
+      },
     ],
   },
   {
@@ -1288,7 +1725,7 @@ export const components: ComponentMeta[] = [
     category: 'Charts',
     level: 'organism',
     description:
-      'A distribution against specification limits, with n, mean, standard deviation and Cpk stated in words.',
+      'A distribution against specification limits, with n, mean, standard deviation, Cpk in words and Ppk.',
     use: [
       'Test results and quality data against a spec',
       'Is this run unusual, or is the whole process off?',
@@ -1307,25 +1744,37 @@ export const components: ComponentMeta[] = [
       ['Escape', 'Clear the readout'],
     ],
     a11y: [
-      'Bins outside the limits turn critical and the readout says "out of spec".',
+      'Values past a limit draw critical and the readout counts them ("7 values, 5 out of spec"); a value exactly on a limit is in spec.',
       'Cpk carries a word (capable, marginal, not capable) next to its number.',
+      'Cpk uses the short-term σ from the moving range of consecutive values (MR̄ / 1.128), so pass values in run order; Ppk uses the overall σ.',
     ],
     props: [
-      { name: 'values', type: 'number[]', description: 'Raw measurements, one per run or part.' },
+      {
+        name: 'values',
+        type: 'number[]',
+        required: true,
+        description: 'Raw measurements, one per run or part, in run order.',
+      },
+      {
+        name: 'xLabel',
+        type: 'string',
+        required: true,
+        description: 'What is measured, as the x axis title (Overshoot).',
+      },
       {
         name: 'binWidth',
         type: 'number',
-        description: 'Bin width in the values’ unit. Defaults to the Freedman–Diaconis rule.',
+        description: 'Bin width in the values’ unit. Defaults to a round width near the Freedman–Diaconis rule.',
       },
       {
         name: 'lower',
         type: 'number',
-        description: 'Lower specification limit. Bins below it turn critical; Cpk uses it.',
+        description: 'Lower specification limit. Values below it draw critical; Cpk and Ppk use it.',
       },
       {
         name: 'upper',
         type: 'number',
-        description: 'Upper specification limit. Bins above it turn critical; Cpk uses it.',
+        description: 'Upper specification limit. Values above it draw critical; Cpk and Ppk use it.',
       },
       {
         name: 'marker',
@@ -1338,21 +1787,16 @@ export const components: ComponentMeta[] = [
         default: 'false',
         description: 'Overlay the normal curve with the sample mean and standard deviation.',
       },
+      { name: 'target', type: 'number', description: 'Where the process should sit, drawn as a line.' },
+      {
+        name: 'ariaLabel',
+        type: 'string',
+        required: true,
+        description: 'One sentence that states the takeaway, such as the capability verdict.',
+      },
     ],
   },
 ];
-
-export const categories = [
-  'Actions',
-  'Inputs',
-  'Selection',
-  'Overlays',
-  'Navigation',
-  'Feedback',
-  'Data display',
-  'Layout',
-  'Charts',
-] as const;
 
 export function getComponent(slug: string) {
   return components.find((c) => c.slug === slug);

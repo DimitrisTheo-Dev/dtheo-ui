@@ -54,10 +54,15 @@ function Step({
 }
 
 const urls = [
-  ['llms.txt', `${site.url}/llms.txt`, 'A described index of every page'],
-  ['llms-full.txt', `${site.url}/llms-full.txt`, 'Every page in one file'],
-  ['Any page + .md', `${site.url}/docs/components/button.md`, 'The Markdown copy of that page'],
-  ['Registry', `${site.url}/r/registry.json`, 'Every item, shadcn format'],
+  ['llms.txt', `${site.url}/llms.txt`, 'A described index of the docs and examples', 'Copy the llms.txt URL'],
+  ['llms-full.txt', `${site.url}/llms-full.txt`, 'All the docs in one file', 'Copy the llms-full.txt URL'],
+  [
+    'Any docs page + .md',
+    `${site.url}/docs/components/button.md`,
+    'The Markdown copy of that page',
+    'Copy the Button page’s Markdown URL',
+  ],
+  ['Registry', `${site.url}/r/registry.json`, 'Every item, shadcn format', 'Copy the registry URL'],
 ] as const;
 
 export default function AgentsPage() {
@@ -131,14 +136,14 @@ export default function AgentsPage() {
           </p>
         </div>
         <ul className="divide-y divide-border overflow-hidden rounded-card border border-border bg-card">
-          {urls.map(([name, url, does]) => (
+          {urls.map(([name, url, does, copy]) => (
             <li key={name} className="flex items-center gap-3 py-2 pr-2 pl-4">
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="text-body font-medium">{name}</span>
                 <span className="truncate font-mono text-caption text-muted-foreground">{url}</span>
               </span>
               <span className="hidden text-label font-normal text-muted-foreground md:block">{does}</span>
-              <CopyButton value={url} label={`Copy ${name} URL`} />
+              <CopyButton value={url} label={copy} />
             </li>
           ))}
         </ul>

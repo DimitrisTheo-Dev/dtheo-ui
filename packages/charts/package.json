@@ -2,7 +2,7 @@
   "name": "@dtheo/charts",
   "version": "0.1.0",
   "private": true,
-  "description": "Engineering charts for dtheo/ui: a small composable grammar on d3 math, rendered with SVG.",
+  "description": "Engineering charts for dtheo/ui on d3 math: SVG drawn by React, and canvas for live and dense data (stream, scatter).",
   "license": "MIT",
   "type": "module",
   "exports": {
@@ -14,13 +14,11 @@
   },
   "dependencies": {
     "d3-array": "3.2.5",
-    "d3-scale": "4.0.3",
-    "d3-shape": "3.2.1"
+    "d3-scale": "4.0.3"
   },
   "devDependencies": {
     "@types/d3-array": "2.12.8",
     "@types/d3-scale": "4.0.9",
-    "@types/d3-shape": "3.2.0",
     "react": "19.3.1"
   },
   "peerDependencies": {

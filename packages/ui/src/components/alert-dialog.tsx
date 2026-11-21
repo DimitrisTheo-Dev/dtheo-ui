@@ -28,7 +28,8 @@ export function AlertDialogContent({
           data-slot="alert-dialog-content"
           className={cn(
             'flex w-full max-w-sm flex-col gap-4 rounded-dialog border border-border bg-card p-5 text-card-foreground shadow-dialog outline-none', // dtheo-check-ignore: focus moves to the first control, which shows the ring
-            'transition-[transform,opacity] duration-240 ease-out',
+            // Scale and opacity ease together. `scale-96` sets the scale property, not transform, so it is listed.
+            'transition-[scale,opacity] duration-240 ease-out',
             'data-starting-style:scale-96 data-starting-style:opacity-0 data-ending-style:scale-96 data-ending-style:opacity-0',
             className,
           )}
