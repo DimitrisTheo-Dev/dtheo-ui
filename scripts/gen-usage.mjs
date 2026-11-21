@@ -8,43 +8,37 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
 
+// Every Actuator Lab tool renders the shared sidebar and the shared ⌘K palette.
+const lab = ['apps/docs/app/examples/_shared/lab-sidebar.tsx', 'apps/docs/app/examples/_shared/lab-palette.tsx'];
+
 const pages = [
   {
     id: 'run-review',
     title: 'Run review',
     href: '/examples/run-review',
     level: 'page',
-    sources: [
-      'apps/docs/app/examples/run-review/run-review.tsx',
-      'apps/docs/app/examples/_shared/lab-sidebar.tsx',
-    ],
+    sources: ['apps/docs/app/examples/run-review/run-review.tsx', ...lab],
   },
   {
     id: 'motor-map',
     title: 'Motor map',
     href: '/examples/motor-map',
     level: 'page',
-    sources: [
-      'apps/docs/app/examples/motor-map/motor-map.tsx',
-      'apps/docs/app/examples/_shared/lab-sidebar.tsx',
-    ],
+    sources: ['apps/docs/app/examples/motor-map/motor-map.tsx', ...lab],
   },
   {
     id: 'tuning',
     title: 'Loop tuning',
     href: '/examples/tuning',
     level: 'page',
-    sources: ['apps/docs/app/examples/tuning/tuning.tsx', 'apps/docs/app/examples/_shared/lab-sidebar.tsx'],
+    sources: ['apps/docs/app/examples/tuning/tuning.tsx', ...lab],
   },
   {
     id: 'assistant',
     title: 'Lab assistant',
     href: '/examples/assistant',
     level: 'page',
-    sources: [
-      'apps/docs/app/examples/assistant/assistant.tsx',
-      'apps/docs/app/examples/_shared/lab-sidebar.tsx',
-    ],
+    sources: ['apps/docs/app/examples/assistant/assistant.tsx', ...lab],
   },
   {
     id: 'home',

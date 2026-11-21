@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import {
   ArchiveIcon,
   ChevronRightIcon,
@@ -66,9 +65,9 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@dtheo/ui/components/to
 import { Empty, EmptyDescription, EmptyTitle } from '@dtheo/ui/components/empty';
 import { Avatar } from '@dtheo/ui/components/avatar';
 import { useToast } from '@dtheo/ui/components/toast';
-import { CommandDialog } from '@dtheo/ui/components/command';
 import { BarChart, ChartLegend, LineChart } from '@dtheo/charts';
-import { LabSidebar } from '../_shared/lab-sidebar';
+import { LabPalette } from '../_shared/lab-palette';
+import { LabSidebar, labUser } from '../_shared/lab-sidebar';
 import { ThemeToggle } from '@/components/theme-controls';
 import {
   CURRENT_LIMIT,
@@ -114,7 +113,6 @@ interface Note {
 }
 
 export function RunReview() {
-  const router = useRouter();
   const toast = useToast();
   const [timeWindow, setTimeWindow] = React.useState<string[]>(['400']);
   const [showSamples, setShowSamples] = React.useState(false);
@@ -132,15 +130,33 @@ export function RunReview() {
     temp: checkStatus(WINDING_TEMP, TEMP_LIMIT),
   };
   const failing = Object.values(status).filter((s) => s === 'fail').length;
+  const exportSamples = React.useCallback(
+    () =>
+      toast.add({
+        title: 'Export started',
+        description: `r-0412-samples.csv, ${fmt.n0.format(SAMPLES)} rows.`,
+      }),
+    [toast],
+  );
+  // ⌘E / Ctrl+E exports, as the menu and the palette say it does.
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        exportSamples();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [exportSamples]);
   const nearLimit = Object.values(status).filter((s) => s === 'warn').length;
 
   return (
     <AppShell sidebar={<LabSidebar current="runs" onSearch={() => setPaletteOpen(true)} />}>
       <AppToolbar>
         <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-body">
-          <a href="#runs" className="text-muted-foreground hover:text-foreground">
-            Runs
-          </a>
+          {/* The runs list isn't part of this demo, so the trail names it without linking to nowhere. */}
+          <span className="text-muted-foreground">Runs</span>
           <ChevronRightIcon className="size-3.5 shrink-0 text-subtle-foreground" aria-hidden="true" />
           <span aria-current="page" className="truncate font-mono text-label text-foreground">
             R-0412
@@ -174,14 +190,7 @@ export function RunReview() {
               <MoreHorizontalIcon aria-hidden="true" />
             </MenuTrigger>
             <MenuContent align="end">
-              <MenuItem
-                onClick={() =>
-                  toast.add({
-                    title: 'Export started',
-                    description: `r-0412-samples.csv, ${fmt.n0.format(SAMPLES)} rows.`,
-                  })
-                }
-              >
+              <MenuItem onClick={exportSamples}>
                 <DownloadIcon aria-hidden="true" />
                 Export samples (CSV)
                 <MenuShortcut>⌘E</MenuShortcut>
@@ -250,7 +259,11 @@ export function RunReview() {
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]">
           {/* Below xl the two columns dissolve so the order reads: checks, decision, evidence, record. */}
           <div className="contents xl:flex xl:min-w-0 xl:flex-col xl:gap-5">
-            <MetricGroup aria-label="Acceptance checks" className="order-1 xl:order-none">
+            {/* Five checks never leave one alone on a row: on a phone the first (failing) check spans the width. */}
+            <MetricGroup
+              aria-label="Acceptance checks"
+              className="order-1 grid-cols-2 xl:order-none sm:grid-cols-3 lg:grid-cols-5 [&>:first-child]:col-span-2 sm:[&>:first-child]:col-span-1"
+            >
               <Metric
                 label="Overshoot"
                 value={fmt.n1.format(M.overshoot)}
@@ -321,7 +334,7 @@ export function RunReview() {
                   <Toggle
                     pressed={showSamples}
                     onPressedChange={setShowSamples}
-                    aria-label="Show sample table"
+                    aria-label="Samples"
                   >
                     <TableIcon aria-hidden="true" />
                     <span className="hidden sm:inline">Samples</span>
@@ -342,7 +355,7 @@ export function RunReview() {
                   <SampleTable span={span} />
                 ) : (
                   <div className="flex flex-col gap-1">
-                    <span className="text-label text-muted-foreground">Output torque, N·m</span>
+                    <span className="text-label text-muted-foreground">Output torque</span>
                     <LineChart
                       ariaLabel={`Output torque. R-0412 peaks at ${fmt.n1.format(M.peak)} N·m, ${fmt.n1.format(M.overshoot)} % over the command, above the ${OVERSHOOT_LIMIT} % limit. R-0409 overshoots ${fmt.n1.format(R.overshoot)} %.`}
                       x={measured.t}
@@ -411,7 +424,7 @@ export function RunReview() {
                         },
                       ]}
                     />
-                    <span className="mt-3 text-label text-muted-foreground">Phase current, A</span>
+                    <span className="mt-3 text-label text-muted-foreground">Phase current</span>
                     <LineChart
                       ariaLabel={`Phase current. R-0412 peaks at ${fmt.n1.format(M.peakCurrent)} A, ${fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)} % of the ${CURRENT_LIMIT} A limit.`}
                       x={measured.t}
@@ -683,7 +696,7 @@ export function RunReview() {
               className="order-7 xl:order-none"
               notes={notes}
               onAdd={(text) =>
-                setNotes((n) => [...n, { id: Date.now(), author: 'Dimitris', text, at: 'Just now' }])
+                setNotes((n) => [...n, { id: Date.now(), author: labUser.first, text, at: 'Just now' }])
               }
             />
           </aside>
@@ -716,10 +729,11 @@ export function RunReview() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <CommandDialog
+      <LabPalette
+        current="runs"
         open={paletteOpen}
         onOpenChange={setPaletteOpen}
-        items={[
+        actions={[
           {
             value: 'retune',
             label: 'Queue retune run',
@@ -740,7 +754,7 @@ export function RunReview() {
             group: 'Actions',
             shortcut: '⌘E',
             icon: <DownloadIcon />,
-            onSelect: () => toast.add({ title: 'Export started' }),
+            onSelect: exportSamples,
           },
           ...runHistory.map((r) => ({
             value: r.id,
@@ -748,19 +762,6 @@ export function RunReview() {
             group: 'Runs',
             hint: resultMeta[r.result].label,
           })),
-          {
-            value: 'motor',
-            label: 'Motor maps',
-            group: 'Go to',
-            onSelect: () => router.push('/examples/motor-map'),
-          },
-          {
-            value: 'assistant',
-            label: 'Lab assistant',
-            group: 'Go to',
-            onSelect: () => router.push('/examples/assistant'),
-          },
-          { value: 'docs', label: 'dtheo/ui docs', group: 'Go to', onSelect: () => router.push('/docs') },
         ]}
       />
     </AppShell>
@@ -925,7 +926,7 @@ function NotesCard({
       <CardContent className="flex flex-col gap-3 pt-2">
         {notes.map((n) => (
           <div key={n.id} className="flex gap-2.5">
-            <Avatar name="Dimitris Theodoropoulos" className="size-6" />
+            <Avatar name={labUser.name} className="size-6" />
             <div className="flex min-w-0 flex-col gap-0.5">
               <span className="text-label">
                 {n.author} <span className="font-normal text-subtle-foreground">· {n.at}</span>

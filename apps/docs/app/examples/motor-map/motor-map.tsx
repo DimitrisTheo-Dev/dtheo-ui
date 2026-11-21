@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@dtheo/ui/components/table';
 import { useToast } from '@dtheo/ui/components/toast';
 import { ChartLegend, Heatmap, LineChart, Sparkline } from '@dtheo/charts';
+import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar } from '../_shared/lab-sidebar';
 
 // ---- Synthetic permanent-magnet traction motor (PM-220) ----
@@ -64,6 +65,7 @@ const torques = Array.from({ length: 22 }, (_, i) => 10 + i * 10);
 const gridOf = (f: (n: number, t: number) => number) => torques.map((t) => speeds.map((n) => f(n, t)));
 const grid = gridOf(efficiency);
 const peakEff = Math.max(...grid.flat().filter(Number.isFinite));
+const lowEff = Math.min(...grid.flat().filter(Number.isFinite));
 const lossGrid = gridOf(totalLosses);
 const maxLoss = Math.max(...lossGrid.flat().filter(Number.isFinite));
 
@@ -117,7 +119,8 @@ const quantities = {
     unit: '%',
     digits: 1,
     grid,
-    domain: [86, Math.ceil(peakEff)] as [number, number],
+    // The full range inside the envelope: a floor above the lowest cell would draw those cells as if empty.
+    domain: [Math.floor(lowEff), Math.ceil(peakEff)] as [number, number],
     at: efficiency,
     summary: `Peak ${nf(1).format(peakEff)} % at mid speed and mid torque.`,
   },
@@ -150,6 +153,7 @@ const SWEEP = sweeps[0]!;
 export function MotorMap() {
   const toast = useToast();
   const [quantity, setQuantity] = React.useState<Quantity>('efficiency');
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
   const q = quantities[quantity];
   const [speed, setSpeed] = React.useState(7400);
   const [torque, setTorque] = React.useState(120);
@@ -163,12 +167,11 @@ export function MotorMap() {
 
   return (
     <ThemeScope mode="dark" preset="flight-deck">
-      <AppShell sidebar={<LabSidebar current="motors" />}>
+      <AppShell sidebar={<LabSidebar current="motors" onSearch={() => setPaletteOpen(true)} />}>
         <AppToolbar>
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-body">
-            <a href="#maps" className="text-muted-foreground hover:text-foreground">
-              Motor maps
-            </a>
+            {/* The map list isn't part of this demo, so the trail names it without linking to nowhere. */}
+            <span className="text-muted-foreground">Motor maps</span>
             <ChevronRightIcon className="size-3.5 shrink-0 text-subtle-foreground" aria-hidden="true" />
             <span aria-current="page" className="truncate font-mono text-label">
               PM-220
@@ -254,10 +257,12 @@ export function MotorMap() {
                   yValues={torques}
                   values={q.grid}
                   domain={q.domain}
-                  xTicks={[500, 4000, 8000, 12000, 16000]}
-                  yTicks={[10, 60, 110, 160, 210]}
-                  xLabel="Speed, rpm"
-                  yLabel="Torque, N·m"
+                  xTicks={[4000, 8000, 12000, 16000]}
+                  yTicks={[50, 100, 150, 200]}
+                  xLabel="Speed"
+                  xUnit="rpm"
+                  yLabel="Torque"
+                  yUnit="N·m"
                   valueLabel={q.label}
                   valueUnit={q.unit}
                   digits={q.digits}
@@ -272,6 +277,7 @@ export function MotorMap() {
                     </div>
                     <Slider
                       aria-label="Operating speed"
+                      unit="rpm"
                       value={speed}
                       onValueChange={(v) => setSpeed(v as number)}
                       min={500}
@@ -288,6 +294,7 @@ export function MotorMap() {
                     </div>
                     <Slider
                       aria-label="Operating torque"
+                      unit="N·m"
                       value={torque}
                       onValueChange={(v) => setTorque(v as number)}
                       min={10}
@@ -408,6 +415,17 @@ export function MotorMap() {
             </div>
           </div>
         </main>
+        <LabPalette
+          current="motors"
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          actions={maps.map((m) => ({
+            value: `map-${m.value}`,
+            label: `Show ${m.label.toLowerCase()} map`,
+            group: 'Map',
+            onSelect: () => setQuantity(m.value),
+          }))}
+        />
       </AppShell>
     </ThemeScope>
   );

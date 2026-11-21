@@ -8,7 +8,8 @@ import { Button } from '@dtheo/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dtheo/ui/components/card';
 import { Metric, MetricGroup } from '@dtheo/ui/components/metric';
 import { useToast } from '@dtheo/ui/components/toast';
-import { FrequencyChart, Histogram, ScatterChart, StreamChart, createStream } from '@dtheo/charts';
+import { CAPABLE, FrequencyChart, Histogram, ScatterChart, StreamChart, createStream } from '@dtheo/charts';
+import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar } from '../_shared/lab-sidebar';
 import { ThemeToggle } from '@/components/theme-controls';
 import {
@@ -32,7 +33,6 @@ const m = bode.margins;
 const ref = bode.referenceMargins;
 const PM_MIN = 45;
 const GM_MIN = 6;
-const CPK_MIN = 1.33;
 // One scale for the scatter and the histogram, with room above the highest run.
 const OVERSHOOT_MAX = Math.ceil(S.max / 5) * 5;
 
@@ -127,13 +127,18 @@ function LiveBench() {
 
 export function Tuning() {
   const toast = useToast();
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const queueRetune = () =>
+    toast.add({
+      title: 'Retune queued on Bench 3',
+      description: 'Kp 3.60, Kd 0.09. Starts after the current run.',
+    });
   return (
-    <AppShell sidebar={<LabSidebar current="tuning" />}>
+    <AppShell sidebar={<LabSidebar current="tuning" onSearch={() => setPaletteOpen(true)} />}>
       <AppToolbar>
         <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-body">
-          <a href="#actuators" className="text-muted-foreground hover:text-foreground">
-            Actuators
-          </a>
+          {/* The actuator list isn't part of this demo, so the trail names it without linking to nowhere. */}
+          <span className="text-muted-foreground">Actuators</span>
           <ChevronRightIcon className="size-3.5 shrink-0 text-subtle-foreground" aria-hidden="true" />
           <span aria-current="page" className="truncate">
             RA-14 hip pitch
@@ -151,22 +156,33 @@ export function Tuning() {
           title="Loop tuning"
           description="The high-gain tune responds faster but gives up phase margin, and the overshoot shows it."
           actions={
-            <Button
-              variant="primary"
-              onClick={() =>
-                toast.add({
-                  title: 'Retune queued on Bench 3',
-                  description: 'Kp 3.60, Kd 0.09. Starts after the current run.',
-                })
-              }
-            >
+            <Button variant="primary" onClick={queueRetune}>
               <RotateCcwIcon aria-hidden="true" />
               Queue retune run
             </Button>
           }
         />
 
-        <MetricGroup aria-label="Loop health" className="sm:grid-cols-3 xl:grid-cols-5">
+        {/* Failing checks first, then the one near its limit, then what passed: the eye meets the problem first. */}
+        <MetricGroup
+          aria-label="Loop health"
+          className="grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 [&>:first-child]:col-span-2 sm:[&>:first-child]:col-span-1"
+        >
+          <Metric
+            label="Overshoot Cpk"
+            value={nf(2).format(S.cpk)}
+            status={S.cpk < 1 ? 'fail' : S.cpk < CAPABLE ? 'warn' : 'pass'}
+            progress={S.cpk / 2}
+            limit={CAPABLE / 2}
+            limitLabel={`Target ≥ ${CAPABLE} · Ppk ${nf(2).format(S.ppk)}`}
+          />
+          <Metric
+            label="Runs over limit"
+            value={S.over}
+            unit={`of ${S.n}`}
+            status={S.over ? 'fail' : 'pass'}
+            limitLabel={`${nf(1).format((100 * S.over) / S.n)} % of runs over ${OVERSHOOT_USL} %`}
+          />
           <Metric
             label="Phase margin"
             value={nf(0).format(m.phaseMargin)}
@@ -191,21 +207,6 @@ export function Tuning() {
             value={nf(1).format(m.gainCrossover)}
             unit="Hz"
             hint={`Was ${nf(1).format(ref.gainCrossover)} Hz on R-0409`}
-          />
-          <Metric
-            label="Overshoot Cpk"
-            value={nf(2).format(S.cpk)}
-            status={S.cpk < 1 ? 'fail' : S.cpk < CPK_MIN ? 'warn' : 'pass'}
-            progress={S.cpk / 2}
-            limit={CPK_MIN / 2}
-            limitLabel={`Target ≥ ${CPK_MIN}`}
-          />
-          <Metric
-            label="Runs over limit"
-            value={S.over}
-            unit={`of ${S.n}`}
-            status={S.over ? 'warn' : 'pass'}
-            hint={`${nf(1).format((100 * S.over) / S.n)} % of runs`}
           />
         </MetricGroup>
 
@@ -249,7 +250,7 @@ export function Tuning() {
                     frequency: m.phaseCrossover,
                     from: m.magnitudeAtPhaseCrossover,
                     to: 0,
-                    label: `GM ${nf(0).format(m.gainMargin)} dB`,
+                    label: `GM ${nf(1).format(m.gainMargin)} dB`,
                   },
                 ]}
                 paneHeight={160}
@@ -332,6 +333,20 @@ export function Tuning() {
           </Card>
         </div>
       </main>
+      <LabPalette
+        current="tuning"
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        actions={[
+          {
+            value: 'retune',
+            label: 'Queue retune run',
+            group: 'Actions',
+            icon: <RotateCcwIcon />,
+            onSelect: queueRetune,
+          },
+        ]}
+      />
     </AppShell>
   );
 }

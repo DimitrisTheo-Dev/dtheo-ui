@@ -24,6 +24,9 @@ import {
   SidebarSection,
 } from '@dtheo/ui/components/app-shell';
 
+/** The signed-in engineer in every example: a made-up person, like the rest of the data. */
+export const labUser = { name: 'Lena Varga', first: 'Lena' };
+
 /**
  * The shared sidebar of the "Actuator Lab" suite. Run review, Motor map, Loop tuning and the Lab assistant are different tools
  * with their own character, but the frame, navigation and vocabulary are the same.
@@ -68,10 +71,11 @@ export function LabSidebar({
           >
             Runs
           </SidebarItem>
-          <SidebarItem href="#benches" icon={<ServerIcon />} count={6}>
+          {/* Destinations the suite has but this demo doesn't build: listed, dimmed, never a dead link. */}
+          <SidebarItem disabled icon={<ServerIcon />} count={6}>
             Benches
           </SidebarItem>
-          <SidebarItem href="#actuators" icon={<CogIcon />} count={28}>
+          <SidebarItem disabled icon={<CogIcon />} count={28}>
             Actuators
           </SidebarItem>
           <SidebarItem
@@ -88,7 +92,7 @@ export function LabSidebar({
           >
             Loop tuning
           </SidebarItem>
-          <SidebarItem href="#reports" icon={<FileTextIcon />}>
+          <SidebarItem disabled icon={<FileTextIcon />}>
             Reports
           </SidebarItem>
           <SidebarItem
@@ -101,24 +105,24 @@ export function LabSidebar({
         </SidebarSection>
         <SidebarSection title="Pinned actuators">
           <SidebarItem
-            href="#ra-14"
+            render={<Link href="/examples/tuning" />}
             icon={<StatusDot tone="destructive" className="mx-1" />}
             count="1 failing"
           >
             RA-14 hip pitch
           </SidebarItem>
-          <SidebarItem href="#rl-22" icon={<StatusDot className="mx-1" />}>
+          <SidebarItem disabled icon={<StatusDot className="mx-1" />}>
             RL-22 knee
           </SidebarItem>
-          <SidebarItem href="#rw-05" icon={<StatusDot className="mx-1" />}>
+          <SidebarItem disabled icon={<StatusDot className="mx-1" />}>
             RW-05 wrist roll
           </SidebarItem>
         </SidebarSection>
       </SidebarContent>
       <SidebarFooter>
-        <Avatar name="Dimitris Theodoropoulos" />
+        <Avatar name={labUser.name} />
         <span className="flex min-w-0 flex-col leading-tight">
-          <span className="truncate text-body font-medium">Dimitris</span>
+          <span className="truncate text-body font-medium">{labUser.first}</span>
           <span className="truncate text-caption text-subtle-foreground">Test engineer</span>
         </span>
         <Link href="/docs" className="ml-auto text-caption text-subtle-foreground hover:text-foreground">

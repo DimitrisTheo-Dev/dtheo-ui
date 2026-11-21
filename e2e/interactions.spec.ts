@@ -188,3 +188,41 @@ test('a link styled as a button is still a link', async ({ page }) => {
   await expect(start).toBeVisible();
   await expect(start).not.toHaveAttribute('role', 'button');
 });
+
+// Every Actuator Lab tool shows the same "Search ⌘K" box in its sidebar, so every one of them must answer to it.
+for (const path of ['/examples/run-review', '/examples/tuning', '/examples/motor-map', '/examples/assistant']) {
+  test(`⌘K and the sidebar search open the palette on ${path}`, async ({ page }) => {
+    await page.goto(path);
+    await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+    await page.keyboard.press('ControlOrMeta+k');
+    const search = page.getByRole('combobox', { name: 'Search commands' });
+    await expect(search).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(search).toBeHidden();
+    await page.locator('[data-slot="sidebar"]').getByRole('button', { name: /^Search/ }).click();
+    await expect(search).toBeFocused();
+    // The sidebar never jumps to a "#" that goes nowhere: unbuilt destinations are disabled, not dead links.
+    await expect(page.locator('[data-slot="sidebar-item"][href^="#"]')).toHaveCount(0);
+  });
+}
+
+test.describe('the Lab assistant on a 14-inch MacBook window', () => {
+  test.use({ viewport: { width: 1512, height: 860 } });
+
+  test('runs the action that was clicked, not a suggestion drawn over it', async ({ page }) => {
+    await page.goto('/examples/assistant');
+    await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+    await page.getByRole('button', { name: 'Queue retune (Kp 3.60)' }).click();
+    await expect(page.getByText('Retune run queued')).toBeVisible();
+    // No question was sent: the conversation still ends with the scripted answer.
+    await expect(page.getByText('Summarize today’s failed runs', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('log').getByText('Reading run data…')).toHaveCount(0);
+  });
+});
+
+test('⌘E exports the run review samples, as the menu says', async ({ page }) => {
+  await page.goto('/examples/run-review');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  await page.keyboard.press('ControlOrMeta+e');
+  await expect(page.getByText('Export started')).toBeVisible();
+});

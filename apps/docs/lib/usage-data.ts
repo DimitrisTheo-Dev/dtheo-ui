@@ -13,19 +13,19 @@ export const pageUsage: Record<string, PageUsage> = {
     title: 'Motor map',
     href: '/examples/motor-map',
     level: 'page',
-    uses: ['button', 'select', 'slider', 'toast', 'app-shell', 'badge', 'card', 'metric', 'table', 'avatar', 'kbd', 'line-chart', 'heatmap', 'sparkline'],
+    uses: ['button', 'select', 'slider', 'command', 'toast', 'app-shell', 'badge', 'card', 'metric', 'table', 'avatar', 'kbd', 'line-chart', 'heatmap', 'sparkline'],
   },
   'tuning': {
     title: 'Loop tuning',
     href: '/examples/tuning',
     level: 'page',
-    uses: ['button', 'toast', 'app-shell', 'badge', 'card', 'metric', 'avatar', 'kbd', 'stream-chart', 'frequency-chart', 'scatter-chart', 'histogram'],
+    uses: ['button', 'command', 'toast', 'app-shell', 'badge', 'card', 'metric', 'avatar', 'kbd', 'stream-chart', 'frequency-chart', 'scatter-chart', 'histogram'],
   },
   'assistant': {
     title: 'Lab assistant',
     href: '/examples/assistant',
     level: 'page',
-    uses: ['button', 'toast', 'tabs', 'app-shell', 'progress', 'spinner', 'badge', 'metric', 'table', 'avatar', 'kbd', 'line-chart'],
+    uses: ['button', 'command', 'toast', 'tabs', 'app-shell', 'progress', 'spinner', 'badge', 'metric', 'table', 'avatar', 'kbd', 'line-chart'],
   },
   'home': {
     title: 'Home page',
