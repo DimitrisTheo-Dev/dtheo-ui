@@ -84,10 +84,10 @@ Every change runs through:
 | --- | --- |
 | `pnpm tokens:check` | Token outputs are current and every contrast pair passes AA |
 | `pnpm lint` · `pnpm typecheck` | oxlint with React Compiler rules, strict TypeScript across the workspace |
-| `pnpm test` | Contracts, registry, usage graph, CLI and every design-check rule |
+| `pnpm test` | Components, charts, contracts, registry, usage graph, CLI and every design-check rule |
 | `pnpm design:check` | The repo passes its own design check, with every exception explained |
-| `pnpm test:e2e` | No errors or sideways scroll on any route, no serious axe violations, real interactions |
-| `pnpm test:visual` | Pixel diffs of the screens that define the look |
+| `pnpm test:e2e` | On the production build: no errors or sideways scroll on any route, no serious axe violations, real interactions |
+| `pnpm test:visual` | Pixel diffs of the screens that define the look. The baselines are macOS ones for now, so this runs locally; CI runs it once Linux baselines are recorded |
 
 ## Develop
 

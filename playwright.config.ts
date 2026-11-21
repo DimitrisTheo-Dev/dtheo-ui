@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const port = Number(process.env.PORT ?? 4100);
+// E2E_SERVER=production tests what ships: `next start` on the build `pnpm build` made, with the production headers
+// (Content-Security-Policy, HSTS) that `next dev` leaves out. CI runs it this way.
+const production = process.env.E2E_SERVER === 'production';
 
 export default defineConfig({
   testDir: './e2e',
@@ -18,9 +21,11 @@ export default defineConfig({
     { name: 'phone', use: { ...devices['iPhone 15'], browserName: 'chromium' }, grep: /@phone/ },
   ],
   webServer: {
-    command: `pnpm --filter @dtheo/docs dev --port ${port}`,
+    // `exec next …` rather than the package's `dev` script, which pins its own --port.
+    command: `pnpm --filter @dtheo/docs exec next ${production ? 'start' : 'dev'} --port ${port}`,
     port,
-    reuseExistingServer: true,
+    // A dev server already on the port is reused; a production run must not quietly test a dev server instead.
+    reuseExistingServer: !production,
     timeout: 120_000,
   },
 });
