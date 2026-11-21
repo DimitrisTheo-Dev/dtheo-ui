@@ -992,9 +992,9 @@ export const components: ComponentMeta[] = [
     registryDependencies: [],
     examples: ['line-chart'],
     keyboard: [
-      ['Arrow left / right', 'Move the readout by 1% of the range'],
-      ['Shift + arrow', 'Move by 5%'],
-      ['Home / End', 'Jump to the start or end'],
+      ['Arrow left / right', 'Move the readout to the next drawn point'],
+      ['Shift + arrow', 'Move by a tenth of the points'],
+      ['Home / End', 'Jump to the first or last point'],
       ['Escape', 'Hide the readout'],
     ],
     a11y: [
@@ -1036,7 +1036,7 @@ export const components: ComponentMeta[] = [
     category: 'Charts',
     level: 'organism',
     description:
-      'Comparison across a few categories; bars past the limit turn critical so the outlier reads first.',
+      'Comparison across a few categories; bars past the limit turn critical so the outlier reads first. Negative values grow down from a zero line.',
     use: ['Overshoot per run, failures per actuator'],
     avoid: ['Continuous data over time: use Line chart', 'More than ~20 bars: use a table or a heatmap'],
     files: ['bar-chart.tsx', 'core.ts'],
@@ -1121,7 +1121,7 @@ export const components: ComponentMeta[] = [
     registryDependencies: [],
     examples: ['stream-chart'],
     a11y: [
-      'The latest values are text above the plot, with the word "over limit" when one is, never color alone.',
+      'The latest values are text above the plot, with the words "over limit" or "below limit" when one is, never color alone.',
       'Crossing a limit is announced politely, at most once every ten seconds.',
       'With reduced motion on, the chart updates four times a second instead of scrolling smoothly.',
       'Drawing stops while the chart is off screen or the tab is hidden.',
@@ -1158,7 +1158,8 @@ export const components: ComponentMeta[] = [
         name: 'paused',
         type: 'boolean',
         default: 'false',
-        description: 'Freeze the view while samples keep buffering.',
+        description:
+          'Freeze the view at the moment it pauses, across theme changes, resizes and scrolling; samples keep buffering, and resuming goes live.',
       },
     ],
   },
@@ -1191,14 +1192,15 @@ export const components: ComponentMeta[] = [
     ],
     a11y: [
       'Both panes share one crosshair and one readout, announced politely as you move.',
-      'Decades are labelled (10, 100, 1k Hz); the steps between them are faint grid lines.',
+      'Decades are labelled (0.1, 1, 10, 1k, 1M Hz); the steps between them are faint grid lines.',
       'Margins are labelled with their value, not shown by color.',
     ],
     props: [
       {
         name: 'frequency',
         type: 'ArrayLike<number>',
-        description: 'Frequencies in Hz, ascending and above zero.',
+        description:
+          'Frequencies in Hz, ascending. Samples at or below zero (an FFT’s 0 Hz bin) are left out.',
       },
       {
         name: 'magnitude',
@@ -1290,7 +1292,7 @@ export const components: ComponentMeta[] = [
     category: 'Charts',
     level: 'organism',
     description:
-      'A distribution against specification limits, with n, mean, standard deviation and Cpk stated in words.',
+      'A distribution against specification limits, with n, mean, standard deviation, Cpk and Ppk stated in words.',
     use: [
       'Test results and quality data against a spec',
       'Is this run unusual, or is the whole process off?',
@@ -1309,25 +1311,36 @@ export const components: ComponentMeta[] = [
       ['Escape', 'Clear the readout'],
     ],
     a11y: [
-      'Bins outside the limits turn critical and the readout says "out of spec".',
-      'Cpk carries a word (capable, marginal, not capable) next to its number.',
+      'Values past the limits turn critical (a bin that straddles a limit shows both tones) and the readout counts them as "out of spec".',
+      'Cpk carries a word (capable, marginal, not capable) next to its number; Ppk is shown beside it.',
     ],
     props: [
-      { name: 'values', type: 'number[]', description: 'Raw measurements, one per run or part.' },
+      {
+        name: 'values',
+        type: 'number[]',
+        description: 'Raw measurements in production order; order matters for Cpk. NaN is left out.',
+      },
       {
         name: 'binWidth',
         type: 'number',
-        description: 'Bin width in the values’ unit. Defaults to the Freedman–Diaconis rule.',
+        description:
+          'Bin width in the values’ unit. Defaults to a round width near the Freedman–Diaconis rule; at most 200 bins.',
+      },
+      {
+        name: 'subgroupSize',
+        type: 'number',
+        description:
+          'Consecutive values per rational subgroup, for Cpk (pooled σ). Leave it out for individuals (moving range / 1.128). Ppk always uses the overall σ.',
       },
       {
         name: 'lower',
         type: 'number',
-        description: 'Lower specification limit. Bins below it turn critical; Cpk uses it.',
+        description: 'Lower specification limit. Values below it turn critical; Cpk and Ppk use it.',
       },
       {
         name: 'upper',
         type: 'number',
-        description: 'Upper specification limit. Bins above it turn critical; Cpk uses it.',
+        description: 'Upper specification limit. Values above it turn critical; Cpk and Ppk use it.',
       },
       {
         name: 'marker',

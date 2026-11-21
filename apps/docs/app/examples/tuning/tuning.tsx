@@ -204,7 +204,8 @@ export function Tuning() {
             label="Runs over limit"
             value={S.over}
             unit={`of ${S.n}`}
-            status={S.over ? 'warn' : 'pass'}
+            // A run past the limit failed; "Near limit" is for values still inside it.
+            status={S.over ? 'fail' : 'pass'}
             hint={`${nf(1).format((100 * S.over) / S.n)} % of runs`}
           />
         </MetricGroup>

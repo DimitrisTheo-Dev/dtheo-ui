@@ -3,10 +3,12 @@
 import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
 import {
+  ChartEmpty,
   createColorReader,
   crisp,
   fitCanvas,
   formatNumber,
+  longestLabel,
   observeTheme,
   toneBg,
   toneVar,
@@ -14,7 +16,7 @@ import {
   useWidth,
   type Tone,
 } from './core';
-import type { Stream } from './stream';
+import { createStream, type Stream } from './stream';
 
 // ---------- The chart ----------
 
@@ -44,7 +46,10 @@ export interface StreamChartProps {
   /** How much history is on screen, in milliseconds. */
   window?: number;
   limits?: StreamLimit[];
-  /** Freeze the view; samples keep buffering and the chart catches up on resume. */
+  /**
+   * Freeze the view at the moment it pauses; samples keep buffering and the chart catches up on resume. The frozen
+   * view survives theme changes, resizes and scrolling out of view and back.
+   */
   paused?: boolean;
   height?: number;
   /** What the chart shows, for screen readers. Limit crossings are announced separately. */
@@ -57,11 +62,31 @@ const noLimits: StreamLimit[] = [];
 
 interface Latest {
   values: number[];
-  over: boolean[];
+  /** Past a limit, and which way: 'above' over an upper limit, 'below' under a lower one. */
+  past: Array<'above' | 'below' | null>;
+  /** True when the window drew no finite sample at all. */
+  empty: boolean;
 }
 
 const isOver = (l: StreamLimit, v: number) =>
   (l.direction ?? 'above') === 'above' ? v > l.value : v < l.value;
+
+/** The latest value of a series, or NaN when its channel is not in the stream. */
+function latestValue(stream: Stream, channel: string) {
+  const c = stream.channels.indexOf(channel);
+  return c < 0 || !stream.size ? Number.NaN : stream.value(c, stream.size - 1);
+}
+
+/** A copy of everything the stream holds, so a paused chart keeps the view it paused on while new samples arrive. */
+function snapshot(stream: Stream): Stream {
+  const copy = createStream(stream.channels, Math.max(1, stream.size));
+  const row: number[] = Array.from({ length: stream.channels.length }, () => Number.NaN);
+  for (let i = 0; i < stream.size; i++) {
+    for (let c = 0; c < row.length; c++) row[c] = stream.value(c, i);
+    copy.push(stream.time(i), row);
+  }
+  return copy;
+}
 
 /**
  * Draws one series as a canvas path. When there are more samples than pixels, each pixel column keeps its first,
@@ -79,6 +104,7 @@ function seriesPath(
   sy: (v: number) => number,
 ) {
   const path = new Path2D();
+  let drawn = 0;
   const n = stream.size - i0;
   const px = (t: number) => left + plotW * (1 - (tEnd - t) / span);
   let pen = false;
@@ -86,6 +112,7 @@ function seriesPath(
     if (pen) path.lineTo(x, y);
     else path.moveTo(x, y);
     pen = true;
+    drawn++;
   };
   if (n <= plotW * 1.5) {
     for (let i = i0; i < stream.size; i++) {
@@ -93,7 +120,7 @@ function seriesPath(
       if (Number.isFinite(v)) to(px(stream.time(i)), sy(v));
       else pen = false;
     }
-    return path;
+    return { path, drawn };
   }
   let col = -1;
   let filled = false;
@@ -131,7 +158,7 @@ function seriesPath(
     }
   }
   flush();
-  return path;
+  return { path, drawn };
 }
 
 interface DrawProps {
@@ -185,7 +212,11 @@ function startDrawing({
     if (!ctx) return;
     if (frame++ % 30 === 0) colors.refresh();
     ctx.clearRect(0, 0, width, height);
-    if (!stream.size) return;
+    if (!stream.size) {
+      onReadout({ values: p.series.map(() => Number.NaN), past: p.series.map(() => null), empty: true });
+      return;
+    }
+    let drawn = 0;
     const tEnd = stream.time(stream.size - 1);
     const i0 = Math.max(0, stream.indexAt(tEnd - p.span) - 1);
     ctx.save();
@@ -197,7 +228,9 @@ function startDrawing({
     for (const s of p.series) {
       const c = stream.channels.indexOf(s.channel);
       if (c < 0) continue;
-      const path = seriesPath(stream, c, i0, tEnd, p.span, p.left, p.plotW, p.sy);
+      const trace = seriesPath(stream, c, i0, tEnd, p.span, p.left, p.plotW, p.sy);
+      const path = trace.path;
+      drawn += trace.drawn;
       ctx.lineWidth = s.width ?? 2;
       ctx.strokeStyle = colors.get(toneVar[s.tone ?? 'primary']);
       ctx.stroke(path);
@@ -219,22 +252,24 @@ function startDrawing({
     // The readout above the plot updates eight times a second: fast enough to feel live, slow enough to read.
     if (now - lastReadout > 125) {
       lastReadout = now;
-      const last = stream.size - 1;
-      const values = p.series.map((s) => stream.value(stream.channels.indexOf(s.channel), last));
-      const over = p.series.map((s, k) =>
-        p.limits.some((l) => l.channel === s.channel && isOver(l, values[k]!)),
-      );
-      onReadout({ values, over });
-      const crossed = over.findIndex((o, k) => o && !wasOver[k]);
+      // A series whose channel the stream does not have reads as missing, like a dropout.
+      const values = p.series.map((s) => latestValue(stream, s.channel));
+      const past = p.series.map((s, k) => {
+        const hit = p.limits.find((l) => l.channel === s.channel && isOver(l, values[k]!));
+        return hit ? (hit.direction ?? 'above') : null;
+      });
+      onReadout({ values, past, empty: drawn === 0 });
+      const crossed = past.findIndex((o, k) => o !== null && !wasOver[k]);
       // At most one announcement every ten seconds: a live feed must not talk over everything else.
       if (crossed >= 0 && now - lastAnnounce > 10_000) {
         lastAnnounce = now;
         const s = p.series[crossed]!;
+        const side = past[crossed] === 'below' ? 'below' : 'over';
         onAnnounce(
-          `${s.label} is over its limit: ${formatNumber(values[crossed]!, s.digits ?? 1)}${s.unit ? ` ${s.unit}` : ''}.`,
+          `${s.label} is ${side} its limit: ${formatNumber(values[crossed]!, s.digits ?? 1)}${s.unit ? ` ${s.unit}` : ''}.`,
         );
       }
-      wasOver = over;
+      wasOver = past.map((o) => o !== null);
     }
   };
 
@@ -290,7 +325,7 @@ export function StreamChart({
 
   const w = width ?? 0;
   const ticks = yTicks ?? scaleLinear().domain(yDomain).ticks(4);
-  const left = 12 + Math.max(...ticks.map((t) => String(t).length)) * 7;
+  const left = 12 + longestLabel(ticks) * 7;
   const plotW = Math.max(0, w - left - M.right);
   const plotH = height - M.top - M.bottom;
   const sy = React.useMemo(
@@ -312,14 +347,20 @@ export function StreamChart({
     props.current = { series, limits, span, sy, left, plotW, plotH };
   });
 
+  // While paused, the chart draws from a copy taken the moment it paused, so redraws (a theme change, a resize,
+  // scrolling back into view) keep that view instead of jumping to samples that arrived since.
+  const frozen = React.useRef<{ source: Stream; copy: Stream } | null>(null);
+
   React.useEffect(() => {
+    if (!paused) frozen.current = null;
+    else if (frozen.current?.source !== stream) frozen.current = { source: stream, copy: snapshot(stream) };
     const canvas = canvasRef.current;
     const host = ref.current;
     if (!canvas || !host || !w) return;
     return startDrawing({
       canvas,
       host,
-      stream,
+      stream: frozen.current?.copy ?? stream,
       width: w,
       height,
       live: !paused && inView,
@@ -348,7 +389,8 @@ export function StreamChart({
         <dl className="flex flex-1 flex-wrap items-baseline gap-x-5 gap-y-1 text-label">
           {series.map((s, k) => {
             const v = latest?.values[k];
-            const over = latest?.over[k] ?? false;
+            const past = latest?.past[k] ?? null;
+            const over = past !== null;
             return (
               <div key={s.channel} className="flex items-baseline gap-2">
                 <dt className="inline-flex items-center gap-1.5 font-normal text-muted-foreground">
@@ -363,7 +405,11 @@ export function StreamChart({
                 >
                   {v === undefined ? '–' : formatNumber(v, s.digits ?? 1)}
                   {s.unit ? <span className="font-normal text-muted-foreground"> {s.unit}</span> : null}
-                  {over ? <span className="ml-1.5 font-semibold">over limit</span> : null}
+                  {over ? (
+                    <span className="ml-1.5 font-semibold">
+                      {past === 'below' ? 'below limit' : 'over limit'}
+                    </span>
+                  ) : null}
                 </dd>
               </div>
             );
@@ -436,6 +482,7 @@ export function StreamChart({
             ))}
           </svg>
         ) : null}
+        {latest?.empty ? <ChartEmpty /> : null}
       </div>
     </div>
   );

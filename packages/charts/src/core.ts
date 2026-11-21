@@ -138,8 +138,9 @@ function lttbRun(xs: ArrayLike<number>, ys: ArrayLike<number>, from: number, to:
   return out;
 }
 
-/** Index of the sample nearest to `x` in a sorted array. */
+/** Index of the sample nearest to `x` in a sorted array, or -1 when the array is empty. */
 export function nearestIndex(xs: ArrayLike<number>, x: number): number {
+  if (!xs.length) return -1;
   let lo = 0;
   let hi = xs.length - 1;
   while (hi - lo > 1) {
@@ -275,8 +276,14 @@ export function useInView<T extends HTMLElement>(ref: React.RefObject<T | null>)
   return inView;
 }
 
-/** Arrow-key stepping shared by the reading charts: returns the next index, or undefined for other keys. */
+const stepKeys = new Set(['ArrowRight', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'Home', 'End', 'Escape']);
+
+/**
+ * Arrow-key stepping shared by the reading charts: returns the next index, null to clear the reading (Escape, or any
+ * stepping key when there is nothing to read), or undefined for other keys.
+ */
 export function stepIndex(key: string, shift: boolean, index: number | null, count: number) {
+  if (count <= 0) return stepKeys.has(key) ? null : undefined;
   const step = shift ? Math.max(1, Math.round(count / 10)) : 1;
   const from = index ?? -1;
   switch (key) {
@@ -307,3 +314,77 @@ export function observeTheme(el: HTMLElement, onChange: () => void) {
     mo.observe(node, { attributes: true, attributeFilter: ['class', 'data-preset'] });
   return () => mo.disconnect();
 }
+
+/** The smallest and largest finite value, without spreading the data into arguments; undefined when none is finite. */
+export function finiteExtent(values: ArrayLike<number>): [number, number] | undefined {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i]!;
+    if (!Number.isFinite(v)) continue;
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  return lo <= hi ? [lo, hi] : undefined;
+}
+
+/** True when any value is finite. */
+export function hasFinite(values: ArrayLike<number>, from = 0, to = values.length - 1) {
+  for (let i = Math.max(0, from); i <= to && i < values.length; i++)
+    if (Number.isFinite(values[i]!)) return true;
+  return false;
+}
+
+/** The widest tick label, in characters, for sizing the y-axis gutter. */
+export function longestLabel(ticks: readonly number[]) {
+  let n = 0;
+  for (const t of ticks) n = Math.max(n, String(t).length);
+  return n;
+}
+
+/**
+ * Builds an SVG line path point by point. `gap()` lifts the pen. A run of one point, a sample alone between two
+ * gaps, gets a zero-length segment, so a line drawn with round caps shows it as a dot instead of dropping it.
+ */
+export function createLinePath(digits: number) {
+  let d = '';
+  let run = 0;
+  let last = '';
+  const lift = () => {
+    if (run === 1) d += `L${last}`;
+    run = 0;
+  };
+  return {
+    to(x: number, y: number) {
+      last = `${x.toFixed(digits)} ${y.toFixed(digits)}`;
+      d += `${run ? 'L' : 'M'}${last}`;
+      run++;
+    },
+    gap: lift,
+    done() {
+      lift();
+      return d;
+    },
+  };
+}
+
+/** A document-unique id for a clipPath, safe inside `url(#…)`. */
+export function useClipId() {
+  return `clip${React.useId().replace(/[^\w-]/g, '')}`;
+}
+
+/** What an empty chart says, in words, where the plot would be. */
+export function ChartEmpty() {
+  return React.createElement(
+    'p',
+    {
+      'data-slot': 'chart-empty',
+      className:
+        'pointer-events-none absolute inset-0 m-0 flex items-center justify-center text-label font-normal text-muted-foreground',
+    },
+    'No data',
+  );
+}
+
+/** The label of a chart drawn as one image, with the empty state stated, since an image hides its children. */
+export const imageLabel = (label: string, empty: boolean) => (empty ? `${label} (no data)` : label);

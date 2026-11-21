@@ -2,7 +2,17 @@
 
 import * as React from 'react';
 import { scaleBand, scaleLinear } from 'd3-scale';
-import { crisp, formatNumber, toneFill, useWidth, type Tone } from './core';
+import {
+  ChartEmpty,
+  crisp,
+  finiteExtent,
+  formatNumber,
+  imageLabel,
+  longestLabel,
+  toneFill,
+  useWidth,
+  type Tone,
+} from './core';
 
 export interface Bar {
   id: string;
@@ -15,7 +25,8 @@ export interface Bar {
 
 /**
  * Comparison across a handful of categories (runs, actuators). Bars are thin, rounded only at the data end,
- * separated by air; bars past `limit` turn critical so the outlier reads first.
+ * separated by air; bars past `limit` turn critical so the outlier reads first. Bars grow from zero, up for a
+ * positive value and down for a negative one; with negatives the zero line is the axis.
  */
 export function BarChart({
   bars,
@@ -41,13 +52,20 @@ export function BarChart({
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = React.useState<string | null>(null);
   const w = width ?? 0;
-  const max = yDomain?.[1] ?? Math.max(limit ?? 0, ...bars.map((b) => b.value)) * 1.15;
+  const extent = React.useMemo(() => finiteExtent(bars.map((b) => b.value)), [bars]);
+  const hasData = extent !== undefined;
+  const top = Math.max(limit ?? 0, extent?.[1] ?? 0);
+  const bottom = Math.min(limit ?? 0, extent?.[0] ?? 0);
+  const lo = yDomain?.[0] ?? (bottom < 0 ? bottom * 1.15 : 0);
+  let hi = yDomain?.[1] ?? top * 1.15;
+  // Nothing above zero (no data, or every bar at zero): a unit range, so the axis sits at the bottom, not mid-air.
+  if (!(hi > lo)) hi = lo + 1;
   const sy = scaleLinear()
-    .domain([yDomain?.[0] ?? 0, max])
+    .domain([lo, hi])
     .nice()
     .range([height - 28, 14]);
   const ticks = sy.ticks(4);
-  const left = 12 + Math.max(...ticks.map((t) => String(t).length)) * 7;
+  const left = 12 + longestLabel(ticks) * 7;
   const sx = scaleBand<string>()
     .domain(bars.map((b) => b.id))
     .range([left, Math.max(left, w - 8)])
@@ -55,13 +73,16 @@ export function BarChart({
     .paddingOuter(0.2);
   const bw = Math.min(24, sx.bandwidth());
   const r = Math.min(4, bw / 2);
-  const base = sy(sy.domain()[0]!);
+  // Bars grow from zero, or from the bottom of a domain that starts above zero.
+  const [d0, d1] = sy.domain() as [number, number];
+  const zero = Math.min(Math.max(0, d0), d1);
+  const base = sy(zero);
 
   return (
     <div
       ref={ref}
       role="img"
-      aria-label={ariaLabel}
+      aria-label={imageLabel(ariaLabel, !hasData)}
       className={`relative w-full ${className ?? ''}`}
       style={{ height }}
     >
@@ -69,7 +90,7 @@ export function BarChart({
         <svg width={w} height={height} aria-hidden="true" className="block overflow-visible">
           {ticks.map((t) => (
             <g key={t}>
-              {t !== sy.domain()[0] ? (
+              {t !== zero ? (
                 <line
                   x1={left}
                   x2={w - 8}
@@ -91,11 +112,17 @@ export function BarChart({
           <line x1={left} x2={w - 8} y1={crisp(base)} y2={crisp(base)} className="stroke-chart-axis" />
           {bars.map((b) => {
             const x = (sx(b.id) ?? 0) + (sx.bandwidth() - bw) / 2;
-            const y = sy(b.value);
+            const finite = Number.isFinite(b.value);
+            const y = finite ? sy(b.value) : base;
+            const down = y > base;
             const over = limit !== undefined && b.value > limit;
             const tone: Tone = b.tone ?? (over ? 'critical' : b.current ? 'primary' : 'muted');
-            const h = Math.max(0, base - y);
-            const d = `M${x} ${base}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + bw - r}Q${x + bw} ${y} ${x + bw} ${y + r}V${base}Z`;
+            const h = Math.abs(base - y);
+            // Rounded only at the data end: the top of a bar going up, the bottom of one going down.
+            const rd = Math.min(r, h);
+            const d = down
+              ? `M${x} ${base}V${y - rd}Q${x} ${y} ${x + rd} ${y}H${x + bw - rd}Q${x + bw} ${y} ${x + bw} ${y - rd}V${base}Z`
+              : `M${x} ${base}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + bw - r}Q${x + bw} ${y} ${x + bw} ${y + r}V${base}Z`;
             return (
               <g
                 key={b.id}
@@ -118,10 +145,10 @@ export function BarChart({
                 >
                   {b.label}
                 </text>
-                {hover === b.id || over || b.current ? (
+                {finite && (hover === b.id || over || b.current) ? (
                   <text
                     x={x + bw / 2}
-                    y={y - 6}
+                    y={down ? y + 14 : y - 6}
                     textAnchor="middle"
                     className="fill-foreground text-caption font-semibold tabular-nums"
                   >
@@ -156,6 +183,7 @@ export function BarChart({
           ) : null}
         </svg>
       ) : null}
+      {hasData ? null : <ChartEmpty />}
     </div>
   );
 }
