@@ -3,11 +3,15 @@
 import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
 import {
+  axisGutter,
   createColorReader,
   crisp,
   fitCanvas,
   formatNumber,
+  haloText,
   observeTheme,
+  sharedUnit,
+  tickFormat,
   toneBg,
   toneVar,
   useInView,
@@ -41,7 +45,12 @@ export interface StreamChartProps {
   series: StreamSeries[];
   yDomain: [number, number];
   yTicks?: number[];
-  /** How much history is on screen, in milliseconds. */
+  /** The y-axis unit, written above its ticks. Defaults to the unit the series share; pass '' for none. */
+  yUnit?: string;
+  /**
+   * How much history is on screen, in milliseconds. The stream's capacity must hold at least rate × window
+   * samples (20,000 by default: 10 s at 2 kHz), or the oldest part of the window is empty.
+   */
   window?: number;
   limits?: StreamLimit[];
   /** Freeze the view; samples keep buffering and the chart catches up on resume. */
@@ -53,6 +62,8 @@ export interface StreamChartProps {
 }
 
 const M = { top: 10, right: 14, bottom: 22 };
+/** Extra room above the plot for the y-axis unit. */
+const UNIT_ROW = 12;
 const noLimits: StreamLimit[] = [];
 
 interface Latest {
@@ -140,8 +151,23 @@ interface DrawProps {
   span: number;
   sy: (v: number) => number;
   left: number;
+  top: number;
   plotW: number;
   plotH: number;
+}
+
+const warned = new Set<string>();
+
+/** Each series' channel index in the stream, or -1 for a name the stream doesn't have (warned once, then skipped). */
+function channelIndices(stream: Stream, series: StreamSeries[]) {
+  return series.map((s) => {
+    const c = stream.channels.indexOf(s.channel);
+    if (c < 0 && !warned.has(s.channel)) {
+      warned.add(s.channel);
+      console.warn(`StreamChart: no channel "${s.channel}" in the stream (${stream.channels.join(', ')}).`);
+    }
+    return c;
+  });
 }
 
 /**
@@ -172,7 +198,6 @@ function startDrawing({
   const colors = createColorReader(host);
   const reduce = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
   let raf = 0;
-  let frame = 0;
   let drawnVersion = -1;
   let lastDraw = 0;
   let lastReadout = 0;
@@ -183,19 +208,19 @@ function startDrawing({
     const p = read();
     const ctx = fitCanvas(canvas, width, height);
     if (!ctx) return;
-    if (frame++ % 30 === 0) colors.refresh();
     ctx.clearRect(0, 0, width, height);
     if (!stream.size) return;
+    const channels = channelIndices(stream, p.series);
     const tEnd = stream.time(stream.size - 1);
     const i0 = Math.max(0, stream.indexAt(tEnd - p.span) - 1);
     ctx.save();
     ctx.beginPath();
-    ctx.rect(p.left, M.top - 2, p.plotW, p.plotH + 4);
+    ctx.rect(p.left, p.top - 2, p.plotW, p.plotH + 4);
     ctx.clip();
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    for (const s of p.series) {
-      const c = stream.channels.indexOf(s.channel);
+    for (const [k, s] of p.series.entries()) {
+      const c = channels[k]!;
       if (c < 0) continue;
       const path = seriesPath(stream, c, i0, tEnd, p.span, p.left, p.plotW, p.sy);
       ctx.lineWidth = s.width ?? 2;
@@ -220,7 +245,7 @@ function startDrawing({
     if (now - lastReadout > 125) {
       lastReadout = now;
       const last = stream.size - 1;
-      const values = p.series.map((s) => stream.value(stream.channels.indexOf(s.channel), last));
+      const values = channels.map((c) => (c < 0 ? Number.NaN : stream.value(c, last)));
       const over = p.series.map((s, k) =>
         p.limits.some((l) => l.channel === s.channel && isOver(l, values[k]!)),
       );
@@ -242,7 +267,8 @@ function startDrawing({
     raf = requestAnimationFrame(loop);
     if (document.hidden) return;
     if (reduce && now - lastDraw < 250) return;
-    if (stream.version === drawnVersion && frame % 30 !== 0) return;
+    // Nothing new, nothing to draw: a theme change redraws through the observer below.
+    if (stream.version === drawnVersion) return;
     drawnVersion = stream.version;
     lastDraw = now;
     draw(now);
@@ -274,6 +300,7 @@ export function StreamChart({
   series,
   yDomain,
   yTicks,
+  yUnit: yUnitProp,
   window: span = 10_000,
   limits = noLimits,
   paused = false,
@@ -289,16 +316,23 @@ export function StreamChart({
   const descId = React.useId();
 
   const w = width ?? 0;
+  const yUnit = yUnitProp ?? sharedUnit(series);
   const ticks = yTicks ?? scaleLinear().domain(yDomain).ticks(4);
-  const left = 12 + Math.max(...ticks.map((t) => String(t).length)) * 7;
+  const fy = tickFormat(ticks);
+  const left = axisGutter([...ticks.map(fy), yUnit]);
+  const top = M.top + (yUnit ? UNIT_ROW : 0);
   const plotW = Math.max(0, w - left - M.right);
-  const plotH = height - M.top - M.bottom;
+  const plotH = height - top - M.bottom;
   const sy = React.useMemo(
     () =>
       scaleLinear()
         .domain(yDomain)
-        .range([M.top + plotH, M.top]),
-    [yDomain, plotH],
+        .range([top + plotH, top]),
+    [yDomain, top, plotH],
+  );
+  // Each reading keeps the width of the widest value it can show, so the row never rewraps as digits change.
+  const valueChars = series.map((s) =>
+    Math.max(...yDomain.map((v) => formatNumber(v, s.digits ?? 1).length), formatNumber(0, s.digits ?? 1).length),
   );
   const seconds = span / 1000;
   const xTicks = React.useMemo(() => {
@@ -307,9 +341,9 @@ export function StreamChart({
   }, [seconds]);
 
   // The draw loop lives in an effect and reads props through a ref, so a new prop never restarts it.
-  const props = React.useRef({ series, limits, span, sy, left, plotW, plotH });
+  const props = React.useRef({ series, limits, span, sy, left, top, plotW, plotH });
   React.useLayoutEffect(() => {
-    props.current = { series, limits, span, sy, left, plotW, plotH };
+    props.current = { series, limits, span, sy, left, top, plotW, plotH };
   });
 
   React.useEffect(() => {
@@ -327,7 +361,7 @@ export function StreamChart({
       onReadout: setLatest,
       onAnnounce: setAnnounce,
     });
-  }, [stream, w, height, paused, inView, ref]);
+  }, [stream, w, height, paused, inView, ref, props]);
 
   return (
     <div
@@ -349,8 +383,9 @@ export function StreamChart({
           {series.map((s, k) => {
             const v = latest?.values[k];
             const over = latest?.over[k] ?? false;
+            const limited = limits.some((l) => l.channel === s.channel);
             return (
-              <div key={s.channel} className="flex items-baseline gap-2">
+              <div key={s.channel} className="flex items-baseline gap-2 whitespace-nowrap">
                 <dt className="inline-flex items-center gap-1.5 font-normal text-muted-foreground">
                   <span
                     aria-hidden="true"
@@ -361,9 +396,14 @@ export function StreamChart({
                 <dd
                   className={`font-semibold tabular-nums ${over ? 'text-destructive-foreground' : 'text-foreground'}`}
                 >
-                  {v === undefined ? '–' : formatNumber(v, s.digits ?? 1)}
+                  <span className="inline-block text-right" style={{ minWidth: `${valueChars[k]}ch` }}>
+                    {v === undefined || !Number.isFinite(v) ? '–' : formatNumber(v, s.digits ?? 1)}
+                  </span>
                   {s.unit ? <span className="font-normal text-muted-foreground"> {s.unit}</span> : null}
-                  {over ? <span className="ml-1.5 font-semibold">over limit</span> : null}
+                  {/* Space for the warning is kept while it is hidden, so the row never jumps when it appears. */}
+                  {limited ? (
+                    <span className={`ml-1.5 font-semibold ${over ? '' : 'invisible'}`}>over limit</span>
+                  ) : null}
                 </dd>
               </div>
             );
@@ -380,24 +420,46 @@ export function StreamChart({
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 overflow-visible"
           >
-            {ticks.map((t) => (
-              <g key={t}>
+            {yUnit ? (
+              <text
+                x={left - 10}
+                y={top - UNIT_ROW + 2}
+                textAnchor="end"
+                className="fill-subtle-foreground text-caption"
+              >
+                {yUnit}
+              </text>
+            ) : null}
+            {ticks.map((t) =>
+              t === yDomain[0] ? null : (
                 <line
+                  key={`g${t}`}
                   x1={left}
                   x2={left + plotW}
                   y1={crisp(sy(t))}
                   y2={crisp(sy(t))}
-                  className={t === yDomain[0] ? 'stroke-chart-axis' : 'stroke-chart-grid'}
+                  className="stroke-chart-grid"
                 />
-                <text
-                  x={left - 10}
-                  y={sy(t) + 3.5}
-                  textAnchor="end"
-                  className="fill-subtle-foreground text-caption tabular-nums"
-                >
-                  {t}
-                </text>
-              </g>
+              ),
+            )}
+            {/* The baseline is drawn whether or not a tick sits on it. */}
+            <line
+              x1={left}
+              x2={left + plotW}
+              y1={crisp(sy(yDomain[0]))}
+              y2={crisp(sy(yDomain[0]))}
+              className="stroke-chart-axis"
+            />
+            {ticks.map((t) => (
+              <text
+                key={t}
+                x={left - 10}
+                y={sy(t) + 3.5}
+                textAnchor="end"
+                className="fill-subtle-foreground text-caption tabular-nums"
+              >
+                {fy(t)}
+              </text>
             ))}
             {xTicks.map((s) => {
               const x = left + plotW * (1 - s / seconds);
@@ -427,7 +489,7 @@ export function StreamChart({
                   <text
                     x={left + 4}
                     y={sy(l.value) - 5}
-                    className="fill-subtle-foreground text-caption [paint-order:stroke] stroke-card [stroke-width:3px]"
+                    className={`fill-subtle-foreground text-caption ${haloText}`}
                   >
                     {l.label}
                   </text>

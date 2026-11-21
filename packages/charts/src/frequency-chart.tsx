@@ -4,13 +4,18 @@
 import * as React from 'react';
 import { scaleLinear, scaleLog, type ScaleLinear, type ScaleLogarithmic } from 'd3-scale';
 import {
+  CAPTION_CHAR_W,
+  axisGutter,
   crisp,
   formatNumber,
+  haloText,
   nearestIndex,
   stepIndex,
   toneBg,
   toneFill,
   toneStroke,
+  tickFormat,
+  useTooltipPlacement,
   useWidth,
   type Tone,
 } from './core';
@@ -24,7 +29,7 @@ export interface FrequencySeries {
   width?: 1 | 1.5 | 2;
 }
 
-/** A labelled point on the magnitude pane: a resonance, a peak in a spectrum. */
+/** A labeled point on the magnitude pane: a resonance, a peak in a spectrum. */
 export interface FrequencyPeak {
   frequency: number;
   value: number;
@@ -65,15 +70,18 @@ export interface FrequencyChartProps {
 }
 
 const M = { top: 22, right: 16, bottom: 6, axis: 22 };
-const haloText = '[paint-order:stroke] stroke-card [stroke-width:3px]';
 const none: never[] = [];
 
 type XScale = ScaleLogarithmic<number, number>;
 type YScale = ScaleLinear<number, number>;
 
-/** 1, 10, 100, 1k, 10k: decades are labelled, the steps between them are faint grid lines. */
+/** 1, 10, 100, 1k, 10k: decades are labeled, the steps between them are faint grid lines. */
 const formatHz = (f: number) =>
   f >= 1000 ? `${formatNumber(f / 1000, f % 1000 ? 1 : 0)}k` : formatNumber(f, f < 10 && f % 1 ? 1 : 0);
+
+/** A frequency with its unit, in kHz from 1,000 Hz: "7.4 Hz", "182 Hz", "1 kHz", never "1k Hz". */
+const withHz = (f: number) =>
+  f >= 1000 ? `${formatNumber(f / 1000, f % 1000 ? 1 : 0)} kHz` : `${formatNumber(f, f < 10 && f % 1 ? 1 : 0)} Hz`;
 
 function logGrid(min: number, max: number) {
   const decades: number[] = [];
@@ -143,6 +151,7 @@ function Pane({
   const plotBottom = height - M.bottom - (xAxis ? M.axis : 0);
   const sy = scaleLinear().domain(domain).range([plotBottom, M.top]);
   const yTicks = ticks ?? sy.ticks(4);
+  const fy = tickFormat(yTicks);
   const [f0, f1] = sx.domain() as [number, number];
   const { decades, minors } = logGrid(f0, f1);
   const right = width - M.right;
@@ -180,7 +189,7 @@ function Pane({
             textAnchor="end"
             className="fill-subtle-foreground text-caption tabular-nums"
           >
-            {t}
+            {fy(t)}
           </text>
         </g>
       ))}
@@ -247,7 +256,7 @@ function Pane({
               <rect
                 x={x + 6}
                 y={(y0 + y1) / 2 - 9}
-                width={sp.label.length * 6.6 + 10}
+                width={sp.label.length * CAPTION_CHAR_W + 10}
                 height={18}
                 rx={4}
                 className="fill-card stroke-border"
@@ -322,7 +331,7 @@ function Pane({
               textAnchor={k === decades.length - 1 && right - sx(f) < 30 ? 'end' : 'middle'}
               className="fill-subtle-foreground text-caption tabular-nums"
             >
-              {k === decades.length - 1 ? `${formatHz(f)} Hz` : formatHz(f)}
+              {k === decades.length - 1 ? withHz(f) : formatHz(f)}
             </text>
           ))
         : null}
@@ -363,19 +372,12 @@ function readoutRows(
   ];
 }
 
-function FrequencyReadout({
-  title,
-  rows,
-  style,
-}: {
-  title: string;
-  rows: Row[];
-  style: React.CSSProperties;
-}) {
+function FrequencyReadout({ title, rows, x, width }: { title: string; rows: Row[]; x: number; width: number }) {
+  const ref = useTooltipPlacement<HTMLDivElement>(x, width);
   return (
     <div
-      className="pointer-events-none absolute top-6 z-10 min-w-40 rounded-popover border border-border bg-popover/95 px-3 py-2.5 text-label shadow-popover backdrop-blur-material"
-      style={style}
+      ref={ref}
+      className="pointer-events-none absolute top-6 z-10 max-w-full min-w-40 rounded-popover border border-border bg-popover/95 px-3 py-2.5 text-label shadow-popover backdrop-blur-material"
     >
       <div className="mb-1.5 font-semibold text-foreground tabular-nums">{title}</div>
       {rows.map((r) => (
@@ -419,7 +421,7 @@ export function FrequencyChart({
     ...(magnitudeTicks ?? scaleLinear().domain(magnitudeDomain).ticks(4)),
     ...(phase ? (phaseTicks ?? scaleLinear().domain(phaseDomain).ticks(4)) : []),
   ];
-  const left = 12 + Math.max(...allTicks.map((t) => String(t).length)) * 7;
+  const left = axisGutter(allTicks.map(tickFormat(allTicks)));
   const f0 = frequency[0] ?? 1;
   const f1 = frequency[frequency.length - 1] ?? 10;
   const sx = React.useMemo(
@@ -441,7 +443,7 @@ export function FrequencyChart({
     setCursor(next);
     if (next === null) return;
     setAnnounce(
-      `${formatHz(frequency[next]!)} Hz: ${readout(next)
+      `${withHz(frequency[next]!)}: ${readout(next)
         .map((r) => `${r.label} ${r.value}`)
         .join(', ')}`,
     );
@@ -460,13 +462,21 @@ export function FrequencyChart({
       tabIndex={0}
       className={`relative w-full touch-pan-y rounded-control select-none ${className ?? ''}`}
       style={{ height: total }}
+      onPointerDown={(e) => {
+        if (!w) return;
+        const rect = e.currentTarget.getBoundingClientRect();
+        setCursor(nearestIndex(frequency, sx.invert(Math.min(w - M.right, Math.max(left, e.clientX - rect.left)))));
+      }}
       onPointerMove={(e) => {
         if (!w) return;
         const rect = e.currentTarget.getBoundingClientRect();
         const f = sx.invert(Math.min(w - M.right, Math.max(left, e.clientX - rect.left)));
         setCursor(nearestIndex(frequency, f));
       }}
-      onPointerLeave={() => setCursor(null)}
+      onPointerLeave={(e) => {
+        // A tap ends with the finger leaving: keep its reading until the next tap or until focus moves on.
+        if (e.pointerType !== 'touch') setCursor(null);
+      }}
       onBlur={() => setCursor(null)}
       onKeyDown={onKeyDown}
     >
@@ -507,11 +517,7 @@ export function FrequencyChart({
         </>
       ) : null}
       {cursor != null && w ? (
-        <FrequencyReadout
-          title={`${formatHz(frequency[cursor]!)} Hz`}
-          rows={readout(cursor)}
-          style={cx > left + (w - left) * 0.62 ? { right: w - cx + 12 } : { left: cx + 12 }}
-        />
+        <FrequencyReadout title={withHz(frequency[cursor]!)} rows={readout(cursor)} x={cx} width={w} />
       ) : null}
     </div>
   );

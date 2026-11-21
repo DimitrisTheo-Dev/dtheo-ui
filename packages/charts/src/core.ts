@@ -72,28 +72,141 @@ export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, n
 /** Snap a coordinate to the pixel grid so 1px lines stay crisp. */
 export const crisp = (v: number) => Math.round(v) + 0.5;
 
+/** A label over data: a card-colored stroke painted under the glyphs keeps it readable where a trace passes. */
+export const haloText = '[paint-order:stroke] stroke-card [stroke-width:3px]';
+
+/**
+ * The advance of one caption character (11 px; tabular digits measure about 6.8 px), rounded up so gutters and
+ * label-collision checks err toward room. Charts use it instead of measuring text, which SSR cannot do.
+ */
+export const CAPTION_CHAR_W = 7;
+
+/** Digits that write `value` exactly, up to four: 0 for 4000, 1 for 0.5, 2 for 0.25. */
+function exactDigits(value: number) {
+  for (let d = 0; d < 4; d++) {
+    const scaled = Math.abs(value) * 10 ** d;
+    if (Math.abs(scaled - Math.round(scaled)) < 1e-6 * Math.max(1, scaled)) return d;
+  }
+  return 4;
+}
+
+/**
+ * Tick labels through the same formatter as every readout: thousands separators, a true minus sign, and one digit
+ * count for the whole axis (the most any tick needs), so the axis reads "−2" where the tooltip reads "−2.00",
+ * never "-2", and 0.5, 1.0, 1.5 line up.
+ */
+export function tickFormat(ticks: readonly number[]) {
+  const digits = ticks.reduce((d, t) => Math.max(d, exactDigits(t)), 0);
+  return (t: number) => formatNumber(t, digits);
+}
+
+/** Left gutter for a y-axis: room for the widest tick label plus `pad`. */
+export function axisGutter(labels: readonly string[], pad = 12) {
+  return pad + labels.reduce((w, l) => Math.max(w, l.length), 1) * CAPTION_CHAR_W;
+}
+
+/** The unit every series with a unit shares, for the axis; none when they disagree. */
+export function sharedUnit(series: ReadonlyArray<{ unit?: string }>) {
+  const units = new Set(series.flatMap((s) => (s.unit ? [s.unit] : [])));
+  return units.size === 1 ? [...units][0]! : '';
+}
+
+/**
+ * Places a chart tooltip beside the cursor: right of it while it fits, left of it when it would cross the chart's
+ * right edge, and clamped inside the chart when neither side has room, as in a phone-width card. It reads the
+ * tooltip's real width after layout, so long rows never run off the card. Attach the returned ref to the tooltip
+ * and leave `left` and `right` out of its style.
+ */
+export function useTooltipPlacement<T extends HTMLElement>(x: number | null, width: number, gap = 12) {
+  const ref = React.useRef<T>(null);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || x == null) return;
+    const tw = el.offsetWidth;
+    let left = x + gap;
+    if (left + tw > width) left = x - gap - tw;
+    if (left < 0) left = Math.max(0, Math.min(width - tw, x - tw / 2));
+    el.style.left = `${Math.round(left)}px`;
+  });
+  return ref;
+}
+
+// ---------- Process capability ----------
+
+/** Cpk at or above 1.33 is the usual bar for a capable process: four standard deviations to the nearer limit. */
+export const CAPABLE = 1.33;
+
+export interface Capability {
+  n: number;
+  mean: number;
+  /** Short-term σ from the average moving range of consecutive values: MR̄ / 1.128 (d₂ for ranges of two). */
+  sigmaWithin: number;
+  /** The overall sample standard deviation. */
+  sigmaOverall: number;
+  /** Capability, from σ within: what the process holds run to run. Undefined without a limit. */
+  cpk?: number;
+  /** Performance, from σ overall: what it delivered, drift between runs included. Undefined without a limit. */
+  ppk?: number;
+}
+
+/**
+ * Cpk and Ppk against specification limits. They differ only in σ: Cpk takes the short-term σ estimated from the
+ * moving range of consecutive values, so `values` must be in run order; Ppk takes the overall σ. When the process
+ * drifts between runs, Ppk falls below Cpk. Non-finite values are skipped.
+ */
+export function capability(values: ArrayLike<number>, lower?: number, upper?: number): Capability {
+  const v = Array.from(values).filter((x) => Number.isFinite(x));
+  const n = v.length;
+  const mean = n ? v.reduce((a, b) => a + b, 0) / n : Number.NaN;
+  let squares = 0;
+  let ranges = 0;
+  for (let i = 0; i < n; i++) {
+    squares += (v[i]! - mean) ** 2;
+    if (i) ranges += Math.abs(v[i]! - v[i - 1]!);
+  }
+  const sigmaOverall = n > 1 ? Math.sqrt(squares / (n - 1)) : 0;
+  const sigmaWithin = n > 1 ? ranges / (n - 1) / 1.128 : 0;
+  const index = (sigma: number) =>
+    !sigma || (lower === undefined && upper === undefined)
+      ? undefined
+      : Math.min(
+          upper === undefined ? Infinity : (upper - mean) / (3 * sigma),
+          lower === undefined ? Infinity : (mean - lower) / (3 * sigma),
+        );
+  return { n, mean, sigmaWithin, sigmaOverall, cpk: index(sigmaWithin), ppk: index(sigmaOverall) };
+}
+
 /**
  * Largest-Triangle-Three-Buckets downsampling. Keeps the visual shape of a dense trace (peaks included)
  * with roughly `threshold` points, so a 100k-sample capture renders as fast as a 1k one.
  *
  * A non-finite y (NaN for a dropout) is a gap: each stretch between gaps is downsampled on its own share of the
  * points, and the first index of every gap is kept, so a line drawn from the result lifts the pen there.
+ *
+ * `from` and `to` pick the samples [from, to) to downsample, so a zoomed view reads the visible part of a typed
+ * array in place instead of copying it; the returned indices point into the full arrays.
  */
-export function lttb(xs: ArrayLike<number>, ys: ArrayLike<number>, threshold: number): number[] {
-  const n = xs.length;
-  if (threshold >= n || threshold < 3) return Array.from({ length: n }, (_, i) => i);
+export function lttb(
+  xs: ArrayLike<number>,
+  ys: ArrayLike<number>,
+  threshold: number,
+  from = 0,
+  to = xs.length,
+): number[] {
+  const n = to - from;
+  if (threshold >= n || threshold < 3) return Array.from({ length: Math.max(0, n) }, (_, i) => from + i);
   let finite = 0;
-  for (let i = 0; i < n; i++) if (Number.isFinite(ys[i]!)) finite++;
-  if (finite === n) return lttbRun(xs, ys, 0, n, threshold);
+  for (let i = from; i < to; i++) if (Number.isFinite(ys[i]!)) finite++;
+  if (finite === n) return lttbRun(xs, ys, from, to, threshold);
   const out: number[] = [];
-  for (let i = 0; i < n;) {
+  for (let i = from; i < to;) {
     if (!Number.isFinite(ys[i]!)) {
       out.push(i);
-      while (i < n && !Number.isFinite(ys[i]!)) i++;
+      while (i < to && !Number.isFinite(ys[i]!)) i++;
       continue;
     }
     let end = i;
-    while (end < n && Number.isFinite(ys[end]!)) end++;
+    while (end < to && Number.isFinite(ys[end]!)) end++;
     const share = Math.max(3, Math.round((threshold * (end - i)) / finite));
     for (const k of lttbRun(xs, ys, i, end, share)) out.push(k);
     i = end;

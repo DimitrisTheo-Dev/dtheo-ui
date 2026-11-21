@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
+import { capability } from '@dtheo/charts';
 import { Toaster } from '@dtheo/ui/components/toast';
 import { examples } from '@/examples';
 import { Assistant } from '@/app/examples/assistant/assistant';
@@ -27,6 +28,7 @@ import {
   TEMP_LIMIT,
   TORQUE_LIMIT,
   WINDING_TEMP,
+  bode,
   checkStatus,
   fmt,
   gains,
@@ -109,6 +111,25 @@ describe('the run review model', () => {
       expect(point.kp, r.id).toBe(Number(r.kp.toFixed(2)));
       expect(point.overshoot, r.id).toBe(Number(r.overshoot.toFixed(1)));
     }
+  });
+
+  it('states the capability the histogram computes: Cpk from σ within, Ppk from σ overall', () => {
+    const c = capability(
+      runs.map((r) => r.overshoot),
+      undefined,
+      OVERSHOOT_LIMIT,
+    );
+    expect(overshootStats.cpk).toBeCloseTo(c.cpk!, 10);
+    expect(overshootStats.ppk).toBeCloseTo(c.ppk!, 10);
+    expect([fmt.n2.format(overshootStats.cpk), fmt.n2.format(overshootStats.ppk)]).toEqual(['0.62', '0.56']);
+    expect(overshootStats.over).toBe(14);
+  });
+
+  it('reads the Bode margins where the curves cross, not at the next grid point', () => {
+    expect(fmt.n1.format(bode.margins.gainCrossover)).toBe('7.4');
+    expect(fmt.n1.format(bode.margins.gainMargin)).toBe('26.7');
+    expect(fmt.n0.format(bode.margins.phaseMargin)).toBe('48');
+    expect(fmt.n1.format(bode.referenceMargins.gainCrossover)).toBe('5.4');
   });
 
   it('draws every run inside the charts that plot them all', () => {

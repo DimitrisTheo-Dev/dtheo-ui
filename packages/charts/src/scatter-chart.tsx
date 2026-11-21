@@ -4,14 +4,18 @@
 import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
 import {
+  axisGutter,
   createColorReader,
   crisp,
   fitCanvas,
   formatNumber,
+  haloText,
   observeTheme,
   stepIndex,
   toneBg,
+  tickFormat,
   toneVar,
+  useTooltipPlacement,
   useWidth,
   type Tone,
 } from './core';
@@ -63,7 +67,6 @@ export interface ScatterChartProps {
 }
 
 const M = { top: 12, right: 16, bottom: 40 };
-const haloText = '[paint-order:stroke] stroke-card [stroke-width:3px]';
 const defaultGroups: ScatterGroup[] = [{ id: 'all', label: 'Points', tone: 'primary' }];
 const noLimits: ScatterLimit[] = [];
 
@@ -257,7 +260,7 @@ function ScatterOverlay({
             textAnchor="end"
             className="fill-subtle-foreground text-caption tabular-nums"
           >
-            {t}
+            {tickFormat(yTicks)(t)}
           </text>
         </g>
       ))}
@@ -269,7 +272,7 @@ function ScatterOverlay({
           textAnchor="middle"
           className="fill-subtle-foreground text-caption tabular-nums"
         >
-          {t}
+          {tickFormat(xTicks)(t)}
         </text>
       ))}
       <line x1={g.left} x2={right} y1={crisp(g.plotB)} y2={crisp(g.plotB)} className="stroke-chart-axis" />
@@ -373,15 +376,13 @@ function ScatterTooltip({
   g: Geometry;
   rows: Array<[string, string]>;
 }) {
-  const px = g.sx(point.x);
+  const ref = useTooltipPlacement<HTMLDivElement>(g.sx(point.x), g.width);
   return (
     <div
+      ref={ref}
       data-slot="scatter-tooltip"
-      className="pointer-events-none absolute z-10 min-w-36 rounded-popover border border-border bg-popover/95 px-3 py-2 text-label shadow-popover backdrop-blur-material"
-      style={{
-        top: Math.max(0, g.sy(point.y) - 70),
-        ...(px > g.left + g.plotW * 0.62 ? { right: g.width - px + 12 } : { left: px + 12 }),
-      }}
+      className="pointer-events-none absolute z-10 max-w-full min-w-36 rounded-popover border border-border bg-popover/95 px-3 py-2 text-label shadow-popover backdrop-blur-material"
+      style={{ top: Math.max(0, g.sy(point.y) - 70) }}
     >
       {point.label ? <div className="mb-1 font-semibold text-foreground">{point.label}</div> : null}
       {rows.map(([k, v]) => (
@@ -437,7 +438,7 @@ export function ScatterChart({
   const w = width ?? 0;
 
   const yt = yTicks ?? scaleLinear().domain(yDomain).ticks(5);
-  const left = 28 + Math.max(...yt.map((t) => String(t).length)) * 7;
+  const left = axisGutter(yt.map(tickFormat(yt)), 28);
   const plotW = Math.max(0, w - left - M.right);
   const plotB = height - M.bottom;
   const sx = React.useMemo(
@@ -489,13 +490,22 @@ export function ScatterChart({
       aria-describedby={descId}
       tabIndex={0}
       className={`relative w-full touch-pan-y rounded-control select-none ${className ?? ''}`}
+      onPointerDown={(e) => {
+        const rect = plotRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const i = nearestPoint(points, sx, sy, e.clientX - rect.left, e.clientY - rect.top);
+        setActive(i < 0 ? null : i);
+      }}
       onPointerMove={(e) => {
         const rect = plotRef.current?.getBoundingClientRect();
         if (!rect) return;
         const i = nearestPoint(points, sx, sy, e.clientX - rect.left, e.clientY - rect.top);
         setActive(i < 0 ? null : i);
       }}
-      onPointerLeave={() => setActive(null)}
+      onPointerLeave={(e) => {
+        // A tap ends with the finger leaving: keep its point until the next tap or until focus moves on.
+        if (e.pointerType !== 'touch') setActive(null);
+      }}
       onBlur={() => setActive(null)}
       onKeyDown={onKeyDown}
     >

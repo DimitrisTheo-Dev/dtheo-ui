@@ -19,6 +19,17 @@ function finiteRuns(values: number[]) {
   return runs;
 }
 
+export interface SparklineProps {
+  values: number[];
+  /** A shared [min, max] so sparklines in one table are comparable. Defaults to this series' own range. */
+  domain?: [number, number];
+  tone?: Tone;
+  height?: number;
+  area?: boolean;
+  ariaLabel: string;
+  className?: string;
+}
+
 /** A word-sized trend: one 1.5px line, a faint area and an emphasized endpoint. No axes, no hover. */
 export function Sparkline({
   values,
@@ -28,16 +39,7 @@ export function Sparkline({
   domain,
   ariaLabel,
   className,
-}: {
-  values: number[];
-  /** A shared [min, max] so sparklines in one table are comparable. Defaults to this series' own range. */
-  domain?: [number, number];
-  tone?: Tone;
-  height?: number;
-  area?: boolean;
-  ariaLabel: string;
-  className?: string;
-}) {
+}: SparklineProps) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const w = width ?? 0;
   const pad = 3;

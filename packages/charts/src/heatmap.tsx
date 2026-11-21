@@ -2,7 +2,44 @@
 
 import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
-import { crisp, formatNumber, useWidth } from './core';
+import { crisp, formatNumber, haloText, tickFormat, useWidth } from './core';
+
+export interface HeatmapProps {
+  xValues: number[];
+  yValues: number[];
+  /** values[row][col], row follows yValues (bottom to top), col follows xValues. NaN leaves a cell empty. */
+  values: number[][];
+  xLabel: string;
+  yLabel: string;
+  /** Units for the axes: written in the axis titles and in the hover readout. */
+  xUnit?: string;
+  yUnit?: string;
+  valueLabel: string;
+  valueUnit?: string;
+  digits?: number;
+  /**
+   * The value range the color spans. Defaults to the data's range. Values outside it take the end color, and the
+   * legend says so ("≤ 86.0 %").
+   */
+  domain?: [number, number];
+  /** An operating point to mark on the map. */
+  marker?: { x: number; y: number; label: string };
+  /** Axis tick values; any value inside the axis range, such as round numbers between grid points. */
+  xTicks?: number[];
+  yTicks?: number[];
+  height?: number;
+  ariaLabel: string;
+  className?: string;
+}
+
+/**
+ * The lowest value's opacity. High enough that the lowest cell still reads as a cell with a value, never as an
+ * empty one (an empty cell, NaN, draws nothing).
+ */
+const FLOOR = 0.15;
+
+const withUnit = (text: string, unit: string) => (unit ? `${text} ${unit}` : text);
+const title = (label: string, unit: string) => (unit ? `${label} (${unit})` : label);
 
 /**
  * A sequential map over two axes, such as motor efficiency over speed and torque. One hue, light to strong,
@@ -14,6 +51,8 @@ export function Heatmap({
   values,
   xLabel,
   yLabel,
+  xUnit = '',
+  yUnit = '',
   valueLabel,
   valueUnit = '',
   digits = 1,
@@ -24,31 +63,13 @@ export function Heatmap({
   height = 300,
   ariaLabel,
   className,
-}: {
-  xValues: number[];
-  yValues: number[];
-  /** values[row][col], row follows yValues (bottom to top), col follows xValues. NaN leaves a cell empty. */
-  values: number[][];
-  xLabel: string;
-  yLabel: string;
-  valueLabel: string;
-  valueUnit?: string;
-  digits?: number;
-  domain?: [number, number];
-  /** An operating point to mark on the map. */
-  marker?: { x: number; y: number; label: string };
-  /** Tick values to label (they must be members of xValues / yValues). */
-  xTicks?: number[];
-  yTicks?: number[];
-  height?: number;
-  ariaLabel: string;
-  className?: string;
-}) {
+}: HeatmapProps) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = React.useState<{ r: number; c: number } | null>(null);
   const w = width ?? 0;
   const flat = values.flat().filter((v) => Number.isFinite(v));
-  const [vmin, vmax] = domain ?? [Math.min(...flat), Math.max(...flat)];
+  const [dataMin, dataMax] = [Math.min(...flat), Math.max(...flat)];
+  const [vmin, vmax] = domain ?? [dataMin, dataMax];
   const left = 44;
   const right = 12;
   const top = 8;
@@ -57,18 +78,27 @@ export function Heatmap({
   const plotH = height - top - bottom;
   const cw = plotW / xValues.length;
   const ch = plotH / yValues.length;
-  const t = scaleLinear().domain([vmin, vmax]).range([0.06, 1]).clamp(true);
+  const t = scaleLinear().domain([vmin, vmax]).range([FLOOR, 1]).clamp(true);
+  const [x0, x1] = [xValues[0]!, xValues.at(-1)!];
+  const [y0, y1] = [yValues[0]!, yValues.at(-1)!];
   // Thin ticks evenly to what fits (about one label per 64px); never force the last one in, which spaces them unevenly.
   const maxXTicks = Math.max(2, Math.floor(plotW / 64));
-  const xTickBase = xTickValues ?? xValues.filter((_, i) => i % Math.ceil(xValues.length / 6) === 0);
+  const xTickBase = (xTickValues ?? xValues.filter((_, i) => i % Math.ceil(xValues.length / 6) === 0)).filter(
+    (v) => v >= Math.min(x0, x1) && v <= Math.max(x0, x1),
+  );
   const xTicks = xTickBase.filter(
     (_, i, a) => a.length <= maxXTicks || i % Math.ceil(a.length / maxXTicks) === 0,
   );
-  const yTicks = yTickValues ?? yValues.filter((_, i) => i % Math.ceil(yValues.length / 5) === 0);
-  const sx = (v: number) =>
-    left + ((v - xValues[0]!) / (xValues.at(-1)! - xValues[0]!)) * (plotW - cw) + cw / 2;
-  const sy = (v: number) =>
-    top + plotH - (((v - yValues[0]!) / (yValues.at(-1)! - yValues[0]!)) * (plotH - ch) + ch / 2);
+  const yTicks = (yTickValues ?? yValues.filter((_, i) => i % Math.ceil(yValues.length / 5) === 0)).filter(
+    (v) => v >= Math.min(y0, y1) && v <= Math.max(y0, y1),
+  );
+  const fx = tickFormat(xTicks);
+  const fy = tickFormat(yTicks);
+  const readX = tickFormat(xValues);
+  const readY = tickFormat(yValues);
+  // Cell centers sit at the grid values, so a tick between grid values falls between their cells.
+  const sx = (v: number) => left + ((v - x0) / (x1 - x0)) * (plotW - cw) + cw / 2;
+  const sy = (v: number) => top + plotH - (((v - y0) / (y1 - y0)) * (plotH - ch) + ch / 2);
   const hv = hover ? values[hover.r]?.[hover.c] : undefined;
 
   return (
@@ -80,7 +110,9 @@ export function Heatmap({
             height={height}
             aria-hidden="true"
             className="block overflow-visible"
-            onPointerLeave={() => setHover(null)}
+            onPointerLeave={(e) => {
+              if (e.pointerType !== 'touch') setHover(null);
+            }}
           >
             {values.map((row, r) =>
               row.map((v, c) =>
@@ -95,6 +127,7 @@ export function Heatmap({
                     className="fill-chart-1"
                     fillOpacity={t(v)}
                     onPointerEnter={() => setHover({ r, c })}
+                    onPointerDown={() => setHover({ r, c })}
                   />
                 ) : null,
               ),
@@ -119,7 +152,7 @@ export function Heatmap({
                 textAnchor="middle"
                 className="fill-subtle-foreground text-caption tabular-nums"
               >
-                {v}
+                {fx(v)}
               </text>
             ))}
             {yTicks.map((v) => (
@@ -130,7 +163,7 @@ export function Heatmap({
                 textAnchor="end"
                 className="fill-subtle-foreground text-caption tabular-nums"
               >
-                {v}
+                {fy(v)}
               </text>
             ))}
             <text
@@ -139,7 +172,7 @@ export function Heatmap({
               textAnchor="middle"
               className="fill-muted-foreground text-caption"
             >
-              {xLabel}
+              {title(xLabel, xUnit)}
             </text>
             <text
               x={12}
@@ -148,7 +181,7 @@ export function Heatmap({
               transform={`rotate(-90 12 ${top + plotH / 2})`}
               className="fill-muted-foreground text-caption"
             >
-              {yLabel}
+              {title(yLabel, yUnit)}
             </text>
             {marker ? (
               <g className="pointer-events-none">
@@ -162,7 +195,7 @@ export function Heatmap({
                 <text
                   x={sx(marker.x) + 9}
                   y={sy(marker.y) + 4}
-                  className="fill-foreground text-label font-semibold [paint-order:stroke] stroke-card [stroke-width:3px]"
+                  className={`fill-foreground text-label font-semibold ${haloText}`}
                 >
                   {marker.label}
                 </text>
@@ -178,25 +211,29 @@ export function Heatmap({
           </svg>
         ) : null}
         {hover && hv !== undefined && Number.isFinite(hv) ? (
-          <div className="pointer-events-none absolute top-1 right-1 rounded-popover border border-border bg-popover/95 px-2.5 py-1.5 text-label shadow-popover backdrop-blur-material">
-            <span className="font-semibold tabular-nums">
-              {formatNumber(hv, digits)} {valueUnit}
-            </span>{' '}
-            <span className="text-muted-foreground">
-              at {xValues[hover.c]} · {yValues[hover.r]}
+          <div className="pointer-events-none absolute top-1 right-1 rounded-popover border border-border bg-popover/95 px-2.5 py-1.5 text-label whitespace-nowrap shadow-popover backdrop-blur-material">
+            <span className="font-semibold tabular-nums">{withUnit(formatNumber(hv, digits), valueUnit)}</span>{' '}
+            <span className="text-muted-foreground tabular-nums">
+              at {withUnit(readX(xValues[hover.c]!), xUnit)}, {withUnit(readY(yValues[hover.r]!), yUnit)}
             </span>
           </div>
         ) : null}
       </div>
-      <div className="flex items-center gap-3 pl-11 text-caption text-subtle-foreground">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-11 text-caption whitespace-nowrap text-subtle-foreground">
         <span>{valueLabel}</span>
-        <span className="tabular-nums">{formatNumber(vmin, digits)}</span>
-        <span
-          aria-hidden="true"
-          className="h-2 w-32 rounded-full bg-[linear-gradient(to_right,color-mix(in_oklch,var(--chart-1)_6%,transparent),var(--chart-1))]"
-        />
-        <span className="tabular-nums">
-          {formatNumber(vmax, digits)} {valueUnit}
+        <span className="flex items-center gap-3">
+          <span className="tabular-nums">
+            {dataMin < vmin ? '≤ ' : ''}
+            {formatNumber(vmin, digits)}
+          </span>
+          <span
+            aria-hidden="true"
+            className="h-2 w-32 rounded-full bg-[linear-gradient(to_right,color-mix(in_oklch,var(--chart-1)_15%,transparent),var(--chart-1))]"
+          />
+          <span className="tabular-nums">
+            {dataMax > vmax ? '≥ ' : ''}
+            {withUnit(formatNumber(vmax, digits), valueUnit)}
+          </span>
         </span>
       </div>
     </div>

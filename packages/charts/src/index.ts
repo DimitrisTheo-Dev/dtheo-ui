@@ -9,9 +9,11 @@ export type {
   LineChartProps,
 } from './line-chart';
 export { Sparkline } from './sparkline';
+export type { SparklineProps } from './sparkline';
 export { BarChart } from './bar-chart';
-export type { Bar } from './bar-chart';
+export type { Bar, BarChartProps } from './bar-chart';
 export { Heatmap } from './heatmap';
+export type { HeatmapProps } from './heatmap';
 export { StreamChart } from './stream-chart';
 export type { StreamSeries, StreamLimit, StreamChartProps } from './stream-chart';
 export { createStream } from './stream';
@@ -22,5 +24,5 @@ export { ScatterChart } from './scatter-chart';
 export type { ScatterPoint, ScatterGroup, ScatterLimit, ScatterChartProps } from './scatter-chart';
 export { Histogram } from './histogram';
 export type { HistogramProps } from './histogram';
-export { lttb, nearestIndex, useSyncedCursor, formatNumber } from './core';
-export type { Tone } from './core';
+export { CAPABLE, capability, formatNumber, lttb, nearestIndex, tickFormat, useSyncedCursor } from './core';
+export type { Capability, Tone } from './core';
