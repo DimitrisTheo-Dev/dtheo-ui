@@ -2,6 +2,7 @@
   "name": "dtheo-ui-workspace",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "pnpm --filter @dtheo/docs dev",
@@ -18,6 +19,7 @@
     "check": "pnpm tokens:check && pnpm lint && pnpm typecheck && pnpm test && pnpm design:check",
     "design:check": "node packages/cli/src/bin.mjs check \"apps/docs/**/*.{ts,tsx}\" \"packages/*/src/**/*.{ts,tsx}\"",
     "test:visual": "playwright test e2e/visual.spec.ts --project=desktop",
+    "test:visual:linux": "bash scripts/visual-linux.sh",
     "usage": "node scripts/gen-usage.mjs",
     "examples": "node scripts/gen-examples.mjs",
     "screens": "node scripts/screens.mjs",

@@ -40,7 +40,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
-      # Visual baselines are recorded on macOS; record Linux baselines before enabling them here.
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -48,3 +47,40 @@ jobs:
           path: |
             playwright-report
             test-results
+
+  # Pixel diffs against the *-linux.png baselines. Fonts and rasterization must match where the baselines were
+  # recorded, so this runs in the Playwright image itself, on arm64 like `pnpm test:visual:linux` on a Mac: see
+  # "Visual baselines" in AGENTS.md. With no Linux baselines committed yet, it records them instead and uploads them
+  # as the visual-baselines-linux artifact; commit those PNGs and the job compares from then on.
+  visual:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      # The image's Node has no corepack; install the pnpm version package.json pins.
+      - run: npm install -g "$(node -p "require('./package.json').packageManager")"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - id: visual
+        run: |
+          if ls e2e/visual.spec.ts-snapshots/*-linux.png >/dev/null 2>&1; then
+            pnpm test:visual
+          else
+            echo "::warning::No Linux visual baselines yet. Recorded them as the visual-baselines-linux artifact; commit them to turn the comparison on."
+            pnpm test:visual --update-snapshots=all
+            echo "recorded=true" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          E2E_SERVER: production
+      - uses: actions/upload-artifact@v4
+        if: steps.visual.outputs.recorded == 'true'
+        with:
+          name: visual-baselines-linux
+          path: e2e/visual.spec.ts-snapshots/*-linux.png
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-diffs
+          path: test-results
