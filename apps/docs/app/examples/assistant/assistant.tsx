@@ -209,9 +209,10 @@ export function Assistant() {
             <div ref={endRef} />
           </div>
 
-          <div className="sticky bottom-0 mt-auto bg-linear-to-t from-background from-70% to-transparent pt-10 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+          {/* The fade above the composer is decoration: clicks pass through it to the message actions it covers. */}
+          <div className="pointer-events-none sticky bottom-0 mt-auto bg-linear-to-t from-background from-70% to-transparent pt-10 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
             {messages.length <= initial.length ? (
-              <div className="mb-2.5 flex flex-wrap gap-2">
+              <div className="pointer-events-auto mb-2.5 flex flex-wrap gap-2">
                 {suggestions.map((s) => (
                   <Button
                     key={s}
@@ -226,7 +227,7 @@ export function Assistant() {
               </div>
             ) : null}
             <form
-              className="flex flex-col gap-2 rounded-dialog border border-border-strong bg-popover p-2 shadow-dialog backdrop-blur-material transition-[border-color,box-shadow] duration-150 has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-3 has-[textarea:focus-visible]:ring-ring/25"
+              className="pointer-events-auto flex flex-col gap-2 rounded-dialog border border-border-strong bg-popover p-2 shadow-dialog backdrop-blur-material transition-[border-color,box-shadow] duration-150 has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-3 has-[textarea:focus-visible]:ring-ring/25"
               onSubmit={(e) => {
                 e.preventDefault();
                 send(draft);

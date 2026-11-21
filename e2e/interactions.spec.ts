@@ -188,3 +188,37 @@ test('a link styled as a button is still a link', async ({ page }) => {
   await expect(start).toBeVisible();
   await expect(start).not.toHaveAttribute('role', 'button');
 });
+
+const middle = (box: { y: number; height: number }) => box.y + box.height / 2;
+
+// The composer's fade sits over the end of the thread. It used to take the clicks meant for the message actions it
+// fades over, so at laptop sizes "Queue retune" did nothing, or a click landed on a suggestion and sent that instead.
+// Put the button under the fade and click where it is drawn, the way a person does.
+for (const [width, height] of [
+  [1280, 900],
+  [1440, 900],
+  [1512, 860],
+] as const) {
+  test(`the assistant's actions take a click through the composer's fade at ${width} × ${height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height });
+    await page.goto('/examples/assistant');
+    await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+    const action = page.getByRole('button', { name: 'Queue retune (Kp 3.60)' });
+    const fade = page.locator('#composer').locator('xpath=ancestor::form/..');
+    // Scroll the thread so the button's middle sits 16 px into the fade (its top 40 px are padding).
+    const offset = middle((await action.boundingBox())!) - ((await fade.boundingBox())!.y + 16);
+    await page
+      .locator('[data-slot="app-main"]')
+      .evaluate((el, top) => el.scrollBy({ top, behavior: 'instant' }), offset);
+    const box = (await action.boundingBox())!;
+    const top = (await fade.boundingBox())!.y;
+    expect(middle(box)).toBeGreaterThan(top);
+    expect(middle(box)).toBeLessThan(top + 40);
+    await page.mouse.click(box.x + box.width / 2, middle(box));
+    await expect(page.getByText('Retune run queued')).toBeVisible();
+    // Nothing was sent: the suggestions are still offered.
+    await expect(page.getByRole('button', { name: 'Summarize today’s failed runs' })).toBeVisible();
+  });
+}
