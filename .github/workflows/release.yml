@@ -2,9 +2,10 @@ name: Release
 
 # Publishes every package whose version is not on npm yet. Bump the version in a pull request, merge it, then run
 # this from the Actions tab (or `gh workflow run release.yml`). npm trusts this workflow file in the `npm`
-# environment (trusted publishing), so no npm token exists anywhere. Every version this workflow publishes carries a
-# provenance attestation that links it to this repository and commit. Versions published by hand before this workflow
-# existed (0.0.0-stage and 0.1.0 of both `dtheo` and `@dtheo/tokens`) have none.
+# environment (trusted publishing), so no npm token exists anywhere. The trust is set per package on npmjs.com; a
+# package without it fails with E404 right after its provenance is signed. Every version this workflow publishes
+# carries a provenance attestation that links it to this repository and commit. Versions published by hand before
+# this workflow existed (0.0.0-stage and 0.1.0 of both `dtheo` and `@dtheo/tokens`) have none.
 on:
   workflow_dispatch:
 
@@ -25,8 +26,10 @@ jobs:
       contents: read
       id-token: write # the OIDC token npm exchanges for a short-lived publish credential
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org

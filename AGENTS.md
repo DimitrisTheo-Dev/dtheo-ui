@@ -75,6 +75,8 @@ supported: `over: ['selection', 'card']`, `tint: 0.15`).
 `package.json` in a pull request; after it merges, the owner runs the workflow (`gh workflow run release.yml`). It
 publishes every version that is not on npm yet through trusted publishing, with provenance; prereleases go to the
 `next` tag. Packages are packed with pnpm because `publishConfig` swaps in the compiled exports.
+Each package needs its own trusted publisher on npmjs.com (GitHub Actions, this repository, `release.yml`, environment
+`npm`); without one, its publish fails with E404. Record what changed for users in [CHANGELOG.md](CHANGELOG.md).
 
 ## Boundaries
 
