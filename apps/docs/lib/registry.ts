@@ -114,7 +114,7 @@ function baseItems(withContent = true): RegistryItem[] {
       type: 'registry:lib',
       title: 'Lab data',
       description:
-        'Synthetic bench data for the chart examples: a Bode response, a spectrum, 412 runs and a live bench. Not real measurements.',
+        'Synthetic bench data for the chart examples: the R-0412 step test against its reference, its run history, a Bode response, a vibration spectrum, 412 runs and a live bench. Not real measurements.',
       dependencies: [],
       registryDependencies: [],
       files: [

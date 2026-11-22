@@ -97,7 +97,7 @@
     "ratio": 4.86,
     "min": 4.5,
     "ok": true,
-    "note": "Primary button label"
+    "note": "Primary button label, and the label and hint of a highlighted menu row"
   },
   {
     "preset": "graphite",
@@ -487,7 +487,7 @@
     "ratio": 4.86,
     "min": 4.5,
     "ok": true,
-    "note": "Primary button label"
+    "note": "Primary button label, and the label and hint of a highlighted menu row"
   },
   {
     "preset": "graphite",
@@ -887,7 +887,7 @@
     "ratio": 10.06,
     "min": 4.5,
     "ok": true,
-    "note": "Primary button label"
+    "note": "Primary button label, and the label and hint of a highlighted menu row"
   },
   {
     "preset": "flight-deck",
@@ -1287,7 +1287,7 @@
     "ratio": 8.61,
     "min": 4.5,
     "ok": true,
-    "note": "Primary button label"
+    "note": "Primary button label, and the label and hint of a highlighted menu row"
   },
   {
     "preset": "deep-space",
