@@ -94,28 +94,29 @@ function exactDigits(value: number, max: number) {
   return max;
 }
 
-/**
- * The most digits an axis may need: four for everyday ranges, more when the ticks themselves are tiny, so ticks
- * 5 µs apart read 0.000005 rather than 0.0000. A single value stands for the spacing (a sample period).
- */
-function digitCap(ticks: readonly number[]) {
+/** The smallest gap between neighboring ticks; for a single value, the value itself (a sample period). */
+function tickStep(ticks: readonly number[]) {
   let step = Infinity;
   for (let i = 1; i < ticks.length; i++) {
     const d = Math.abs(ticks[i]! - ticks[i - 1]!);
     if (d > 0 && d < step) step = d;
   }
-  if (!Number.isFinite(step)) step = Math.abs(ticks.find((t) => t !== 0) ?? 1);
-  return Math.min(15, Math.max(4, 2 - Math.floor(Math.log10(step))));
+  return Number.isFinite(step) ? step : Math.abs(ticks.find((t) => t !== 0) ?? 1);
 }
 
 /**
  * Tick labels through the same formatter as every readout: thousands separators, a true minus sign, and one digit
- * count for the whole axis (the most any tick needs), so the axis reads "−2" where the tooltip reads "−2.00",
- * never "-2", and 0.5, 1.0, 1.5 line up.
+ * count for the whole axis, so the axis reads "−2" where the tooltip reads "−2.00", never "-2", and 0.5, 1.0, 1.5
+ * line up. The count is the most any tick needs to be written exactly (up to four for everyday axes, more when the
+ * spacing is finer), and never fewer than the spacing needs, so neighbors never read alike: ticks 5 µs apart read
+ * 0.000005, and ticks 0.00001 apart near 12 read 12.00001, 12.00002.
  */
 export function tickFormat(ticks: readonly number[]) {
-  const max = digitCap(ticks);
-  const digits = ticks.reduce((d, t) => Math.max(d, exactDigits(t, max)), 0);
+  const step = tickStep(ticks);
+  const spacing = Math.ceil(-Math.log10(step) - 1e-9);
+  const max = Math.min(15, Math.max(4, spacing + 1));
+  const exact = ticks.reduce((d, t) => Math.max(d, exactDigits(t, max)), 0);
+  const digits = Math.min(15, Math.max(exact, spacing, 0));
   return (t: number) => formatNumber(t, digits);
 }
 
