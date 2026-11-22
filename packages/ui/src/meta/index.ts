@@ -838,6 +838,19 @@ export const components: ComponentMeta[] = [
         description: 'AppShell: fill a fixed-height parent instead of the viewport.',
       },
       {
+        name: 'active',
+        type: 'boolean',
+        default: 'false',
+        description: 'SidebarItem: the current page. It reads as selected and carries `aria-current="page"`.',
+      },
+      {
+        name: 'disabled',
+        type: 'boolean',
+        default: 'false',
+        description:
+          "SidebarItem: a destination this view can't open. It stays in the list, dimmed, and is not a link.",
+      },
+      {
         name: 'title',
         type: 'ReactNode',
         required: true,
@@ -850,7 +863,11 @@ export const components: ComponentMeta[] = [
         description: 'PageHeader: heading level of the title; use 2 when the page already has an h1.',
       },
     ],
-    a11y: ['The current page carries `aria-current="page"`. Sections are labeled navigation landmarks.'],
+    a11y: [
+      'The current page carries `aria-current="page"`. Sections are labeled navigation landmarks.',
+      'A "Skip to content" link is the first stop for Tab. It shows while focused and moves focus to the page\'s `<main>`.',
+      'A disabled SidebarItem is a link with no `href` and `aria-disabled="true"`: Tab skips it, and nothing happens on click.',
+    ],
   },
   // ---------------- Feedback ----------------
   {
