@@ -28,7 +28,7 @@ export interface HistogramProps {
    * the bins and every statistic.
    */
   values: number[];
-  /** The x range. Defaults to the data's range, widened to whole bins. */
+  /** The x range. Defaults to the range of the data and the limit, target and marker lines, widened to whole bins. */
   domain?: [number, number];
   /**
    * Bin width in the values' unit. Defaults to a round width (1, 2 or 5 × 10ⁿ) near the Freedman–Diaconis rule. At
@@ -414,7 +414,12 @@ export function Histogram({
 
   // Everything that walks the data is memoized on it, so hovering a bin never reads the values again.
   const finite = React.useMemo(() => values.filter((v) => Number.isFinite(v)), [values]);
-  const extent = React.useMemo(() => finiteExtent(finite), [finite]);
+  // The default range covers the data and every line drawn over it, so a limit outside the data stays on the plot.
+  const markerValue = marker?.value;
+  const extent = React.useMemo(
+    () => finiteExtent([...finite, ...[lower, upper, target, markerValue].filter((v) => v !== undefined)]),
+    [finite, lower, upper, target, markerValue],
+  );
   const hasData = finite.length > 0;
   const [r0, r1] = validDomain(domain) ? domain : (extent ?? [0, 1]);
   const { bins, step, domain: [d0, d1] } = React.useMemo(

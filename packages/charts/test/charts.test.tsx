@@ -242,6 +242,17 @@ describe('Histogram against a limit', () => {
     expect(chart.textContent).toContain('10.0 to 11.0: 2 values, 1 out of spec');
   });
 
+  it('widens its default range to the limits, so a limit outside the data stays on the plot', () => {
+    const { getByRole } = render(
+      <Histogram values={[9.8, 10, 10.2]} binWidth={0.5} lower={9} upper={11} xLabel="x" ariaLabel="x" />,
+    );
+    const chart = getByRole('group');
+    fireEvent.keyDown(chart, { key: 'Home' });
+    expect(chart.textContent).toContain('9.0 to 9.5: 0 values');
+    fireEvent.keyDown(chart, { key: 'End' });
+    expect(chart.textContent).toMatch(/10\.5 to 11\.0: 0 values|11\.0 to 11\.5: 0 values/);
+  });
+
   it('states Cpk with its word and Ppk beside it', () => {
     const { container } = render(
       <Histogram values={[1, 2, 3, 4, 5]} upper={7} xLabel="x" ariaLabel="x" />,

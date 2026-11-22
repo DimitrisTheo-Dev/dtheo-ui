@@ -406,12 +406,17 @@ describe('Histogram binning', () => {
     expect(readBins(container).reduce((a, b) => a + b[2], 0)).toBe(4);
   });
 
-  it('draws one bin when every value is the same', () => {
+  it('puts every value in one bin when they are all the same, with the limits still in range', () => {
     const { container } = render(
       <Histogram values={[5, 5, 5, 5]} lower={4} upper={6} xLabel="x" ariaLabel="h" />,
     );
     noBadNumbers(container);
-    expect(readBins(container)).toEqual([[5, 5.1, 4]]);
+    expect(readBins(container)).toEqual([
+      [4, 4.5, 0],
+      [4.5, 5, 0],
+      [5, 5.5, 4],
+      [5.5, 6, 0],
+    ]);
   });
 });
 
