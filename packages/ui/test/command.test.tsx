@@ -235,6 +235,19 @@ describe('CommandDialog', () => {
       expect(onOpenChange).not.toHaveBeenCalled();
     });
 
+    it('leaves Ctrl+K to the text field on a Mac, where it deletes to the end of the line', async () => {
+      const platform = vi.spyOn(navigator, 'platform', 'get').mockReturnValue('MacIntel');
+      try {
+        render(<Palette initialOpen={false} />);
+        expect(fireEvent.keyDown(window, { key: 'k', code: 'KeyK', ctrlKey: true })).toBe(true);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        fireEvent.keyDown(window, { key: 'k', code: 'KeyK', metaKey: true });
+        expect(await screen.findByRole('dialog', { name: 'Command palette' })).toBeInTheDocument();
+      } finally {
+        platform.mockRestore();
+      }
+    });
+
     it('does nothing with shortcut={false}, so another palette can own it', () => {
       const onOpenChange = vi.fn();
       render(<Palette initialOpen={false} shortcut={false} onOpenChange={onOpenChange} />);
