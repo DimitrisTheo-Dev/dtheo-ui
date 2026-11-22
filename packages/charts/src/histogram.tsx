@@ -281,13 +281,17 @@ function BinBars({
   bins,
   f,
   active,
+  animate,
   onEnter,
 }: {
   bins: HistogramBin[];
   f: Frame;
   active: number | null;
+  /** Fade the dimming for the pointer; arrow-key steps change it at once. */
+  animate: boolean;
   onEnter: (i: number) => void;
 }) {
+  const fade = animate ? 'transition-opacity duration-150' : '';
   return bins.map((b, i) => {
     const x0 = f.sx(b.x0) + 1;
     const bw = Math.max(1, f.sx(b.x1) - f.sx(b.x0) - 2);
@@ -299,14 +303,14 @@ function BinBars({
         {inSpec ? (
           <path
             d={barPath(x0, bw, f.sy(inSpec), f.plotB, !b.out)}
-            className={`${toneFill.primary} transition-opacity duration-150 ${dim}`}
+            className={`${toneFill.primary} ${fade} ${dim}`}
           />
         ) : null}
         {/* Out-of-spec values stack on top in the critical color, so the red area counts exactly the runs past a limit. */}
         {b.out ? (
           <path
             d={barPath(x0, bw, f.sy(b.count), f.sy(inSpec), true)}
-            className={`${toneFill.critical} transition-opacity duration-150 ${dim}`}
+            className={`${toneFill.critical} ${fade} ${dim}`}
           />
         ) : null}
       </g>
@@ -407,6 +411,7 @@ export function Histogram({
 }: HistogramProps) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [active, setActive] = React.useState<number | null>(null);
+  const [byKeys, setByKeys] = React.useState(false);
   const [announce, setAnnounce] = React.useState('');
   const descId = React.useId();
   const clipId = useClipId();
@@ -463,8 +468,13 @@ export function Histogram({
     const next = stepIndex(e.key, e.shiftKey, active, hasData ? bins.length : 0);
     if (next === undefined) return;
     e.preventDefault();
+    setByKeys(true);
     setActive(next);
     if (next !== null) setAnnounce(describe(next));
+  };
+  const onPointerBin = (i: number) => {
+    setByKeys(false);
+    setActive(i);
   };
 
   const curve =
@@ -528,7 +538,7 @@ export function Histogram({
               xTitle={`${xLabel}${unit ? ` (${unit})` : ''}`}
               height={height}
             />
-            <BinBars bins={bins} f={f} active={active} onEnter={setActive} />
+            <BinBars bins={bins} f={f} active={active} animate={!byKeys} onEnter={onPointerBin} />
             {curve ? (
               <path
                 d={curve}

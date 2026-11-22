@@ -273,6 +273,17 @@ describe('Histogram against a limit', () => {
     expect(chart.textContent).toMatch(/10\.5 to 11\.0: 0 values|11\.0 to 11\.5: 0 values/);
   });
 
+  it('dims bins at once for the arrow keys, and fades them for the pointer', () => {
+    const { container, getByRole } = render(
+      <Histogram values={[1, 2, 2, 3]} domain={[0, 4]} binWidth={1} xLabel="x" ariaLabel="x" />,
+    );
+    const fading = () => container.querySelectorAll('path.transition-opacity').length;
+    fireEvent.keyDown(getByRole('group'), { key: 'Home' });
+    expect(fading()).toBe(0);
+    fireEvent.pointerEnter(container.querySelectorAll('[data-slot="histogram"] svg g > rect')[1]!.parentElement!);
+    expect(fading()).toBeGreaterThan(0);
+  });
+
   it('states Cpk with its word and Ppk beside it', () => {
     const { container } = render(
       <Histogram values={[1, 2, 3, 4, 5]} upper={7} xLabel="x" ariaLabel="x" />,
