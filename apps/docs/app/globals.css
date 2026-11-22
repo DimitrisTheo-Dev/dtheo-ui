@@ -20,7 +20,7 @@
    clear of it instead of under it. */
 @layer base {
   html {
-    scroll-padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+    scroll-padding-top: calc(var(--sticky-bar-clearance) + env(safe-area-inset-top, 0px));
   }
 }
 

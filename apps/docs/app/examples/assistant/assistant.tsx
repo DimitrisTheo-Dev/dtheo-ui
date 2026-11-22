@@ -218,7 +218,7 @@ export function Assistant() {
               </div>
             ) : null}
             {/* Scrolled to with room for the sticky composer below it, so the newest message is never under it. */}
-            <div ref={endRef} className="scroll-mb-48" />
+            <div ref={endRef} className="scroll-mb-(--composer-clearance)" />
           </div>
 
           {/* The fade above the composer is decoration: it lets clicks through to the message under it. */}

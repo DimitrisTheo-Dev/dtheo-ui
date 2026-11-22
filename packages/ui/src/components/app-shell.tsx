@@ -90,7 +90,7 @@ export function AppShell({
             // `relative` makes it the containing block of what is positioned inside it: without it, an absolutely
             // positioned element far down the content (an sr-only live region) escapes the column's scrolling and
             // makes the whole page scroll past the shell.
-            'relative flex min-w-0 flex-1 scroll-pt-14 flex-col md:overflow-y-auto md:overscroll-contain',
+            'relative flex min-w-0 flex-1 scroll-pt-(--sticky-bar-clearance) flex-col md:overflow-y-auto md:overscroll-contain',
             embedded && 'overflow-y-auto',
           )}
         >

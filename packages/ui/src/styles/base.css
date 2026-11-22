@@ -129,16 +129,19 @@ main:focus-visible,
 }
 
 /*
- * Sticky bars. Keyboard focus and in-page links scroll their target clear of the bar instead of under it. Docs set
- * their own header height; an app shell's toolbar is 48px, plus a little air.
+ * Sticky bars. Keyboard focus and in-page links scroll their target clear of the bar instead of under it: 48px of
+ * bar plus a little air at the top, and the height of a composer pinned to the bottom of the main column (mark it
+ * data-slot="app-composer"). One value each, for the CSS here and the classes that scroll to a target.
  */
-html:has([data-slot='app-toolbar']) {
-  scroll-padding-top: 3.5rem;
+:root {
+  --sticky-bar-clearance: 3.5rem;
+  --composer-clearance: 12rem;
 }
-
-/* A composer pinned to the bottom of the main column (mark it data-slot="app-composer") gets the same clearance. */
+html:has([data-slot='app-toolbar']) {
+  scroll-padding-top: var(--sticky-bar-clearance);
+}
 :is(html, [data-slot='app-main']):has([data-slot='app-composer']) {
-  scroll-padding-bottom: 14rem;
+  scroll-padding-bottom: var(--composer-clearance);
 }
 
 /*
