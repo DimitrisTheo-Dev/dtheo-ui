@@ -356,10 +356,10 @@ function bodeOf(frequency: number[], gain: number) {
   return { magnitude, phase };
 }
 
-/** Where the magnitude crosses 0 dB (phase margin) and where the phase crosses −180° (gain margin). */
 /**
- * Margins read where the curves cross 0 dB and −180°, interpolated between the two grid samples around each
- * crossing (linear in log frequency), so the stated decimals are the curve's, not the next grid point's.
+ * The phase margin where the magnitude crosses 0 dB and the gain margin where the phase crosses −180°. Each crossing
+ * is interpolated between the two grid samples around it (linear in log frequency), so the stated decimals are the
+ * curve's, not the next grid point's.
  */
 function marginsOf(frequency: number[], { magnitude, phase }: { magnitude: number[]; phase: number[] }) {
   const gc = magnitude.findIndex((m, i) => i > 0 && magnitude[i - 1]! >= 0 && m < 0);
@@ -460,8 +460,9 @@ export const overshootStats = (() => {
   const o = runs.map((r) => r.overshoot);
   const mean = o.reduce((a, b) => a + b, 0) / o.length;
   const sd = Math.sqrt(o.reduce((a, b) => a + (b - mean) ** 2, 0) / (o.length - 1));
-  // Cpk uses the within-process spread: the average moving range between consecutive runs over d₂ (1.128), as the
-  // Histogram computes it. Ppk uses the overall deviation, which also holds the drift between runs.
+  // Cpk uses the within-process spread: the average moving range between consecutive runs over d₂ (1.128). Ppk uses
+  // the overall deviation, which also holds the drift between runs. This is the Histogram's capability() written
+  // out, so the file installs on its own (dtheo add lab-data); a test keeps the two equal.
   let movingRange = 0;
   for (let i = 1; i < o.length; i++) movingRange += Math.abs(o[i]! - o[i - 1]!);
   const sdWithin = movingRange / (o.length - 1) / 1.128;

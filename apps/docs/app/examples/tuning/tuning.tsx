@@ -8,7 +8,15 @@ import { Button } from '@dtheo/ui/components/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@dtheo/ui/components/card';
 import { Metric, MetricGroup } from '@dtheo/ui/components/metric';
 import { useToast } from '@dtheo/ui/components/toast';
-import { CAPABLE, FrequencyChart, Histogram, ScatterChart, StreamChart, createStream } from '@dtheo/charts';
+import {
+  CAPABLE,
+  FrequencyChart,
+  Histogram,
+  ScatterChart,
+  StreamChart,
+  capabilityLevel,
+  createStream,
+} from '@dtheo/charts';
 import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar } from '../_shared/lab-sidebar';
 import { ThemeToggle } from '@/components/theme-controls';
@@ -32,6 +40,8 @@ const nf = (digits: number) =>
 const m = bode.margins;
 const ref = bode.referenceMargins;
 const PM_MIN = 45;
+/** The Metric status for each capability level the Histogram states. */
+const levelStatus = { capable: 'pass', marginal: 'warn', 'not capable': 'fail' } as const;
 const GM_MIN = 6;
 // One scale for the scatter and the histogram, with room above the highest run.
 const OVERSHOOT_MAX = Math.ceil(S.max / 5) * 5;
@@ -171,7 +181,7 @@ export function Tuning() {
           <Metric
             label="Overshoot Cpk"
             value={nf(2).format(S.cpk)}
-            status={S.cpk < 1 ? 'fail' : S.cpk < CAPABLE ? 'warn' : 'pass'}
+            status={levelStatus[capabilityLevel(S.cpk)]}
             progress={S.cpk / 2}
             limit={CAPABLE / 2}
             limitLabel={`Target ≥ ${CAPABLE} · Ppk ${nf(2).format(S.ppk)}`}
