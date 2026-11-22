@@ -132,9 +132,6 @@ function BandSwatch({ opacity }: { opacity: number }) {
   );
 }
 
-/** Digits that write every band edge exactly: 0 for 90, 92, 94; 1 for 94.5. */
-const bandDigits = (edges: readonly number[]) => (edges.some((e) => !Number.isInteger(e)) ? 1 : 0);
-
 /**
  * A sequential map over two axes, such as motor efficiency over speed and torque. One hue, light to strong,
  * built from the primary series color's opacity, so it stays monotonic in both themes. Hover a cell to read it.
@@ -184,6 +181,8 @@ export function Heatmap({
     [bandKey],
   );
   const shade = React.useMemo(() => shadeScale(vmin, vmax, edges), [vmin, vmax, edges]);
+  // Band edges read like axis ticks: every edge exactly, with one digit count (90, 92, 94.25 → 90.00, 92.00, 94.25).
+  const edgeLabel = React.useMemo(() => tickFormat(edges), [edges]);
   const left = 44;
   const right = 12;
   const top = 8;
@@ -342,7 +341,7 @@ export function Heatmap({
             {edges.map((e, k) => (
               <React.Fragment key={e}>
                 <BandSwatch opacity={shade(k ? edges[k - 1]! : e - 1)} />
-                <span>{formatNumber(e, bandDigits(edges))}</span>
+                <span>{edgeLabel(e)}</span>
               </React.Fragment>
             ))}
             <BandSwatch opacity={1} />
