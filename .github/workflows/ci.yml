@@ -52,10 +52,10 @@ jobs:
             playwright-report
             test-results
 
-  # Pixel diffs against the *-linux.png baselines. Fonts and rasterization must match where the baselines were
-  # recorded, so this runs in the Playwright image itself, on arm64 like `pnpm test:visual:linux` on a Mac: see
-  # "Visual baselines" in AGENTS.md. With no Linux baselines committed yet, it records them instead and uploads them
-  # as the visual-baselines-linux artifact; commit those PNGs and the job compares from then on.
+  # Pixel diffs against the committed *-linux.png baselines. Fonts and rasterization must match where the baselines
+  # were recorded, so this runs in the Playwright image itself, on arm64 like `pnpm test:visual:linux` on a Mac: see
+  # "Visual baselines" in AGENTS.md. A missing baseline fails like a changed one; record new ones with that command or
+  # the "Record visual baselines" workflow.
   visual:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 30
@@ -67,22 +67,9 @@ jobs:
       - run: npm install -g "$(node -p "require('./package.json').packageManager")"
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      - id: visual
-        run: |
-          if ls e2e/visual.spec.ts-snapshots/*-linux.png >/dev/null 2>&1; then
-            pnpm test:visual
-          else
-            echo "::warning::No Linux visual baselines yet. Recorded them as the visual-baselines-linux artifact; commit them to turn the comparison on."
-            pnpm test:visual --update-snapshots=all
-            echo "recorded=true" >> "$GITHUB_OUTPUT"
-          fi
+      - run: pnpm test:visual
         env:
           E2E_SERVER: production
-      - uses: actions/upload-artifact@v4
-        if: steps.visual.outputs.recorded == 'true'
-        with:
-          name: visual-baselines-linux
-          path: e2e/visual.spec.ts-snapshots/*-linux.png
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

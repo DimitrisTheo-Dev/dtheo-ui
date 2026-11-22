@@ -51,8 +51,8 @@ Use pnpm 11 through corepack. New dependencies must be at least two weeks old (`
 ## Visual baselines
 
 `pnpm test:visual` compares against `*-darwin.png` on a Mac and `*-linux.png` in CI, which runs the suite in the
-Playwright Docker image on arm64 against a production build (`E2E_SERVER=production`). If no `*-linux.png` is
-committed, the CI job records them and uploads them as the `visual-baselines-linux` artifact instead of comparing.
+Playwright Docker image on arm64 against a production build (`E2E_SERVER=production`). A missing `*-linux.png`
+fails the job like a changed one.
 
 After an intended visual change, update both sets and commit them with the change: `pnpm test:visual
 --update-snapshots` on a Mac, then `pnpm test:visual:linux`, which records the Linux set in that same image (Docker
