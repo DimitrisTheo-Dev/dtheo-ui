@@ -419,6 +419,27 @@ describe('design check rules', () => {
     });
   });
 
+  it('reads a # that starts a reference as text, and a color on a line with a link as a color', () => {
+    const references = [
+      "const title = 'Run #482';",
+      '<Badge label="Issue #1024" />',
+      "document.querySelector('#feed');",
+      '<a href="#faced">Faced</a>',
+      '<Link href="/docs#cafe">Docs</Link>',
+      '<use href="/icons.svg#add" />',
+      "const mask = 'url(#fade)';",
+    ];
+    for (const src of references) expect(count(src, 'raw-color'), src).toBe(0);
+    const colors = [
+      '<Link href="/runs" className="bg-[#0070f3]">Runs</Link>',
+      "const border = '1px solid #e5e5e5';",
+      'const a = "#fff";',
+      "<div style={{ color: '#fff' }} />",
+      '<div className="shadow-[0_0_0_1px_#f00]" />',
+    ];
+    for (const src of colors) expect(count(src, 'raw-color'), src).toBe(1);
+  });
+
   it('lets token files define colors', () => {
     expect(count('--primary: oklch(0.55 0.2 257);', 'raw-color', 'tokens.css')).toBe(0);
   });

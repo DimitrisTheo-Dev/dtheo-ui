@@ -727,6 +727,36 @@ function primaryAsText(m, ctx) {
   );
 }
 
+/** The string around `index`: where it opens, its text before `index`, all of its text, and the code before it. */
+function stringAround(ctx, index) {
+  const k = ctx.kind[index];
+  let a = index;
+  while (a > 0 && ctx.kind[a - 1] === k) a--;
+  let b = index;
+  while (b < ctx.source.length && ctx.kind[b] === k) b++;
+  return {
+    prefix: ctx.source.slice(a + 1, index),
+    text: ctx.source.slice(a, b),
+    lead: ctx.source.slice(Math.max(0, a - 40), a),
+  };
+}
+
+/** CSS in a string: a declaration, a function, a length or a border style. */
+const CSS_IN_TEXT = /[:;(]|\d(?:px|rem|em|%|deg)\b|\b(?:solid|dashed|dotted|inset)\b/;
+
+/**
+ * A hex or color function in a string is a color, unless the # starts a reference: "Run #482" or "Issue #1024" (a #
+ * after a word, in a string with no CSS), a link or asset (href="#faced", "/docs#cafe", "icon.svg#a", url(#clip)), a
+ * selector (querySelector('#feed')), or an SVG gradient stop.
+ */
+function colorInString(m, ctx) {
+  const { prefix, text, lead } = stringAround(ctx, m.index);
+  if (/url\(\s*['"]?[^)]*$/.test(prefix) || /\.(?:svg|png)\b/.test(text)) return false;
+  if (/(?:\b(?:href|src|to|stopColor|stop-color)\s*=\s*\{?\s*|\bhref\s*:\s*)$/.test(lead)) return false;
+  if (!prefix && /(?:querySelector(?:All)?|getElementById|closest|matches)\s*\(\s*$/.test(lead)) return false;
+  return !(m[0].startsWith('#') && /[A-Za-z]\s+$/.test(prefix) && !CSS_IN_TEXT.test(text));
+}
+
 /** UI motion is 120–240 ms, and 400 ms for toasts and sheets (DESIGN.md, Motion). Nothing else is on the scale. */
 const offScale = (ms) => ms > 240 && ms !== 400;
 const toMs = (value, unit) => Number(value) * (unit === 's' ? 1000 : 1);
@@ -780,7 +810,11 @@ const rules = [
     id: 'raw-color',
     severity: 'error',
     patterns: [
-      { in: 'string', re: /(?<![A-Za-z0-9-])(?:#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(|oklab\()/g },
+      {
+        in: 'string',
+        re: /(?<![A-Za-z0-9-])(?:#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(|oklch\(|oklab\()/g,
+        accept: colorInString,
+      },
       // Named colors inside arbitrary values: bg-[red], shadow-[0_0_0_1px_red]. Not masks, where black and white
       // are alpha: mask-[linear-gradient(to_bottom,black,transparent)].
       {
@@ -799,7 +833,6 @@ const rules = [
         accept: (m, ctx) => m[1] !== '' || ctx.kind[m.index] !== CODE,
       },
     ],
-    lineSkip: (line) => /\.(svg|png)|url\(|href=|stop-color/.test(line),
     message: 'Raw color in UI code: a hex, rgb(), oklch() or named color such as red.',
     fix: 'Use a token class (bg-card, text-muted-foreground, border-border, text-destructive-foreground) so themes, presets and dark mode keep working.',
   },
@@ -1080,7 +1113,6 @@ export function checkSource(source, options = {}) {
     for (const f of rule.find?.(ctx) ?? []) if (!hits.has(f.index)) hits.set(f.index, f.text);
     for (const [index, text] of hits) {
       const li = lineOf(index);
-      if (rule.lineSkip?.(lines[li])) continue;
       if (!meta && (ignored(li) || rule.contextSkip?.(source.slice(0, index)))) continue;
       findings.push({
         rule: rule.id,
