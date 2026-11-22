@@ -24,5 +24,5 @@ export { ScatterChart } from './scatter-chart';
 export type { ScatterPoint, ScatterGroup, ScatterLimit, ScatterChartProps } from './scatter-chart';
 export { Histogram } from './histogram';
 export type { HistogramProps } from './histogram';
-export { CAPABLE, capability, formatNumber, lttb, nearestIndex, tickFormat, useSyncedCursor } from './core';
+export { CAPABLE, capability, capabilityLevel, formatNumber, lttb, nearestIndex, tickFormat, useSyncedCursor } from './core';
 export type { Capability, Tone } from './core';

@@ -151,6 +151,11 @@ export function useTooltipPlacement<T extends HTMLElement>(x: number | null, wid
 /** Cpk at or above 1.33 is the usual bar for a capable process: four standard deviations to the nearer limit. */
 export const CAPABLE = 1.33;
 
+/** What a Cpk says about a process: capable from 1.33 (CAPABLE), marginal from 1, not capable below. */
+export function capabilityLevel(cpk: number): 'capable' | 'marginal' | 'not capable' {
+  return cpk >= CAPABLE ? 'capable' : cpk >= 1 ? 'marginal' : 'not capable';
+}
+
 export interface Capability {
   n: number;
   mean: number;

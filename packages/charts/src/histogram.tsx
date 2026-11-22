@@ -5,7 +5,7 @@ import * as React from 'react';
 import { thresholdFreedmanDiaconis, tickStep } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 import {
-  CAPABLE,
+  capabilityLevel,
   CAPTION_CHAR_W,
   ChartEmpty,
   axisGutter,
@@ -64,11 +64,15 @@ const LABEL_ROW = 12;
 /** At most this many bins, whatever the width asked for: past it, bars are thinner than a pixel. */
 const MAX_BINS = 200;
 
-/** Cpk carries a word next to its number: capable at 1.33 and up, marginal from 1, not capable below. */
+/** Cpk carries a word next to its number (see capabilityLevel), in the status color that word stands for. */
+const levelClass = {
+  capable: 'text-success-foreground',
+  marginal: 'text-warning-foreground',
+  'not capable': 'text-destructive-foreground',
+} as const;
 function cpkStatus(cpk: number) {
-  if (cpk >= CAPABLE) return { word: 'capable', className: 'text-success-foreground' };
-  if (cpk >= 1) return { word: 'marginal', className: 'text-warning-foreground' };
-  return { word: 'not capable', className: 'text-destructive-foreground' };
+  const word = capabilityLevel(cpk);
+  return { word, className: levelClass[word] };
 }
 
 interface HistogramBin {
