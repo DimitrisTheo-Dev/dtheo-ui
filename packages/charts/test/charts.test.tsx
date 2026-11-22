@@ -143,6 +143,37 @@ describe('LineChart zoomed in', () => {
   });
 });
 
+/** The SVG text element that contains `word`. */
+const svgText = (container: HTMLElement, word: string) =>
+  [...container.querySelectorAll('text')].find((t) => t.textContent?.includes(word))!;
+
+describe('LineChart vertical marker labels', () => {
+  const x = Array.from({ length: 401 }, (_, i) => i);
+  const series = [{ id: 't', label: 'Torque', values: x.map(() => 1), unit: 'N·m' }];
+
+  it('use the short label on a narrow chart, and sit left of a line near the right edge', () => {
+    const { container } = render(
+      <LineChart
+        x={x}
+        series={series}
+        yDomain={[0, 2]}
+        verticals={[{ x: 380, label: 'Settled 360 ms after the step', shortLabel: 'Settled 360 ms' }]}
+        ariaLabel="Torque"
+      />,
+    );
+    const label = svgText(container, 'Settled');
+    expect(label.textContent).toBe('Settled 360 ms');
+    expect(label.getAttribute('text-anchor')).toBe('end');
+  });
+
+  it('sit right of a line with room after it', () => {
+    const { container } = render(
+      <LineChart x={x} series={series} yDomain={[0, 2]} verticals={[{ x: 40, label: 'Step' }]} ariaLabel="Torque" />,
+    );
+    expect(svgText(container, 'Step').getAttribute('text-anchor')).toBe('start');
+  });
+});
+
 describe('Sparkline with a gap', () => {
   it('renders, breaks the line and keeps the endpoint', () => {
     const { container } = render(<Sparkline values={[3, 4, Number.NaN, 5, 6]} ariaLabel="Overshoot trend" />);
