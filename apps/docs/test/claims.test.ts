@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { contrastPairs } from '@dtheo/tokens';
 import { components } from '@dtheo/ui/meta';
@@ -20,6 +20,9 @@ const actual = {
   tools: read('apps/docs/app/mcp/route.ts').match(/registerTool\(/g)?.length ?? 0,
   // The routes e2e/a11y.spec.ts runs axe on: the quoted paths in its `pages` list.
   routes: /const pages = \[([^\]]*)\]/.exec(read('e2e/a11y.spec.ts'))?.[1]?.match(/'\//g)?.length ?? 0,
+  apps: readdirSync(new URL('apps/docs/app/examples/', repo), { withFileTypes: true }).filter(
+    (d) => d.isDirectory() && !d.name.startsWith('_'),
+  ).length,
 };
 
 const claims: Array<[RegExp, keyof typeof actual]> = [
@@ -28,6 +31,7 @@ const claims: Array<[RegExp, keyof typeof actual]> = [
   [/\b(\d+) rules\b/g, 'rules'],
   [/\b(\d+) components\b/g, 'components'],
   [/\b(\d+) (?:engineering )?charts\b/g, 'charts'],
+  [/\b(\d+) example apps\b/g, 'apps'],
   [/\b(\d+) (?:MCP )?tools\b/g, 'tools'],
   [/\b(\d+) routes\b/g, 'routes'],
 ];

@@ -46,7 +46,7 @@ Components are copied into your project, so you own the code. Every item also in
 
 - **Charts that know what a limit is.** Line, bar, live stream (1 kHz), scatter and histogram charts draw
   limits and mark what crosses them; the histogram states Cpk. The frequency chart (spectrum and Bode) marks
-  gain and phase margins. Heatmap and sparkline make 8. Line, frequency, scatter and histogram charts read
+  gain and phase margins. Heatmap and sparkline make 8 charts. Line, frequency, scatter and histogram charts read
   with the arrow keys.
 - **Your agent already knows it.** An MCP server with 7 tools, `llms.txt` and a Markdown copy of every docs
   page. The page you read, the Markdown an agent reads and the MCP answer all come from one component contract.

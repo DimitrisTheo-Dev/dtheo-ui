@@ -34,8 +34,9 @@ interface Window {
 
 /**
  * Allows `limit` requests per client in each `windowMs`. It remembers at most `maxClients` clients: ended windows are
- * forgotten first (at most once a second), and past the cap the clients seen longest ago go, so many one-off clients
- * can't grow memory without bound or reset everyone else's count.
+ * forgotten first (at most once a second), and past the cap the clients whose window began longest ago go, so many
+ * one-off clients can't grow memory without bound or reset everyone's count at once. A flood of new clients can still
+ * push out a client that was over its limit; stopping that is the platform firewall's job, not this instance's.
  */
 export function createLimiter({
   limit,
