@@ -20,10 +20,11 @@ const dryRun = args.includes('--dry-run');
 const otp = args.find((a) => a.startsWith('--otp='));
 const ci = process.env.GITHUB_ACTIONS === 'true';
 
-function run(cmd, cmdArgs, opts = {}) {
+function run(cmd, cmdArgs, { hint, ...opts } = {}) {
   const result = spawnSync(cmd, cmdArgs, { encoding: 'utf8', stdio: 'inherit', ...opts });
   if (result.status !== 0) {
     console.error(`\n${cmd} ${cmdArgs.join(' ')} failed: ${result.error?.message ?? `exit code ${result.status}`}.`);
+    if (hint) console.error(hint);
     process.exit(result.status ?? 1);
   }
   return result;
@@ -76,7 +77,14 @@ try {
       ...(ci ? ['--provenance'] : []),
       ...(otp ? [otp] : []),
       ...(dryRun ? ['--dry-run'] : []),
-    ]);
+    ], {
+      // npm answers a publish it cannot authenticate with E404, which reads like a missing package.
+      hint: ci
+        ? `If npm answered E404 right after signing the provenance, npm does not trust this workflow for ${name}. ` +
+          `On npmjs.com, open its Settings, Trusted publishing, and add GitHub Actions with repository ` +
+          `${process.env.GITHUB_REPOSITORY}, workflow release.yml and environment npm.`
+        : undefined,
+    });
     published += 1;
   }
 } finally {
