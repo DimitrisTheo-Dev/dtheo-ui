@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
-import { ChartEmpty, crisp, formatNumber, haloText, imageLabel, tickFormat, useWidth } from './core';
+import { ChartEmpty, crisp, formatNumber, haloText, imageLabel, tickFormat, tooltipSurface, useWidth } from './core';
 
 export interface HeatmapProps {
   xValues: number[];
@@ -289,7 +289,7 @@ export function Heatmap({
         ) : null}
         {hasData ? null : <ChartEmpty />}
         {hover && hv !== undefined && Number.isFinite(hv) ? (
-          <div className="pointer-events-none absolute top-1 right-1 rounded-popover border border-border bg-popover/95 px-2.5 py-1.5 text-label whitespace-nowrap shadow-popover backdrop-blur-material">
+          <div className={`${tooltipSurface} top-1 right-1 px-2.5 py-1.5 whitespace-nowrap`}>
             <span className="font-semibold tabular-nums">{withUnit(formatNumber(hv, digits), valueUnit)}</span>{' '}
             <span className="text-muted-foreground tabular-nums">
               at {withUnit(readX(xValues[hover.c]!), xUnit)}, {withUnit(readY(yValues[hover.r]!), yUnit)}

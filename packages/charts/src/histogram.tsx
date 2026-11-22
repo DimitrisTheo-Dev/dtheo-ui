@@ -5,9 +5,10 @@ import * as React from 'react';
 import { thresholdFreedmanDiaconis, tickStep } from 'd3-array';
 import { scaleLinear } from 'd3-scale';
 import {
-  capabilityLevel,
   CAPTION_CHAR_W,
   ChartEmpty,
+  TITLED_AXIS_PAD,
+  capabilityLevel,
   axisGutter,
   capability,
   crisp,
@@ -447,7 +448,7 @@ export function Histogram({
     .nice()
     .domain()[1]!;
   const yt = scaleLinear().domain([0, yMax]).ticks(4);
-  const left = axisGutter(yt.map(tickFormat(yt)), 28);
+  const left = axisGutter(yt.map(tickFormat(yt)), TITLED_AXIS_PAD);
   const plotW = Math.max(0, w - left - M.right);
   const plotB = height - M.bottom;
   const f: Frame = {

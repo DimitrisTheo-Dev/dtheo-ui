@@ -22,10 +22,10 @@ import {
   toneStroke,
   useClipId,
   useSyncedCursor,
-  useTooltipPlacement,
   useWidth,
   type Tone,
 } from './core';
+import { ReadoutTooltip } from './readout';
 
 export interface LineSeries {
   id: string;
@@ -524,43 +524,6 @@ function Crosshair({ f, cx, series, index }: { f: Frame; cx: number; series: Lin
   );
 }
 
-function ReadoutTooltip({
-  title,
-  rows,
-  x,
-  width,
-}: {
-  title: string;
-  rows: ReadoutRow[];
-  x: number;
-  width: number;
-}) {
-  const ref = useTooltipPlacement<HTMLDivElement>(x, width);
-  return (
-    <div
-      ref={ref}
-      className="pointer-events-none absolute top-2 z-10 max-w-full min-w-40 rounded-popover border border-border bg-popover/95 px-3 py-2.5 text-label shadow-popover backdrop-blur-material"
-    >
-      <div className="mb-1.5 font-semibold text-foreground tabular-nums">{title}</div>
-      {rows.map((r) => (
-        <div key={r.label} className="grid grid-cols-[12px_auto_1fr] items-center gap-2 leading-6">
-          <span aria-hidden="true" className={`h-0.5 w-3 rounded-full ${toneBg[r.tone ?? 'primary']}`} />
-          <span className="text-right font-semibold text-foreground tabular-nums">{r.value}</span>
-          <span className="truncate font-normal text-muted-foreground">
-            {r.label}
-            {r.status ? (
-              <span className="ml-1.5 inline-flex items-center gap-1 font-semibold text-destructive-foreground">
-                <span aria-hidden="true">▲</span>
-                {r.status}
-              </span>
-            ) : null}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /** The plot's frame: domains, ticks and scales for the current width. */
 function useChartFrame({
   x,
@@ -865,7 +828,7 @@ export function LineChart({
       ) : null}
 
       {tooltipRows && cursorIndex != null ? (
-        <ReadoutTooltip title={formatX(x[cursorIndex]!)} rows={tooltipRows} x={cx} width={w} />
+        <ReadoutTooltip title={formatX(x[cursorIndex]!)} rows={tooltipRows} x={cx} width={w} className="top-2" />
       ) : null}
       {hasData ? null : <ChartEmpty />}
     </div>
