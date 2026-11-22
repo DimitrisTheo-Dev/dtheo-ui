@@ -334,9 +334,12 @@ export const foundation = {
   },
 } as const;
 
-/** How a pair reads in reports: "muted-foreground on card", or "ring on ring 12 %" for a tinted layer. */
-export function pairLabel(p: { fg: string; bg: string; tint?: number }) {
-  return `${p.fg} on ${p.bg}${p.tint === undefined ? '' : ` ${Math.round(p.tint * 100)} %`}`;
+/** How a pair reads in reports: "muted-foreground on card", or "ring on ring 12 % over card" for a tinted layer. */
+export function pairLabel(p: { fg: string; bg: string; tint?: number; over?: string | string[] }) {
+  // Every surface rests on `background`, so only the layers between it and `bg` tell two pairs apart.
+  const under = [p.over ?? []].flat().filter((o) => o !== 'background');
+  const tint = p.tint === undefined ? '' : ` ${Math.round(p.tint * 100)} %`;
+  return `${p.fg} on ${p.bg}${tint}${under.map((o) => ` over ${o}`).join('')}`;
 }
 
 /** Foreground/background pairs that must meet WCAG AA. `min` is the required ratio. */
