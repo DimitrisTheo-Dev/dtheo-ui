@@ -190,6 +190,31 @@ describe('StreamChart with a dropout', () => {
   }
 });
 
+/** Where the last canvas stroke starts, in y. */
+const lastStrokeY = () => strokes.at(-1)![0]![2];
+
+describe('StreamChart while paused', () => {
+  it('redraws when its y range changes, instead of keeping the old scale', () => {
+    const stream = createStream(['i'], 300);
+    for (let k = 0; k < 300; k++) stream.push(k, [10]);
+    const chart = (yDomain: [number, number]) => (
+      <StreamChart
+        stream={stream}
+        series={[{ channel: 'i', label: 'Current', unit: 'A' }]}
+        yDomain={yDomain}
+        window={300}
+        paused
+        ariaLabel="Current"
+      />
+    );
+    const { rerender } = render(chart([0, 20]));
+    const before = lastStrokeY();
+    rerender(chart([0, 40]));
+    // 10 A sits mid-plot on 0–20 and a quarter up on 0–40, so the trace moves down.
+    expect(lastStrokeY()).toBeGreaterThan(before);
+  });
+});
+
 describe('tickFormat', () => {
   it('writes ticks the way readouts write numbers: true minus, separators, one digit count per axis', () => {
     const minus = tickFormat([-60, -40, -20, 0]);
