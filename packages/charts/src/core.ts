@@ -81,13 +81,27 @@ export const haloText = '[paint-order:stroke] stroke-card [stroke-width:3px]';
  */
 export const CAPTION_CHAR_W = 7;
 
-/** Digits that write `value` exactly, up to four: 0 for 4000, 1 for 0.5, 2 for 0.25. */
-function exactDigits(value: number) {
-  for (let d = 0; d < 4; d++) {
+/** Digits that write `value` exactly, up to `max`: 0 for 4000, 1 for 0.5, 2 for 0.25. */
+function exactDigits(value: number, max: number) {
+  for (let d = 0; d < max; d++) {
     const scaled = Math.abs(value) * 10 ** d;
     if (Math.abs(scaled - Math.round(scaled)) < 1e-6 * Math.max(1, scaled)) return d;
   }
-  return 4;
+  return max;
+}
+
+/**
+ * The most digits an axis may need: four for everyday ranges, more when the ticks themselves are tiny, so ticks
+ * 5 µs apart read 0.000005 rather than 0.0000. A single value stands for the spacing (a sample period).
+ */
+function digitCap(ticks: readonly number[]) {
+  let step = Infinity;
+  for (let i = 1; i < ticks.length; i++) {
+    const d = Math.abs(ticks[i]! - ticks[i - 1]!);
+    if (d > 0 && d < step) step = d;
+  }
+  if (!Number.isFinite(step)) step = Math.abs(ticks.find((t) => t !== 0) ?? 1);
+  return Math.min(15, Math.max(4, 2 - Math.floor(Math.log10(step))));
 }
 
 /**
@@ -96,7 +110,8 @@ function exactDigits(value: number) {
  * never "-2", and 0.5, 1.0, 1.5 line up.
  */
 export function tickFormat(ticks: readonly number[]) {
-  const digits = ticks.reduce((d, t) => Math.max(d, exactDigits(t)), 0);
+  const max = digitCap(ticks);
+  const digits = ticks.reduce((d, t) => Math.max(d, exactDigits(t, max)), 0);
   return (t: number) => formatNumber(t, digits);
 }
 

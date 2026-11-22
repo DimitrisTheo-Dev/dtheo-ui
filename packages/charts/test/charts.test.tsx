@@ -197,6 +197,14 @@ describe('tickFormat', () => {
     expect([0, 0.5, 1].map(tickFormat([0, 0.5, 1]))).toEqual(['0.0', '0.5', '1.0']);
     expect(tickFormat([0, 4000, 8000, 12000])(12000)).toBe('12,000');
   });
+
+  it('gives tiny ticks the digits they need, and keeps four as the cap for everyday ones', () => {
+    const micro = tickFormat([-1e-5, -5e-6, 0, 5e-6, 1e-5]);
+    expect([-1e-5, 5e-6].map(micro)).toEqual(['−0.000010', '0.000005']);
+    // A 100 kHz sample period in seconds, as a line chart's default x readout uses it.
+    expect(tickFormat([1e-5])(3e-5)).toBe('0.00003');
+    expect(tickFormat([0, 1 / 3])(1 / 3)).toBe('0.3333');
+  });
 });
 
 describe('lttb over a range', () => {
