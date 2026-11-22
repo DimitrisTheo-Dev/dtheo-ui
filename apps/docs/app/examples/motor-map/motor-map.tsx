@@ -117,8 +117,19 @@ const sweeps = [
 const nf = (d: number) =>
   new Intl.NumberFormat('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 
+interface MapQuantity {
+  label: string;
+  unit: string;
+  digits: number;
+  grid: number[][];
+  domain: [number, number];
+  bands?: number[];
+  at: (n: number, t: number) => number;
+  summary: string;
+}
+
 /** The three maps the selector offers, each computed from the same motor model. */
-const quantities = {
+const quantities: Record<'efficiency' | 'losses' | 'power-factor', MapQuantity> = {
   efficiency: {
     label: 'Efficiency',
     unit: '%',
@@ -126,6 +137,9 @@ const quantities = {
     grid,
     // The full range inside the envelope: a floor above the lowest cell would draw those cells as if empty.
     domain: [Math.floor(lowEff), Math.ceil(peakEff)] as [number, number],
+    // Shaded in bands, as motor engineers read an iso-efficiency map: most of the map sits between 90 and 96 %, and
+    // a linear shade would draw all of it in one blue.
+    bands: [80, 85, 90, 92, 94, 95, 96],
     at: efficiency,
     summary: `Peak ${nf(1).format(peakEff)} % at mid speed and mid torque.`,
   },
@@ -262,6 +276,7 @@ export function MotorMap() {
                   yValues={torques}
                   values={q.grid}
                   domain={q.domain}
+                  bands={q.bands}
                   xTicks={[4000, 8000, 12000, 16000]}
                   yTicks={[50, 100, 150, 200]}
                   xLabel="Speed"

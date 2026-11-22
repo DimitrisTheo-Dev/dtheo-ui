@@ -1437,6 +1437,12 @@ export const components: ComponentMeta[] = [
           'The color range. Defaults to the data’s; share it between maps people compare. Values outside it take the end color, and the legend says so (≤ 86.0 %).',
       },
       {
+        name: 'bands',
+        type: 'number[]',
+        description:
+          'Band edges, ascending: [90, 92, 94, 95, 96]. Each band gets its own evenly stepped shade, so values crowded at the top still read apart, as on an iso-efficiency map. The legend shows the bands.',
+      },
+      {
         name: 'marker',
         type: '{ x: number; y: number; label: string }',
         description: 'An operating point to mark on the map.',
