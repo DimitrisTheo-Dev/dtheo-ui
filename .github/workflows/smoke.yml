@@ -1,0 +1,46 @@
+name: Production smoke test
+
+# CI tests the source; this tests what Vercel deployed. After a push to main it waits for Vercel to report that
+# commit deployed, then calls ui.dtheo.dev the way people and agents do (scripts/smoke-production.mjs). The MCP tools
+# once passed every test and failed only in production, because the deployed function lacked the files they read.
+# It also runs every morning, and by hand from the Actions tab.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  statuses: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - name: Wait for Vercel to deploy this commit
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          for attempt in $(seq 1 60); do
+            state=$(gh api "repos/$REPO/commits/$SHA/status" --jq '[.statuses[] | select(.context == "Vercel")][0].state // ""')
+            case "$state" in
+              success) exit 0 ;;
+              failure|error) echo "::error::Vercel reported the deployment of $SHA as $state."; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::Vercel did not report a deployment of $SHA within 15 minutes."
+          exit 1
+      - run: node scripts/smoke-production.mjs https://ui.dtheo.dev
