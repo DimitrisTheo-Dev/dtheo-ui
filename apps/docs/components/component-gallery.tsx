@@ -9,6 +9,7 @@ import { Input } from '@dtheo/ui/components/input';
 import { Button } from '@dtheo/ui/components/button';
 import { examples } from '@/examples';
 import { countLabel } from '@/lib/counts';
+import { docsPath } from '@/lib/paths';
 
 /** Examples that need a wide stage to make sense: they span two columns in the grid. */
 const wide = new Set([
@@ -26,7 +27,7 @@ const wide = new Set([
 
 const catId = (cat: string) => `cat-${cat.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
 
-const href = (c: ComponentMeta) => `/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}`;
+const href = (c: ComponentMeta) => docsPath(c);
 
 const firstSentence = (text: string) => text.split(/(?<=\.)\s/)[0]!;
 

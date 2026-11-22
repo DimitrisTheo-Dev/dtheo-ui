@@ -11,6 +11,7 @@ import { componentByName, registryItem } from '@/lib/registry';
 import { searchDocs } from '@/lib/search';
 import { site } from '@/lib/site';
 import { repoFile } from '@/lib/source';
+import { docsSection } from '@/lib/paths';
 
 /**
  * dtheo/ui MCP server (Streamable HTTP). Read-only: it describes the design system and checks code; it never
@@ -18,7 +19,7 @@ import { repoFile } from '@/lib/source';
  */
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
 const docsPage = (slug: string) =>
-  `${site.url}/docs/${getComponent(slug)?.package === 'charts' ? 'charts' : 'components'}/${slug}`;
+  `${site.url}/docs/${docsSection(getComponent(slug))}/${slug}`;
 
 /** Every tool only reads: it describes the system or checks code it is given, and never changes anything. */
 const readOnly = (title: string) => ({

@@ -12,6 +12,7 @@ import { highlight } from '@/lib/highlight';
 import { installCommand, shadcnCommand, site } from '@/lib/site';
 import { usedIn } from '@/lib/usage';
 import { smartQuotes } from '@/lib/parse-markdown';
+import { docsPath, docsSection } from '@/lib/paths';
 
 /**
  * Contract text as people read it: `code` spans render as code, and the prose around them gets curly quotes.
@@ -184,7 +185,7 @@ function UsedIn({ slug }: { slug: string }) {
   const links = [
     ...pages.map((p) => ({ href: p.href, title: p.title })),
     ...composedBy.map((c) => ({
-      href: `/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}`,
+      href: docsPath(c),
       title: c.title,
     })),
   ];
@@ -211,7 +212,7 @@ function UsedIn({ slug }: { slug: string }) {
  * get it, what it looks like, when to use it, then the details. All content comes from the component contract.
  */
 export async function ComponentDoc({ meta }: { meta: ComponentMeta }) {
-  const base = meta.package === 'charts' ? 'charts' : 'components';
+  const base = docsSection(meta);
   const md = `/docs/${base}/${meta.slug}.md`;
   const [first, ...rest] = meta.examples;
   // The component plus whatever its examples import, so the code on this page builds once pasted.

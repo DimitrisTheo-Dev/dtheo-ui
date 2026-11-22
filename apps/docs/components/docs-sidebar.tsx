@@ -20,6 +20,7 @@ import { Button } from '@dtheo/ui/components/button';
 import { Input } from '@dtheo/ui/components/input';
 import { InputGroup, InputGroupAddon } from '@dtheo/ui/components/input-group';
 import { examples, foundations, getStarted, patterns, type NavItem } from '@/lib/nav';
+import { docsPath } from '@/lib/paths';
 
 interface Group {
   title: string;
@@ -32,7 +33,7 @@ interface Group {
 }
 
 const href = (c: (typeof components)[number]) =>
-  `/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}`;
+  docsPath(c);
 const itemsOf = (category: string): NavItem[] =>
   components.filter((c) => c.category === category).map((c) => ({ title: c.title, href: href(c) }));
 

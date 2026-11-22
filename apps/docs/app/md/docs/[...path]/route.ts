@@ -6,6 +6,7 @@ import {
   checkRulesMarkdown,
 } from '@/lib/markdown';
 import { pagesMarkdown } from '@/lib/pages-md';
+import { docsSection } from '@/lib/paths';
 
 export const dynamic = 'force-static';
 export const dynamicParams = false;
@@ -17,7 +18,7 @@ export function generateStaticParams() {
     ...['installation', 'theming', 'agents', 'cli', 'atomic-design'].map((s) => ({ path: [s] })),
     ...['color', 'typography', 'geometry', 'motion'].map((s) => ({ path: ['foundations', s] })),
     ...['data-table', 'forms', 'states'].map((s) => ({ path: ['patterns', s] })),
-    ...components.map((c) => ({ path: [c.package === 'charts' ? 'charts' : 'components', c.slug] })),
+    ...components.map((c) => ({ path: [docsSection(c), c.slug] })),
     { path: ['check-rules'] },
   ];
 }
