@@ -28,12 +28,29 @@ interface CommandGroup {
 type Contains = (text: string, query: string) => boolean;
 
 /**
- * The K of ⌘K. A Latin layout reports the letter it types, so Dvorak and AZERTY users press their own K. A Greek,
- * Cyrillic or Hebrew layout reports its own letter (κ, л, ל), so fall back to the physical key there.
+ * Whether a key is `letter`. A Latin layout reports the letter it types, so Dvorak and AZERTY users press their own
+ * K. A Greek, Cyrillic or Hebrew layout reports its own letter (κ, л, ל), so fall back to the physical key there.
  */
+function isLetter(event: Pick<KeyboardEvent, 'key' | 'code'>, letter: string) {
+  if (/^[a-z]$/i.test(event.key)) return event.key.toLowerCase() === letter;
+  return event.code === `Key${letter.toUpperCase()}`;
+}
+
+/** The K of ⌘K, on any layout. */
 export function isKKey(event: Pick<KeyboardEvent, 'key' | 'code'>) {
-  if (/^[a-z]$/i.test(event.key)) return event.key.toLowerCase() === 'k';
-  return event.code === 'KeyK';
+  return isLetter(event, 'k');
+}
+
+/** Apple keyboards take shortcuts with ⌘ and leave Ctrl to text editing. */
+const applePlatform = () =>
+  typeof navigator !== 'undefined' && /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
+
+/**
+ * Whether a keydown is the app shortcut ⌘ + `letter`, or Ctrl + `letter` off Apple keyboards. On a Mac, Ctrl stays
+ * with the text field, where Ctrl+K deletes to the end of the line and Ctrl+E moves to it.
+ */
+export function isShortcut(event: Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'ctrlKey'>, letter: string) {
+  return (event.metaKey || (event.ctrlKey && !applePlatform())) && isLetter(event, letter);
 }
 
 /**
@@ -96,7 +113,7 @@ export function CommandDialog({
   React.useEffect(() => {
     if (!shortcut) return;
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && isKKey(e)) {
+      if (isShortcut(e, 'k')) {
         e.preventDefault();
         onOpenChange(!open);
       }

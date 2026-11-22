@@ -694,7 +694,7 @@ export const components: ComponentMeta[] = [
     ],
     files: ['components/command.tsx', 'components/kbd.tsx'],
     package: 'ui',
-    exports: ['CommandDialog'],
+    exports: ['CommandDialog', 'isShortcut'],
     dependencies: [...base, ...styling, 'lucide-react'],
     registryDependencies: ['utils', 'kbd'],
     examples: ['command'],

@@ -65,6 +65,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@dtheo/ui/components/to
 import { Empty, EmptyDescription, EmptyTitle } from '@dtheo/ui/components/empty';
 import { Avatar } from '@dtheo/ui/components/avatar';
 import { useToast } from '@dtheo/ui/components/toast';
+import { isShortcut } from '@dtheo/ui/components/command';
 import { BarChart, ChartLegend, LineChart } from '@dtheo/charts';
 import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar, labUser } from '../_shared/lab-sidebar';
@@ -132,12 +133,6 @@ function download(name: string, text: string) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
-/** The E of ⌘E on any layout: the letter on a Latin layout, the physical key on Greek or Cyrillic (as isKKey does). */
-const isEKey = (e: KeyboardEvent) => (/^[a-z]$/i.test(e.key) ? e.key.toLowerCase() === 'e' : e.code === 'KeyE');
-
-const isEditable = (target: EventTarget | null) =>
-  target instanceof HTMLElement && (target.isContentEditable || /^(?:INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
-
 const resultMeta = {
   fail: { label: 'Fail', variant: 'destructive', Icon: CircleXIcon },
   review: { label: 'Review', variant: 'warning', Icon: TriangleAlertIcon },
@@ -179,9 +174,7 @@ export function RunReview() {
   // ⌘E / Ctrl+E exports, as the menu and the palette say it does.
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat || e.shiftKey || e.altKey || !isEKey(e)) return;
-      // In a text field Ctrl+E moves to the end of the line on a Mac, so there only ⌘E exports.
-      if (!e.metaKey && !(e.ctrlKey && !isEditable(e.target))) return;
+      if (e.repeat || e.shiftKey || e.altKey || !isShortcut(e, 'e')) return;
       e.preventDefault();
       exportSamples();
     };
