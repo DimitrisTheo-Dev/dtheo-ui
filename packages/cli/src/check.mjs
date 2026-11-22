@@ -402,7 +402,14 @@ function tokenize(src, mode) {
   if (mode === 'mdx') {
     while (i < n) children();
     // Markdown's own comments, where a directive can sit as it does in {/* */}.
-    for (const m of src.matchAll(/<!--[\s\S]*?(?:-->|$)/g)) mark(m.index, m.index + m[0].length, COMMENT);
+    // Not inside a code span, which is already a comment: `<!--` there is an example, not the start of a comment.
+    for (let at = src.indexOf('<!--'); at !== -1; at = src.indexOf('<!--', at + 4)) {
+      if (kind[at] === COMMENT) continue;
+      const close = src.indexOf('-->', at + 4);
+      const end = close === -1 ? n : close + 3;
+      mark(at, end, COMMENT);
+      at = end - 4;
+    }
   } else code();
   return { kind, tags, calls };
 }
@@ -730,34 +737,74 @@ function primaryAsText(m, ctx) {
   );
 }
 
-/** The string around `index`: where it opens, its text before `index`, all of its text, and the code before it. */
-function stringAround(ctx, index) {
+/** How far a color's context is read around it: enough for any real attribute or declaration, and a bound on work. */
+const NEAR = 200;
+
+/** The string or template text around `index` that shares its label: NEAR characters before it, 40 after. */
+function runAround(ctx, index) {
   const k = ctx.kind[index];
   let a = index;
-  while (a > 0 && ctx.kind[a - 1] === k) a--;
+  const start = Math.max(0, index - NEAR);
+  while (a > start && ctx.kind[a - 1] === k) a--;
   let b = index;
-  while (b < ctx.source.length && ctx.kind[b] === k) b++;
-  return {
-    prefix: ctx.source.slice(a + 1, index),
-    text: ctx.source.slice(a, b),
-    lead: ctx.source.slice(Math.max(0, a - 40), a),
-  };
+  const end = Math.min(ctx.source.length, index + 40);
+  while (b < end && ctx.kind[b] === k) b++;
+  return ctx.source.slice(a, b);
 }
 
-/** CSS in a string: a declaration, a function, a length or a border style. */
-const CSS_IN_TEXT = /[:;(]|\d(?:px|rem|em|%|deg)\b|\b(?:solid|dashed|dotted|inset)\b/;
+/** The whitespace- and quote-delimited word before `index`, at most NEAR characters: `url(/hero.png)` or `bg-[`. */
+function wordBefore(source, index) {
+  let a = index;
+  const stop = Math.max(0, index - NEAR);
+  while (a > stop && !/[\s'"`{}]/.test(source[a - 1])) a--;
+  return source.slice(a, index);
+}
 
 /**
- * A hex or color function in a string is a color, unless the # starts a reference: "Run #482" or "Issue #1024" (a #
- * after a word, in a string with no CSS), a link or asset (href="#faced", "/docs#cafe", "icon.svg#a", url(#clip)), a
- * selector (querySelector('#feed')), or an SVG gradient stop.
+ * Whether `index` sits inside the value of an href or src attribute that starts within NEAR characters:
+ * href="#faced", href={open ? "#cafe" : "#feed"}, href={`/docs/${slug}#add`}. A class after the value has closed is
+ * not inside it: <Link href="/runs" className="bg-[#0070f3]">.
+ */
+function inLinkValue(source, index) {
+  const from = Math.max(0, index - NEAR);
+  const before = source.slice(from, index);
+  const attr = /\b(?:href|src)=(?=["'{])/g;
+  let last = -1;
+  for (let m = attr.exec(before); m; m = attr.exec(before)) last = m.index + m[0].length;
+  if (last === -1) return false;
+  const open = before[last];
+  if (open !== '{') return !before.slice(last + 1).includes(open);
+  let depth = 0;
+  for (const ch of before.slice(last)) {
+    if (ch === '{') depth++;
+    else if (ch === '}' && --depth === 0) return false;
+  }
+  return true;
+}
+
+/** CSS around a color: a declaration, a function, a length (also right after a ${} interpolation) or a keyword. */
+const CSS_NEARBY =
+  /[:;(]|(?:^|\d|\})(?:px|rem|em|%|deg|vh|vw)|\b(?:solid|dashed|dotted|double|wavy|inset|underline|overline|color|background|border|fill|stroke|shadow|outline|gradient)\b/i;
+
+/**
+ * A hex or color function in a string is a color unless the # starts a reference:
+ * - a number after a word, in a string with no CSS: "Run #482", "Issue #1024" (a hex with letters, #f00, is a color);
+ * - a link or asset: href="#faced", src="/icons.svg#add", url(#clip), url(/hero.png);
+ * - a selector: querySelector('#feed');
+ * - an SVG gradient stop in markup or CSS, stop-color="#fff" (as before; React's stopColor is still checked).
+ * Each test reads at most NEAR characters around the match, so checking stays linear on hostile input.
  */
 function colorInString(m, ctx) {
-  const { prefix, text, lead } = stringAround(ctx, m.index);
-  if (/url\(\s*['"]?[^)]*$/.test(prefix) || /\.(?:svg|png)\b/.test(text)) return false;
-  if (/(?:\b(?:href|src|to|stopColor|stop-color)\s*=\s*\{?\s*|\bhref\s*:\s*)$/.test(lead)) return false;
-  if (!prefix && /(?:querySelector(?:All)?|getElementById|closest|matches)\s*\(\s*$/.test(lead)) return false;
-  return !(m[0].startsWith('#') && /[A-Za-z]\s+$/.test(prefix) && !CSS_IN_TEXT.test(text));
+  const at = m.index;
+  const word = wordBefore(ctx.source, at);
+  if (word.lastIndexOf('url(') > word.lastIndexOf(')') || /\.(?:svg|png)\b/.test(word)) return false;
+  if (inLinkValue(ctx.source, at)) return false;
+  if (/stop-color\s*[=:]\s*["']?$/.test(ctx.source.slice(Math.max(0, at - 24), at))) return false;
+  const opensString = /["'`]/.test(ctx.source[at - 1] ?? '') && ctx.kind[at - 1] === ctx.kind[at];
+  const lead = ctx.source.slice(Math.max(0, at - 41), at - 1);
+  if (opensString && /(?:querySelector(?:All)?|getElementById|closest|matches)\s*\(\s*$/.test(lead)) return false;
+  if (!/^#\d+$/.test(m[0]) || !/[A-Za-z] $/.test(ctx.source.slice(Math.max(0, at - 2), at))) return true;
+  return CSS_NEARBY.test(runAround(ctx, at));
 }
 
 /** UI motion is 120–240 ms, and 400 ms for toasts and sheets (DESIGN.md, Motion). Nothing else is on the scale. */
@@ -785,12 +832,16 @@ function directiveHasReason(line, at, length, fileDirective) {
   return /[\p{L}]{2,}/u.test(`${head} ${tail}`);
 }
 
-/** The rule ids a `dtheo-check-disable-file` directive names, before its "--": none means every rule. */
+/**
+ * The rule ids a `dtheo-check-disable-file` directive names, before its "--": none means every rule. Every word there
+ * counts, so a misspelled id ("Raw-Color", "raw-colour") is reported as unknown instead of disabling every rule.
+ */
 const disabledRuleIds = (rest) =>
   rest
     .split('--')[0]
+    .replace(/\*\/\s*\}?|-->/g, ' ')
     .split(/[\s,]+/)
-    .filter((id) => /^[a-z][\w-]*$/.test(id));
+    .filter(Boolean);
 
 /**
  * Directives in comments (one quoted in a string is not a directive) with no reason, and file directives that name a
@@ -1087,6 +1138,12 @@ export function checkSource(source, options = {}) {
   const lines = source.split('\n');
   const lineStarts = [0];
   for (let i = 0; i < source.length; i++) if (source[i] === '\n') lineStarts.push(i + 1);
+  // A line's excerpt is made once, however many findings it has: a 60,000-character line can hold thousands.
+  const excerpts = new Map();
+  const lineExcerpt = (li) => {
+    if (!excerpts.has(li)) excerpts.set(li, lines[li].trim().slice(0, 480).replace(/\s+/g, ' ').slice(0, 120));
+    return excerpts.get(li);
+  };
   const lineOf = (index) => {
     let lo = 0;
     let hi = lineStarts.length - 1;
@@ -1137,7 +1194,7 @@ export function checkSource(source, options = {}) {
         column: index - lineStarts[li] + 1,
         message: rule.message,
         fix: rule.fix,
-        excerpt: (text ?? lines[li].trim()).replace(/\s+/g, ' ').slice(0, 120),
+        excerpt: text == null ? lineExcerpt(li) : text.replace(/\s+/g, ' ').slice(0, 120),
       });
     }
   }

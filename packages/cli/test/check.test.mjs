@@ -222,9 +222,12 @@ describe('design check rules', () => {
     expect(count('const tip = "dtheo-check-ignore: why"; const a = "#fff";', 'raw-color')).toBe(1);
     expect(count('const tip = "use dtheo-check-ignore-next-line";\nconst a = "#fff";', 'raw-color')).toBe(1);
     expect(count('const tip = "dtheo-check-ignore-next-line";', 'ignore-reason')).toBe(0);
-    // A misspelled id switches nothing off, so it is an error, not a silent no-op.
-    expect(count('// dtheo-check-disable-file raw-colour -- brand swatches\nconst a = "#fff";', 'ignore-reason')).toBe(1);
-    expect(count('// dtheo-check-disable-file raw-colour -- brand swatches\nconst a = "#fff";', 'raw-color')).toBe(1);
+    // A misspelled id switches nothing off, so it is an error, not a silent no-op, whatever its case.
+    for (const id of ['raw-colour', 'Raw-Color', '"raw-color"']) {
+      const src = `// dtheo-check-disable-file ${id} -- brand swatches\nconst a = "#fff";`;
+      expect(count(src, 'ignore-reason'), id).toBe(1);
+      expect(count(src, 'raw-color'), id).toBe(1);
+    }
     // Markdown's HTML comments still carry a directive.
     expect(count('<!-- dtheo-check-ignore-next-line (brand swatch) -->\n<div style={{ color: "#fff" }} />', 'raw-color', 'x.md')).toBe(0);
   });
@@ -452,6 +455,32 @@ describe('design check rules', () => {
     for (const src of colors) expect(count(src, 'raw-color'), src).toBe(1);
   });
 
+  it('judges each color by what is next to it, not by the rest of its string or line', () => {
+    const colors = [
+      // A .png elsewhere in a stylesheet excuses nothing.
+      ['.hero{background:url(/hero.png)} .card{color:#333;border:1px solid #e5e5e5}', 2, 'x.css'],
+      // A unit right after an interpolation is CSS, and so is a keyword.
+      ['const ring = `0 0 0 ${w}px #3b82f6`;', 1],
+      ['const glow = `drop-shadow(0 0 ${r}px #fff)`;', 1],
+      ["const line = 'underline wavy #f00';", 1],
+      ["const w = `${n}px #333`;", 1],
+      // React's stopColor and a gradient's `to` are colors; only stop-color in markup and CSS keeps its old pass.
+      ['<stop stopColor="#0070f3" />', 1],
+      ['<Gradient to="#7928ca" />', 1],
+      ["const to = '#000';", 1],
+      ['.a stop { stop-color: #fff; }', 0, 'x.css'],
+      // Links: inside an href's value, a # is a fragment.
+      ['<a href={open ? "#cafe" : "#feed"}>x</a>', 0],
+      ['<a href={`/docs/${slug}#add`}>x</a>', 0],
+    ];
+    for (const [src, n, file] of colors) expect(count(src, 'raw-color', file), src).toBe(n);
+  });
+
+  it('skips a code span in Markdown, even one that shows how a comment opens', () => {
+    const md = 'Write `<!--` to open a comment.\n\n<div className="text-sm bg-[#fff]" />\n';
+    expect(count(md, 'raw-color', 'x.md')).toBe(1);
+  });
+
   it('lets token files define colors', () => {
     expect(count('--primary: oklch(0.55 0.2 257);', 'raw-color', 'tokens.css')).toBe(0);
   });
@@ -464,6 +493,7 @@ describe('design check rules', () => {
   // The MCP check_ui_code tool runs the check on up to 60,000 characters from anyone.
   it('stays fast and in one piece on input built to be slow or deeply nested', () => {
     const crafted = [
+      `const s = '${'url('.repeat(7_000)})${' #fff'.repeat(6_000)}';`,
       `// import${'\n'.repeat(59_990)}`,
       'import x '.repeat(6_000),
       '`${'.repeat(20_000),
