@@ -123,6 +123,26 @@ describe('LineChart with a gap', () => {
   });
 });
 
+const vertices = (d: string | null) => (d ?? '').match(/[ML]/g)?.length ?? 0;
+const trace = (container: HTMLElement) => container.querySelector('path.stroke-chart-1')?.getAttribute('d') ?? null;
+
+describe('LineChart zoomed in', () => {
+  const x = Array.from({ length: 10 }, (_, i) => i);
+  const series = [{ id: 'v', label: 'Torque', values: x.map((t) => t * 2), unit: 'N·m' }];
+
+  it('runs the trace to both edges, through the samples just outside the range', () => {
+    const { container } = render(<LineChart x={x} series={series} xDomain={[1.5, 3.5]} yDomain={[0, 20]} ariaLabel="Torque" />);
+    // Samples 1 to 4: the two inside and one past each edge, clipped at the plot's edges.
+    expect(vertices(trace(container))).toBe(4);
+  });
+
+  it('draws the segment when the range falls between two samples', () => {
+    const { container } = render(<LineChart x={x} series={series} xDomain={[1.2, 1.8]} yDomain={[0, 20]} ariaLabel="Torque" />);
+    expect(container.textContent).not.toContain('No data');
+    expect(vertices(trace(container))).toBe(2);
+  });
+});
+
 describe('Sparkline with a gap', () => {
   it('renders, breaks the line and keeps the endpoint', () => {
     const { container } = render(<Sparkline values={[3, 4, Number.NaN, 5, 6]} ariaLabel="Overshoot trend" />);

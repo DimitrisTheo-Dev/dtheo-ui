@@ -168,9 +168,15 @@ function bound(x: ArrayLike<number>, target: number, strict: boolean) {
   return lo;
 }
 
-/** First and last sample index inside [x0, x1], by binary search: a 6M-sample capture costs about 23 reads. */
-function visibleRange(x: ArrayLike<number>, x0: number, x1: number): [number, number] {
-  return [Math.min(x.length - 1, bound(x, x0, false)), Math.max(0, bound(x, x1, true) - 1)];
+/**
+ * The samples to draw for the x range, by binary search (a 6M-sample capture costs about 23 reads): every sample inside
+ * it plus one past each edge. The trace then runs to the plot's edges, where it is clipped, and a range that falls
+ * between two samples still draws the segment across it.
+ */
+function drawnRange(x: ArrayLike<number>, x0: number, x1: number): [number, number] {
+  const lo = Math.min(x0, x1);
+  const hi = Math.max(x0, x1);
+  return [Math.max(0, bound(x, lo, false) - 1), Math.min(x.length - 1, bound(x, hi, true))];
 }
 
 /**
@@ -697,7 +703,7 @@ export function LineChart({
     height,
   });
   const { x0, x1, plotW } = f;
-  const [i0, i1] = React.useMemo(() => visibleRange(x, x0, x1), [x, x0, x1]);
+  const [i0, i1] = React.useMemo(() => drawnRange(x, x0, x1), [x, x0, x1]);
   const hasData = React.useMemo(
     () => i1 >= i0 && series.some((s) => hasFinite(s.values, i0, i1)),
     [series, i0, i1],
@@ -712,8 +718,13 @@ export function LineChart({
     () => (sampled ? series.map((s) => ({ s, d: seriesPath(x, s.values, sampled.get(s.id)!, f) })) : []),
     [sampled, series, x, f],
   );
-  // The points the keyboard reads: each sample some series draws a vertex at.
-  const grid = React.useMemo(() => (sampled ? drawnPoints([...sampled.values()]) : []), [sampled]);
+  // The points the keyboard reads: each sample inside the x range that some series draws a vertex at.
+  const grid = React.useMemo(() => {
+    if (!sampled) return [];
+    const lo = Math.min(x0, x1);
+    const hi = Math.max(x0, x1);
+    return drawnPoints([...sampled.values()]).filter((i) => x[i]! >= lo && x[i]! <= hi);
+  }, [sampled, x, x0, x1]);
   const gridX = React.useMemo(() => Float64Array.from(grid, (i) => x[i]!), [grid, x]);
   const shades = React.useMemo(() => {
     if (!sampled) return [];
