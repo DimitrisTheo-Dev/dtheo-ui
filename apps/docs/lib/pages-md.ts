@@ -1,6 +1,7 @@
 // dtheo-check-disable-file raw-color, transition-all, scale-zero, ease-in -- documentation that quotes the rules and token values; no UI styling here.
 import { site } from './site';
 import { agentsMarkdown } from './agents';
+import { chartCount, componentCount } from './counts';
 
 /**
  * Long-form docs pages, authored once in Markdown. The HTML page renders this text and the `.md` mirror serves it
@@ -19,14 +20,14 @@ ${site.name} is built for the tools engineers use every day: run reviews, dashbo
 - **Native by default.** System fonts, Mac-like materials, a focus ring you can always see, motion that responds immediately and never makes you wait.
 - **Summary before detail.** Checks first, then the evidence (charts, tables), then the record.
 - **One source of truth.** Each component has one contract that drives its page, its Markdown, the registry, the MCP server and the CLI.
-- **Proof over claims.** Every text color pair is contrast-checked when tokens build; the build fails below WCAG AA.
+- **Proof over claims.** Every declared color pair is contrast-checked in every theme when tokens build; the build fails below WCAG AA.
 
 ## What is in the box
 
-- 35 components on Base UI, styled with Tailwind CSS v4 and OKLCH tokens.
-- 8 engineering charts: line (limits, bands, synced crosshair, keyboard reading), bar, heatmap, sparkline, a live stream chart, frequency (spectrum and Bode with margins), scatter and histogram (spec limits and Cpk).
-- 3 presets: Graphite (default), Flight deck and Deep space, each a different character from the same components.
-- Agent surfaces: \`/llms.txt\`, a \`.md\` mirror of every page, a shadcn-compatible registry, an MCP server at \`/mcp\`, and the \`dtheo\` CLI with a design checker.
+- ${componentCount} components on Base UI, styled with Tailwind CSS v4 and OKLCH tokens.
+- ${chartCount} engineering charts: line (limits, bands, synced crosshair, keyboard reading), bar, heatmap, sparkline, a live stream chart, frequency (spectrum and Bode with margins), scatter and histogram (spec limits and Cpk).
+- 3 presets: Graphite (default, light and dark), Flight deck and Deep space (dark), each a different character from the same components.
+- Agent surfaces: \`/llms.txt\`, a \`.md\` mirror of every docs page, a shadcn-compatible registry, an MCP server at \`/mcp\` and the \`dtheo\` CLI with a design checker.
 `,
 
   installation: `# Installation
@@ -124,7 +125,7 @@ Name the folders that hold your UI code (\`src\` in a Vite app). It flags raw co
 
   theming: `# Theming
 
-> Mode, preset and density are attributes, not separate stylesheets. Components never change.
+> The mode is a class and the preset an attribute, not separate stylesheets. Components never change.
 
 ## Light and dark
 
@@ -138,7 +139,7 @@ import { ThemeScope } from "@/lib/theme";
 </ThemeScope>
 \`\`\`
 
-Overlays opened inside a \`ThemeScope\` (menus, dialogs, tooltips, toasts) mount inside it, so they keep the scope's theme.
+Overlays opened inside a \`ThemeScope\` (menus, dialogs, tooltips, toasts) mount inside it, so they keep the scope’s theme.
 
 ## Presets
 
@@ -152,11 +153,27 @@ Each tool in a suite can pick its preset and keep its own character while clearl
 
 ## Tokens
 
-Colors use the shadcn role names (\`background\`, \`foreground\`, \`card\`, \`primary\`, \`muted-foreground\`, …) plus \`subtle-foreground\`, \`selection\`, status roles (\`success\`, \`warning\`, \`info\`, \`destructive\`, each with a readable \`-foreground\` text color) and chart roles. The source is \`packages/tokens/src/index.ts\`; \`pnpm tokens\` generates CSS, DTCG JSON and React Native values and fails if any declared pair misses WCAG AA.
+Colors use the shadcn role names (\`background\`, \`foreground\`, \`card\`, \`primary\`, \`muted-foreground\`, …) plus \`subtle-foreground\`, \`selection\`, status roles (\`success\`, \`warning\`, \`info\`, \`destructive\`, each with a readable \`-foreground\` text color) and chart roles. Use them as classes: \`bg-card\`, \`text-muted-foreground\`.
+
+On the web, \`npx ${site.cli}@latest init\` writes every role to \`styles/dtheo.css\` as CSS variables, for each preset and mode. There is nothing else to install.
+
+For code that cannot read CSS (React Native, canvas, image renderers, design tools), install \`@dtheo/tokens\`. It has three entry points:
+
+| Import | What it holds |
+| --- | --- |
+| \`@dtheo/tokens/native\` | \`colors\` (hex) and \`oklch\` (as authored) for every preset and mode, and \`radii\` per preset |
+| \`@dtheo/tokens/tokens.json\` | Every role, radius and foundation value in DTCG 2025.10 format, with a hex fallback for each color |
+| \`@dtheo/tokens/contrast.json\` | The measured contrast of every declared pair in every theme |
+
+Every declared pair passes WCAG AA in every theme; the token build fails if one does not.
 
 ## React Native and Expo
 
-Native apps cannot read CSS variables. Import the generated values instead: \`oklch\` has every role as authored, \`colors\` has the same roles as hex for React Native's \`StyleSheet\`, which cannot parse \`oklch()\`.
+Native apps cannot read CSS variables. Install the tokens and import the generated values instead: \`oklch\` has every role as authored, \`colors\` has the same roles as hex for React Native’s \`StyleSheet\`, which cannot parse \`oklch()\`.
+
+\`\`\`bash
+npm install @dtheo/tokens
+\`\`\`
 
 \`\`\`ts
 import { colors, oklch, radii } from "@dtheo/tokens/native";
@@ -208,7 +225,7 @@ The CLI only reads from the registry, over HTTPS unless the host is local. It re
 | Molecules | Small groups with one job | Field, Select, Combobox, Menu, Metric, Card, Table |
 | Organisms | Complex sections | Dialog, Sheet, Command palette, Line chart, Heatmap |
 | Templates | Page structures without content | App shell, Data table, Forms, States |
-| Pages | Templates with real data | Run review, Motor map, Lab assistant |
+| Pages | Templates filled with synthetic data | Run review, Motor map, Loop tuning, Lab assistant |
 
 Every component page has a **Used in** section: the templates and pages that depend on it. Before changing a component, look there; that is the blast radius of the change, and the list of screens to review.
 `,
@@ -221,7 +238,7 @@ Every component page has a **Used in** section: the templates and pages that dep
 
 1. A toolbar above the table: search on the left, filters next to it, view options and the primary action on the right.
 2. The table: identifiers in monospace, numbers right-aligned with tabular figures, units in the header or after the value, status as a badge with a word.
-3. A footer with the count ("8 of 412 runs") and pagination.
+3. A footer with the count (“8 of 412 runs”) and pagination.
 
 ## States
 
@@ -234,21 +251,21 @@ Every component page has a **Used in** section: the templates and pages that dep
 
 - Never truncate numbers, units or identifiers that people compare.
 - Selection shows a count and the actions that apply to the selection.
-- Row actions live in a "…" menu at the end of the row; the row itself opens the item.
+- Row actions live in a “…” menu at the end of the row; the row itself opens the item.
 - Wide tables scroll inside their container; the page never scrolls sideways.
 `,
 
   'patterns/forms': `# Forms
 
-> Labels above fields, help where the decision is made, validation that says what to do, and a save that never loses work.
+> Labels above fields, help where the decision is made, validation that says what to do and a save that never loses work.
 
 ## Rules
 
 - Every field has a visible label. Placeholders show format, not meaning.
 - Mark the exception: if most fields are required, mark the optional ones.
-- Validate on blur and on submit, not on every keystroke. The message names the problem and the fix: "Enter a gain between 0 and 10."
+- Validate on blur and on submit, not on every keystroke. The message names the problem and the fix: “Enter a gain between 0 and 10.”
 - Show units in the field (N·m, ms) instead of in the label.
-- Save buttons say what they do ("Save limits"). While saving, the button shows progress and keeps its width.
+- Save buttons say what they do (“Save limits”). While saving, the button shows progress and keeps its width.
 - A failed save keeps every value, says what went wrong and offers Retry. A successful save confirms with a toast.
 - Warn before leaving with unsaved changes; offer to save or discard.
 `,

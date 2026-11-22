@@ -3,8 +3,19 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 import { colors } from '@dtheo/tokens/native';
+import { getComponent } from '@dtheo/ui/meta';
 import { brand, Mark, starPath } from './brand';
+import {
+  DELAY,
+  OVERSHOOT_LIMIT,
+  TARGET,
+  TORQUE_LIMIT,
+  fmt,
+  measured,
+  measuredMetrics as M,
+} from './lab-data';
 import { examples } from './nav';
+import { plainText } from './parse-markdown';
 import { site } from './site';
 
 const fontFile = (weight: number) =>
@@ -140,13 +151,29 @@ function Command({ text }: { text: string }) {
   );
 }
 
-/** A step response that overshoots its limit, glowing: the product's own chart, as the card's picture. */
+/**
+ * R-0412's step response, drawn from the same simulated trace as the run review: the first 400 ms, the 13.2 N·m
+ * limit and the 17.6 % peak are where the numbers put them, so the card can't show more overshoot than it states.
+ */
+/** 0 N·m at y = 250 and the 12 N·m command at y = 108, with room above for the peak. */
+const y = (v: number) => 250 - (v / TARGET) * 142;
+
 function Trace() {
   const w = 430;
   const h = 300;
-  const limitY = 92;
-  const path =
-    'M 0 250 L 70 250 C 110 250 118 66 168 66 C 212 66 214 128 252 116 C 290 104 300 110 340 108 C 380 106 400 108 430 108';
+  const x = (t: number) => (t / 400) * w;
+  const limitY = y(TORQUE_LIMIT);
+  const samples = measured.t.filter((t) => t <= 400 && t % 2 === 0);
+  const path = samples
+    .map((t, k) => `${k ? 'L' : 'M'} ${x(t).toFixed(1)} ${y(measured.torque[t]!).toFixed(1)}`)
+    .join(' ');
+  // The part of the trace past the limit, closed along the limit line.
+  const over = samples.filter((t) => measured.torque[t]! > TORQUE_LIMIT);
+  const shade = over.length
+    ? `M ${x(over[0]!).toFixed(1)} ${limitY.toFixed(1)} ${over
+        .map((t) => `L ${x(t).toFixed(1)} ${y(measured.torque[t]!).toFixed(1)}`)
+        .join(' ')} L ${x(over.at(-1)!).toFixed(1)} ${limitY.toFixed(1)} Z`
+    : '';
   return (
     <div
       style={{
@@ -171,6 +198,8 @@ function Trace() {
         <span
           style={{
             display: 'flex',
+            alignItems: 'center',
+            gap: 6,
             padding: '4px 12px',
             borderRadius: 999,
             fontSize: 16,
@@ -179,16 +208,21 @@ function Trace() {
             backgroundColor: alpha(c['destructive-foreground'], 0.14),
           }}
         >
-          Overshoot 17.6 %
+          {/* Status is an icon and a word, never color alone: the circled cross of a failed check. */}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <circle cx="12" cy="12" r="10" />
+            <path d="m15 9-6 6M9 9l6 6" />
+          </svg>
+          {`Overshoot ${fmt.n1.format(M.overshoot)} %`}
         </span>
       </div>
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        {[60, 120, 180, 240].map((y) => (
-          <line key={y} x1="0" x2={w} y1={y} y2={y} stroke={alpha(c.foreground, 0.06)} />
+        {[60, 120, 180, 240].map((gy) => (
+          <line key={gy} x1="0" x2={w} y1={gy} y2={gy} stroke={alpha(c.foreground, 0.06)} />
         ))}
         <line x1="0" x2={w} y1={limitY} y2={limitY} stroke={alpha(c.foreground, 0.4)} strokeDasharray="6 6" />
         <path
-          d="M 0 250 L 70 250 L 70 108 L 430 108"
+          d={`M 0 ${y(0)} L ${x(DELAY)} ${y(0)} L ${x(DELAY)} ${y(TARGET)} L ${w} ${y(TARGET)}`}
           fill="none"
           stroke={alpha(c.foreground, 0.35)}
           strokeWidth="2"
@@ -199,13 +233,21 @@ function Trace() {
           stroke={alpha(c['chart-1'], 0.35)}
           strokeWidth="12"
           strokeLinecap="round"
+          strokeLinejoin="round"
         />
-        <path d={path} fill="none" stroke={c['chart-1']} strokeWidth="4" strokeLinecap="round" />
-        <path d="M 141 92 C 152 66 184 66 196 92" fill={alpha(c['destructive-foreground'], 0.28)} />
-        <circle cx="168" cy="66" r="8" fill={c['destructive-foreground']} stroke={c.card} strokeWidth="3" />
+        <path d={path} fill="none" stroke={c['chart-1']} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        {shade ? <path d={shade} fill={alpha(c['destructive-foreground'], 0.28)} /> : null}
+        <circle
+          cx={x(M.peakAt)}
+          cy={y(M.peak)}
+          r="8"
+          fill={c['destructive-foreground']}
+          stroke={c.card}
+          strokeWidth="3"
+        />
       </svg>
       <span style={{ marginTop: 10, fontSize: 16, color: c['subtle-foreground'] }}>
-        Limit 10 % · synthetic data
+        {`Limit ${OVERSHOOT_LIMIT} % · synthetic data`}
       </span>
     </div>
   );
@@ -256,6 +298,12 @@ export function HomeCard() {
   );
 }
 
+/**
+ * The images carry Inter's Latin subset, which has no ⌘. A missing glyph makes next/og fetch a font from the network
+ * at build time; that fails offline and leaves a blank in the card. Spell the key out instead.
+ */
+const ogText = (text: string) => text.replace(/⌘\s?/g, 'Cmd+');
+
 /** A docs page's card: where it sits, what it is, and the one line that installs it. */
 export function DocCard({
   eyebrow,
@@ -295,9 +343,11 @@ export function DocCard({
               color: c.foreground,
             }}
           >
-            {title}
+            {ogText(title)}
           </span>
-          <span style={{ fontSize: 30, lineHeight: 1.35, color: c['muted-foreground'] }}>{description}</span>
+          <span style={{ fontSize: 30, lineHeight: 1.35, color: c['muted-foreground'] }}>
+            {ogText(description)}
+          </span>
         </div>
         {command ? (
           <div style={{ display: 'flex' }}>
@@ -310,6 +360,20 @@ export function DocCard({
         )}
       </div>
     </Sky>
+  );
+}
+
+/** A component or chart page's share card: its category, name, what it is for and the line that installs it. */
+export async function componentCard(slug: string) {
+  const meta = getComponent(slug);
+  return new ImageResponse(
+    <DocCard
+      eyebrow={meta?.category ?? 'Components'}
+      title={meta?.title ?? slug}
+      description={plainText(meta?.description ?? '')}
+      command={`npx ${site.cli} add ${slug}`}
+    />,
+    { ...ogSize, fonts: await ogFonts() },
   );
 }
 

@@ -39,8 +39,11 @@ jobs:
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps chromium
+      # Test what ships: a production build behind `next start`, with the production headers (CSP) dev leaves out.
+      - run: pnpm build
       - run: pnpm test:e2e
-      # Visual baselines are recorded on macOS; record Linux baselines before enabling them here.
+        env:
+          E2E_SERVER: production
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -48,3 +51,27 @@ jobs:
           path: |
             playwright-report
             test-results
+
+  # Pixel diffs against the committed *-linux.png baselines. Fonts and rasterization must match where the baselines
+  # were recorded, so this runs in the Playwright image itself, on arm64 like `pnpm test:visual:linux` on a Mac: see
+  # "Visual baselines" in AGENTS.md. A missing baseline fails like a changed one; record new ones with that command or
+  # the "Record visual baselines" workflow.
+  visual:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+    steps:
+      - uses: actions/checkout@v4
+      # The image's Node has no corepack; install the pnpm version package.json pins.
+      - run: npm install -g "$(node -p "require('./package.json').packageManager")"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm test:visual
+        env:
+          E2E_SERVER: production
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-diffs
+          path: test-results

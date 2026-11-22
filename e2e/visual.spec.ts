@@ -29,7 +29,7 @@ for (const theme of ['dark', 'light'] as const) {
       await page.emulateMedia({ reducedMotion: 'reduce' });
       await page.goto(shot.path);
       await page.waitForLoadState('networkidle');
-      // Audit the page people use: after React has hydrated and Base UI has wired up labels and ids.
+      // Shoot the page people see: after React has hydrated, with fonts loaded and motion settled.
       await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
       await page.evaluate(() => document.fonts.ready);
       const target = shot.locator ? page.locator(shot.locator).first() : page;

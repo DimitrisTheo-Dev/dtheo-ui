@@ -8,6 +8,7 @@ import { InputGroup, InputGroupAddon } from '@dtheo/ui/components/input-group';
 import { Input } from '@dtheo/ui/components/input';
 import { Button } from '@dtheo/ui/components/button';
 import { examples } from '@/examples';
+import { countLabel } from '@/lib/counts';
 
 /** Examples that need a wide stage to make sense: they span two columns in the grid. */
 const wide = new Set([
@@ -107,7 +108,7 @@ export function ComponentGallery() {
           />
         </InputGroup>
         <p aria-live="polite" className="text-label font-normal text-muted-foreground tabular-nums">
-          {q ? `${count} of ${components.length}` : `${components.length} components`}
+          {q ? `${count} of ${components.length}` : countLabel}
         </p>
         <nav aria-label="Categories" className="flex w-full flex-wrap gap-1.5">
           {groups.map((g) => (

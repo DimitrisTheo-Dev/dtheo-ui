@@ -28,7 +28,9 @@ export default function TableExample() {
     <div className="w-full overflow-hidden rounded-card border border-border bg-card">
       <Table>
         {/* Left-aligned: on narrow screens the table scrolls and a centered caption would be cut off. */}
-        <TableCaption>Bench 3, firmware 4.18.2. Selected: R-0412.</TableCaption>
+        <TableCaption>
+          Bench 3, firmware 4.18.2. Selected: <span className="whitespace-nowrap">R-0412</span>.
+        </TableCaption>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead>Run</TableHead>

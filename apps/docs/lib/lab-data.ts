@@ -58,7 +58,7 @@ export function checkStatus(value: number, limit: number): CheckStatus {
 /** Controller gains. R-0412 raised Kp by 50 % over the R-0409 reference; Ki and Kd are unchanged. */
 export const gains = { kp: 4.2, ki: 0.8, kd: 0.06 };
 export const referenceGains = { kp: 2.8, ki: 0.8, kd: 0.06 };
-/** R-0412's winding temperature at the end of the capture, in °C. Read from the bench, not simulated. */
+/** R-0412's winding temperature at the end of the capture, in °C. Fixed, not computed by the step model. */
 export const WINDING_TEMP = 71.2;
 
 const KT = 0.46; // output N·m per phase A, through the reducer
@@ -357,16 +357,28 @@ function bodeOf(frequency: number[], gain: number) {
 }
 
 /** Where the magnitude crosses 0 dB (phase margin) and where the phase crosses −180° (gain margin). */
+/**
+ * Margins read where the curves cross 0 dB and −180°, interpolated between the two grid samples around each
+ * crossing (linear in log frequency), so the stated decimals are the curve's, not the next grid point's.
+ */
 function marginsOf(frequency: number[], { magnitude, phase }: { magnitude: number[]; phase: number[] }) {
   const gc = magnitude.findIndex((m, i) => i > 0 && magnitude[i - 1]! >= 0 && m < 0);
   const pc = phase.findIndex((p, i) => i > 0 && phase[i - 1]! > -180 && p <= -180);
+  const between = (i: number, values: number[], level: number) => {
+    const t = (level - values[i - 1]!) / (values[i]! - values[i - 1]!);
+    const lerp = (v: number[]) => v[i - 1]! + t * (v[i]! - v[i - 1]!);
+    const f = Math.exp(Math.log(frequency[i - 1]!) + t * Math.log(frequency[i]! / frequency[i - 1]!));
+    return { f, magnitude: lerp(magnitude), phase: lerp(phase) };
+  };
+  const g = between(gc, magnitude, 0);
+  const p = between(pc, phase, -180);
   return {
-    gainCrossover: frequency[gc]!,
-    phaseMargin: 180 + phase[gc]!,
-    phaseAtCrossover: phase[gc]!,
-    phaseCrossover: frequency[pc]!,
-    gainMargin: -magnitude[pc]!,
-    magnitudeAtPhaseCrossover: magnitude[pc]!,
+    gainCrossover: g.f,
+    phaseMargin: 180 + g.phase,
+    phaseAtCrossover: g.phase,
+    phaseCrossover: p.f,
+    gainMargin: -p.magnitude,
+    magnitudeAtPhaseCrossover: p.magnitude,
   };
 }
 
@@ -441,17 +453,26 @@ export const runs: LabRun[] = (() => {
   return out;
 })();
 
-/** Overshoot statistics across all runs: the numbers the histogram states, for metrics elsewhere on the page. */
+/**
+ * Overshoot statistics across all runs: the numbers the histogram states, for metrics elsewhere on the page.
+ */
 export const overshootStats = (() => {
   const o = runs.map((r) => r.overshoot);
   const mean = o.reduce((a, b) => a + b, 0) / o.length;
   const sd = Math.sqrt(o.reduce((a, b) => a + (b - mean) ** 2, 0) / (o.length - 1));
+  // Cpk uses the within-process spread: the average moving range between consecutive runs over d₂ (1.128), as the
+  // Histogram computes it. Ppk uses the overall deviation, which also holds the drift between runs.
+  let movingRange = 0;
+  for (let i = 1; i < o.length; i++) movingRange += Math.abs(o[i]! - o[i - 1]!);
+  const sdWithin = movingRange / (o.length - 1) / 1.128;
   const over = runs.filter((r) => r.overshoot > OVERSHOOT_USL);
   return {
     n: o.length,
     mean,
     sd,
-    cpk: (OVERSHOOT_USL - mean) / (3 * sd),
+    sdWithin,
+    cpk: (OVERSHOOT_USL - mean) / (3 * sdWithin),
+    ppk: (OVERSHOOT_USL - mean) / (3 * sd),
     over: over.length,
     max: Math.max(...o),
     /** The lowest gain among the runs over the limit. */

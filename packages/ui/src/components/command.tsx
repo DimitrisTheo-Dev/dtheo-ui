@@ -28,6 +28,15 @@ interface CommandGroup {
 type Contains = (text: string, query: string) => boolean;
 
 /**
+ * The K of ⌘K. A Latin layout reports the letter it types, so Dvorak and AZERTY users press their own K. A Greek,
+ * Cyrillic or Hebrew layout reports its own letter (κ, л, ל), so fall back to the physical key there.
+ */
+export function isKKey(event: Pick<KeyboardEvent, 'key' | 'code'>) {
+  if (/^[a-z]$/i.test(event.key)) return event.key.toLowerCase() === 'k';
+  return event.code === 'KeyK';
+}
+
+/**
  * Every word of the query must appear in the item's label, hint or keywords. Items whose label is the query come
  * first, then those whose label has every word, and their groups move up with them, so typing a name and pressing
  * Enter opens that item even when other items mention the word.
@@ -57,7 +66,7 @@ function search(groups: CommandGroup[], query: string, contains: Contains): Comm
 
 /**
  * A ⌘K palette: type to filter, arrows to move, Enter to run. It opens and closes instantly; something used
- * a hundred times a day should never make you wait for an animation.
+ * a hundred times a day should never make you wait for an animation. Other props go to Base UI's Dialog root.
  */
 export function CommandDialog({
   open,
@@ -66,7 +75,8 @@ export function CommandDialog({
   placeholder = 'Search commands and pages…',
   emptyMessage = 'No matching commands.',
   shortcut = true,
-}: {
+  ...props
+}: Omit<DialogPrimitive.Root.Props, 'open' | 'defaultOpen' | 'onOpenChange' | 'children'> & {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: CommandItemData[];
@@ -86,7 +96,7 @@ export function CommandDialog({
   React.useEffect(() => {
     if (!shortcut) return;
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      if ((e.metaKey || e.ctrlKey) && isKKey(e)) {
         e.preventDefault();
         onOpenChange(!open);
       }
@@ -96,7 +106,7 @@ export function CommandDialog({
   }, [open, onOpenChange, shortcut]);
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root {...props} open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal container={container}>
         <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-overlay" />
         <DialogPrimitive.Viewport className="fixed inset-0 z-50 flex items-start justify-center px-3 pt-[12dvh] pb-3">

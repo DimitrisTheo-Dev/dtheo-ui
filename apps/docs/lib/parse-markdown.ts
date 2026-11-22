@@ -51,3 +51,26 @@ export function parseMarkdown(md: string) {
   }
   return { title, description, blocks };
 }
+
+/** Straight quotes to curly ones, for prose people read. Callers keep code spans out of it. */
+export function smartQuotes(text: string) {
+  return text
+    .replace(/(^|[\s([{–—])"/g, '$1“')
+    .replace(/"/g, '”')
+    .replace(/(\w)'(\w)/g, '$1’$2')
+    .replace(/(^|[\s([{–—])'/g, '$1‘')
+    .replace(/'/g, '’');
+}
+
+/**
+ * Inline Markdown as plain text, for meta tags, share cards and structured data, where nothing renders it: code
+ * spans lose their backticks, bold loses its asterisks and links keep only their label.
+ */
+export function plainText(text: string) {
+  return text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .split(/(`[^`]+`)/g)
+    .map((part) => (/^`[^`]+`$/.test(part) ? part.slice(1, -1) : smartQuotes(part)))
+    .join('');
+}

@@ -72,28 +72,168 @@ export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, n
 /** Snap a coordinate to the pixel grid so 1px lines stay crisp. */
 export const crisp = (v: number) => Math.round(v) + 0.5;
 
+/** A label over data: a card-colored stroke painted under the glyphs keeps it readable where a trace passes. */
+export const haloText = '[paint-order:stroke] stroke-card [stroke-width:3px]';
+
+/**
+ * The advance of one caption character (11 px; tabular digits measure about 6.8 px), rounded up so gutters and
+ * label-collision checks err toward room. Charts use it instead of measuring text, which SSR cannot do.
+ */
+export const CAPTION_CHAR_W = 7;
+
+/** Digits that write `value` exactly, up to four: 0 for 4000, 1 for 0.5, 2 for 0.25. */
+function exactDigits(value: number) {
+  for (let d = 0; d < 4; d++) {
+    const scaled = Math.abs(value) * 10 ** d;
+    if (Math.abs(scaled - Math.round(scaled)) < 1e-6 * Math.max(1, scaled)) return d;
+  }
+  return 4;
+}
+
+/**
+ * Tick labels through the same formatter as every readout: thousands separators, a true minus sign, and one digit
+ * count for the whole axis (the most any tick needs), so the axis reads "−2" where the tooltip reads "−2.00",
+ * never "-2", and 0.5, 1.0, 1.5 line up.
+ */
+export function tickFormat(ticks: readonly number[]) {
+  const digits = ticks.reduce((d, t) => Math.max(d, exactDigits(t)), 0);
+  return (t: number) => formatNumber(t, digits);
+}
+
+/** Left gutter for a y-axis: room for the widest tick label plus `pad`. */
+export function axisGutter(labels: readonly string[], pad = 12) {
+  return pad + labels.reduce((w, l) => Math.max(w, l.length), 1) * CAPTION_CHAR_W;
+}
+
+/** The unit every series with a unit shares, for the axis; none when they disagree. */
+export function sharedUnit(series: ReadonlyArray<{ unit?: string }>) {
+  const units = new Set(series.flatMap((s) => (s.unit ? [s.unit] : [])));
+  return units.size === 1 ? [...units][0]! : '';
+}
+
+/**
+ * Places a chart tooltip beside the cursor: right of it while it fits, left of it when it would cross the chart's
+ * right edge, and clamped inside the chart when neither side has room, as in a phone-width card. It reads the
+ * tooltip's real width after layout, so long rows never run off the card. Attach the returned ref to the tooltip
+ * and leave `left` and `right` out of its style.
+ */
+export function useTooltipPlacement<T extends HTMLElement>(x: number | null, width: number, gap = 12) {
+  const ref = React.useRef<T>(null);
+  React.useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || x == null) return;
+    const tw = el.offsetWidth;
+    let left = x + gap;
+    if (left + tw > width) left = x - gap - tw;
+    if (left < 0) left = Math.max(0, Math.min(width - tw, x - tw / 2));
+    el.style.left = `${Math.round(left)}px`;
+  });
+  return ref;
+}
+
+// ---------- Process capability ----------
+
+/** Cpk at or above 1.33 is the usual bar for a capable process: four standard deviations to the nearer limit. */
+export const CAPABLE = 1.33;
+
+export interface Capability {
+  n: number;
+  mean: number;
+  /** Short-term σ from the average moving range of consecutive values: MR̄ / 1.128 (d₂ for ranges of two). */
+  sigmaWithin: number;
+  /** The overall sample standard deviation. */
+  sigmaOverall: number;
+  /** Capability, from σ within: what the process holds run to run. Undefined without a limit. */
+  cpk?: number;
+  /** Performance, from σ overall: what it delivered, drift between runs included. Undefined without a limit. */
+  ppk?: number;
+}
+
+/** d₂ for subgroups of two, which turns an average moving range into a standard deviation. */
+const D2_MOVING_RANGE = 1.128;
+
+/** The pooled σ of consecutive subgroups of `k` values, √(Σ(nᵢ−1)sᵢ² / Σ(nᵢ−1)); a group of fewer than two is skipped. */
+function pooledSigma(values: ArrayLike<number>, k: number) {
+  let ss = 0;
+  let df = 0;
+  for (let start = 0; start < values.length; start += k) {
+    const group: number[] = [];
+    for (let i = start; i < Math.min(values.length, start + k); i++)
+      if (Number.isFinite(values[i]!)) group.push(values[i]!);
+    if (group.length < 2) continue;
+    const m = group.reduce((a, b) => a + b, 0) / group.length;
+    for (const v of group) ss += (v - m) ** 2;
+    df += group.length - 1;
+  }
+  return df ? Math.sqrt(ss / df) : 0;
+}
+
+/**
+ * Cpk and Ppk against specification limits. They differ only in σ: Cpk takes the short-term σ within the process,
+ * Ppk the overall σ, so when the process drifts between runs Ppk falls below Cpk. For individual readings σ within
+ * is the average moving range of consecutive values over d₂ (MR̄ / 1.128), so `values` must be in run order. With
+ * `subgroupSize` above 1, consecutive groups of that many values are rational subgroups and σ within is their pooled
+ * standard deviation (without the c₄ unbiasing constant). Non-finite values are skipped.
+ */
+export function capability(
+  values: ArrayLike<number>,
+  lower?: number,
+  upper?: number,
+  subgroupSize?: number,
+): Capability {
+  const v = Array.from(values).filter((x) => Number.isFinite(x));
+  const n = v.length;
+  const mean = n ? v.reduce((a, b) => a + b, 0) / n : Number.NaN;
+  let squares = 0;
+  let ranges = 0;
+  for (let i = 0; i < n; i++) {
+    squares += (v[i]! - mean) ** 2;
+    if (i) ranges += Math.abs(v[i]! - v[i - 1]!);
+  }
+  const k = Math.floor(subgroupSize ?? 1);
+  const sigmaOverall = n > 1 ? Math.sqrt(squares / (n - 1)) : 0;
+  const sigmaWithin = k > 1 ? pooledSigma(values, k) : n > 1 ? ranges / (n - 1) / D2_MOVING_RANGE : 0;
+  const index = (sigma: number) =>
+    !sigma || (lower === undefined && upper === undefined)
+      ? undefined
+      : Math.min(
+          upper === undefined ? Infinity : (upper - mean) / (3 * sigma),
+          lower === undefined ? Infinity : (mean - lower) / (3 * sigma),
+        );
+  return { n, mean, sigmaWithin, sigmaOverall, cpk: index(sigmaWithin), ppk: index(sigmaOverall) };
+}
+
 /**
  * Largest-Triangle-Three-Buckets downsampling. Keeps the visual shape of a dense trace (peaks included)
  * with roughly `threshold` points, so a 100k-sample capture renders as fast as a 1k one.
  *
  * A non-finite y (NaN for a dropout) is a gap: each stretch between gaps is downsampled on its own share of the
  * points, and the first index of every gap is kept, so a line drawn from the result lifts the pen there.
+ *
+ * `from` and `to` pick the samples [from, to) to downsample, so a zoomed view reads the visible part of a typed
+ * array in place instead of copying it; the returned indices point into the full arrays.
  */
-export function lttb(xs: ArrayLike<number>, ys: ArrayLike<number>, threshold: number): number[] {
-  const n = xs.length;
-  if (threshold >= n || threshold < 3) return Array.from({ length: n }, (_, i) => i);
+export function lttb(
+  xs: ArrayLike<number>,
+  ys: ArrayLike<number>,
+  threshold: number,
+  from = 0,
+  to = xs.length,
+): number[] {
+  const n = to - from;
+  if (threshold >= n || threshold < 3) return Array.from({ length: Math.max(0, n) }, (_, i) => from + i);
   let finite = 0;
-  for (let i = 0; i < n; i++) if (Number.isFinite(ys[i]!)) finite++;
-  if (finite === n) return lttbRun(xs, ys, 0, n, threshold);
+  for (let i = from; i < to; i++) if (Number.isFinite(ys[i]!)) finite++;
+  if (finite === n) return lttbRun(xs, ys, from, to, threshold);
   const out: number[] = [];
-  for (let i = 0; i < n;) {
+  for (let i = from; i < to;) {
     if (!Number.isFinite(ys[i]!)) {
       out.push(i);
-      while (i < n && !Number.isFinite(ys[i]!)) i++;
+      while (i < to && !Number.isFinite(ys[i]!)) i++;
       continue;
     }
     let end = i;
-    while (end < n && Number.isFinite(ys[end]!)) end++;
+    while (end < to && Number.isFinite(ys[end]!)) end++;
     const share = Math.max(3, Math.round((threshold * (end - i)) / finite));
     for (const k of lttbRun(xs, ys, i, end, share)) out.push(k);
     i = end;
@@ -138,8 +278,9 @@ function lttbRun(xs: ArrayLike<number>, ys: ArrayLike<number>, from: number, to:
   return out;
 }
 
-/** Index of the sample nearest to `x` in a sorted array. */
+/** Index of the sample nearest to `x` in a sorted array, or -1 when the array is empty. */
 export function nearestIndex(xs: ArrayLike<number>, x: number): number {
+  if (!xs.length) return -1;
   let lo = 0;
   let hi = xs.length - 1;
   while (hi - lo > 1) {
@@ -275,8 +416,14 @@ export function useInView<T extends HTMLElement>(ref: React.RefObject<T | null>)
   return inView;
 }
 
-/** Arrow-key stepping shared by the reading charts: returns the next index, or undefined for other keys. */
+const stepKeys = new Set(['ArrowRight', 'ArrowUp', 'ArrowLeft', 'ArrowDown', 'Home', 'End', 'Escape']);
+
+/**
+ * Arrow-key stepping shared by the reading charts: returns the next index, null to clear the reading (Escape, or any
+ * stepping key when there is nothing to read), or undefined for other keys.
+ */
 export function stepIndex(key: string, shift: boolean, index: number | null, count: number) {
+  if (count <= 0) return stepKeys.has(key) ? null : undefined;
   const step = shift ? Math.max(1, Math.round(count / 10)) : 1;
   const from = index ?? -1;
   switch (key) {
@@ -307,3 +454,77 @@ export function observeTheme(el: HTMLElement, onChange: () => void) {
     mo.observe(node, { attributes: true, attributeFilter: ['class', 'data-preset'] });
   return () => mo.disconnect();
 }
+
+/** The smallest and largest finite value, without spreading the data into arguments; undefined when none is finite. */
+export function finiteExtent(values: ArrayLike<number>): [number, number] | undefined {
+  let lo = Infinity;
+  let hi = -Infinity;
+  for (let i = 0; i < values.length; i++) {
+    const v = values[i]!;
+    if (!Number.isFinite(v)) continue;
+    if (v < lo) lo = v;
+    if (v > hi) hi = v;
+  }
+  return lo <= hi ? [lo, hi] : undefined;
+}
+
+/** True when any value is finite. */
+export function hasFinite(values: ArrayLike<number>, from = 0, to = values.length - 1) {
+  for (let i = Math.max(0, from); i <= to && i < values.length; i++)
+    if (Number.isFinite(values[i]!)) return true;
+  return false;
+}
+
+/** The widest tick label, in characters, for sizing the y-axis gutter. */
+export function longestLabel(ticks: readonly number[]) {
+  let n = 0;
+  for (const t of ticks) n = Math.max(n, String(t).length);
+  return n;
+}
+
+/**
+ * Builds an SVG line path point by point. `gap()` lifts the pen. A run of one point, a sample alone between two
+ * gaps, gets a zero-length segment, so a line drawn with round caps shows it as a dot instead of dropping it.
+ */
+export function createLinePath(digits: number) {
+  let d = '';
+  let run = 0;
+  let last = '';
+  const lift = () => {
+    if (run === 1) d += `L${last}`;
+    run = 0;
+  };
+  return {
+    to(x: number, y: number) {
+      last = `${x.toFixed(digits)} ${y.toFixed(digits)}`;
+      d += `${run ? 'L' : 'M'}${last}`;
+      run++;
+    },
+    gap: lift,
+    done() {
+      lift();
+      return d;
+    },
+  };
+}
+
+/** A document-unique id for a clipPath, safe inside `url(#…)`. */
+export function useClipId() {
+  return `clip${React.useId().replace(/[^\w-]/g, '')}`;
+}
+
+/** What an empty chart says, in words, where the plot would be. */
+export function ChartEmpty() {
+  return React.createElement(
+    'p',
+    {
+      'data-slot': 'chart-empty',
+      className:
+        'pointer-events-none absolute inset-0 m-0 flex items-center justify-center text-label font-normal text-muted-foreground',
+    },
+    'No data',
+  );
+}
+
+/** The label of a chart drawn as one image, with the empty state stated, since an image hides its children. */
+export const imageLabel = (label: string, empty: boolean) => (empty ? `${label} (no data)` : label);

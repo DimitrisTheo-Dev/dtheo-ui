@@ -7,7 +7,7 @@ const sizes = [
   { size: 'xs', icon: 'icon-xs', height: '22 px', use: 'Table rows' },
   { size: 'sm', icon: 'icon-sm', height: '24 px', use: 'Toolbars' },
   { size: 'md', icon: 'icon', height: '28 px', use: 'Default, 36 px on touch' },
-  { size: 'lg', icon: 'icon-lg', height: '32 px', use: 'Page actions' },
+  { size: 'lg', icon: 'icon-lg', height: '32 px', use: 'Page actions, 40 px on touch' },
 ] as const;
 
 export default function ButtonSizes() {

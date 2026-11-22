@@ -12,7 +12,7 @@ export function Toggle({ className, ...props }: React.ComponentProps<typeof Togg
       data-slot="toggle"
       className={cn(
         'relative inline-flex h-control-md cursor-default items-center justify-center gap-1.5 rounded-control px-2.5 text-body font-medium select-none',
-        'text-muted-foreground transition-[background-color,color,transform] duration-150 ease-out active:scale-97 after:absolute after:inset-0 active:after:-inset-2',
+        'text-muted-foreground transition-[scale,background-color,color] [transition-duration:120ms,150ms,150ms] ease-out active:scale-97 after:absolute after:inset-0 active:after:-inset-2',
         'hover:bg-accent hover:text-foreground data-pressed:bg-secondary data-pressed:text-foreground',
         'data-disabled:opacity-45 [&_svg:not([class*=size-])]:size-4',
         className,
@@ -45,7 +45,8 @@ export function SegmentedControlItem({ className, ...props }: React.ComponentPro
       data-slot="segmented-control-item"
       className={cn(
         'inline-flex h-full cursor-default items-center justify-center gap-1.5 rounded-[calc(var(--radius-control)-2px)] px-2.5 [--focus-offset:-1px]',
-        'text-label text-muted-foreground select-none transition-[background-color,color,box-shadow] duration-150 ease-out',
+        // No box-shadow in the list: the focus ring is a shadow too, and it appears at once.
+        'text-label text-muted-foreground select-none transition-[background-color,color] duration-150 ease-out',
         'hover:text-foreground',
         'data-pressed:bg-card data-pressed:text-foreground data-pressed:shadow-raised dark:data-pressed:bg-foreground/15',
         'data-disabled:opacity-45 [&_svg:not([class*=size-])]:size-3.5',

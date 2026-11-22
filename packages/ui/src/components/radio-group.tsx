@@ -29,7 +29,10 @@ export function Radio({ className, ...props }: React.ComponentProps<typeof Radio
       )}
       {...props}
     >
-      <RadioPrimitive.Indicator className="size-1.5 rounded-full bg-primary-foreground data-unchecked:hidden" />
+      <RadioPrimitive.Indicator
+        data-slot="radio-indicator"
+        className="size-1.5 rounded-full bg-primary-foreground data-unchecked:hidden"
+      />
     </RadioPrimitive.Root>
   );
 }

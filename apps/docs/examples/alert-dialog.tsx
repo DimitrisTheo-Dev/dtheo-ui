@@ -25,8 +25,8 @@ export default function AlertDialogExample() {
         <div className="flex flex-col gap-1.5">
           <AlertDialogTitle>Delete 3 runs?</AlertDialogTitle>
           <AlertDialogDescription>
-            R-0402, R-0403 and R-0404 and their traces (1.2 GB) are removed for everyone on the team. This
-            cannot be undone.
+            R-0402 to R-0404 and their traces (1.2 GB) are removed for everyone on the team. This cannot be
+            undone.
           </AlertDialogDescription>
         </div>
         <AlertDialogFooter>

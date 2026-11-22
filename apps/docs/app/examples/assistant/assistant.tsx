@@ -23,6 +23,7 @@ import { useToast } from '@dtheo/ui/components/toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@dtheo/ui/components/table';
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@dtheo/ui/components/tabs';
 import { ChartLegend, LineChart } from '@dtheo/charts';
+import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar } from '../_shared/lab-sidebar';
 import { SpaceBackdrop } from '@/components/space-backdrop';
 import {
@@ -92,7 +93,7 @@ const initial: Message[] = [
     id: 4,
     role: 'assistant',
     parts: [
-      { type: 'tool', summary: 'Queried 28 actuators · 18 Nov to 25 Nov' },
+      { type: 'tool', summary: 'Queried 28 actuators · 16 Nov to 22 Nov' },
       {
         type: 'text',
         text: 'Two actuators peaked above 90 % of their phase-current limit. Both ran high-gain profiles; the wrist is well clear.',
@@ -124,10 +125,13 @@ export function Assistant() {
   const [messages, setMessages] = React.useState<Message[]>(initial);
   const [draft, setDraft] = React.useState('');
   const [pending, setPending] = React.useState(false);
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
   const endRef = React.useRef<HTMLDivElement>(null);
   const reduce = React.useRef(false);
   React.useEffect(() => {
     reduce.current = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Open at the latest message, as a conversation does, so no answer starts out under the composer.
+    endRef.current?.scrollIntoView({ block: 'end' });
   }, []);
 
   const send = (text: string) => {
@@ -172,7 +176,10 @@ export function Assistant() {
   return (
     <ThemeScope mode="dark" preset="deep-space" className="relative">
       <SpaceBackdrop className="fixed" />
-      <AppShell className="relative bg-transparent" sidebar={<LabSidebar current="assistant" />}>
+      <AppShell
+        className="relative bg-transparent"
+        sidebar={<LabSidebar current="assistant" onSearch={() => setPaletteOpen(true)} />}
+      >
         <AppToolbar className="bg-background/40">
           <h1 className="flex items-center gap-2 text-body font-medium">
             <SparklesIcon className="size-4 text-primary" aria-hidden="true" />
@@ -182,7 +189,11 @@ export function Assistant() {
             <Badge variant="outline" className="hidden sm:inline-flex">
               Deep space preset
             </Badge>
-            <Badge variant="outline">Scripted demo · no model called</Badge>
+            {/* A badge can't shrink, so phones get the short form and a 320 px screen never scrolls sideways. */}
+            <Badge variant="outline">
+              <span className="sm:hidden">Synthetic data</span>
+              <span className="hidden sm:inline">Scripted demo · synthetic data</span>
+            </Badge>
           </div>
         </AppToolbar>
 
@@ -206,12 +217,16 @@ export function Assistant() {
                 Reading run data…
               </div>
             ) : null}
-            <div ref={endRef} />
+            {/* Scrolled to with room for the sticky composer below it, so the newest message is never under it. */}
+            <div ref={endRef} className="scroll-mb-48" />
           </div>
 
-          <div className="sticky bottom-0 mt-auto bg-linear-to-t from-background from-70% to-transparent pt-10 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+          {/* The fade above the composer is decoration: it lets clicks through to the message under it. */}
+          <div
+            data-slot="app-composer"
+            className="pointer-events-none sticky bottom-0 mt-auto bg-linear-to-t from-background from-70% to-transparent pt-10 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
             {messages.length <= initial.length ? (
-              <div className="mb-2.5 flex flex-wrap gap-2">
+              <div className="pointer-events-auto mb-2.5 flex flex-wrap gap-2">
                 {suggestions.map((s) => (
                   <Button
                     key={s}
@@ -226,7 +241,7 @@ export function Assistant() {
               </div>
             ) : null}
             <form
-              className="flex flex-col gap-2 rounded-dialog border border-border-strong bg-popover p-2 shadow-dialog backdrop-blur-material transition-[border-color,box-shadow] duration-150 has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-3 has-[textarea:focus-visible]:ring-ring/25"
+              className="pointer-events-auto flex flex-col gap-2 rounded-dialog border border-border-strong bg-popover p-2 shadow-dialog backdrop-blur-material transition-[border-color,box-shadow] duration-150 has-[textarea:focus-visible]:border-ring has-[textarea:focus-visible]:ring-3 has-[textarea:focus-visible]:ring-ring/25"
               onSubmit={(e) => {
                 e.preventDefault();
                 send(draft);
@@ -271,6 +286,12 @@ export function Assistant() {
             </form>
           </div>
         </main>
+        <LabPalette
+          current="assistant"
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          actions={suggestions.map((q) => ({ value: q, label: q, group: 'Ask', onSelect: () => send(q) }))}
+        />
       </AppShell>
     </ThemeScope>
   );
@@ -358,7 +379,7 @@ function AssistantMessage({
                   data-slot="card"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-label">Output torque, N·m</span>
+                    <span className="text-label">Output torque</span>
                     <TabsList aria-label="Show as" className="h-control-sm">
                       <TabsTab value="chart" className="h-full px-2 text-label">
                         Chart

@@ -4,14 +4,20 @@
 import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
 import {
+  ChartEmpty,
+  axisGutter,
   createColorReader,
   crisp,
   fitCanvas,
   formatNumber,
+  haloText,
   observeTheme,
   stepIndex,
+  tickFormat,
   toneBg,
   toneVar,
+  useClipId,
+  useTooltipPlacement,
   useWidth,
   type Tone,
 } from './core';
@@ -63,7 +69,6 @@ export interface ScatterChartProps {
 }
 
 const M = { top: 12, right: 16, bottom: 40 };
-const haloText = '[paint-order:stroke] stroke-card [stroke-width:3px]';
 const defaultGroups: ScatterGroup[] = [{ id: 'all', label: 'Points', tone: 'primary' }];
 const noLimits: ScatterLimit[] = [];
 
@@ -71,8 +76,17 @@ type Scale = (v: number) => number;
 
 const groupOf = (p: ScatterPoint, groups: ScatterGroup[]) => p.group ?? groups[0]!.id;
 
-/** Least squares: y = a + b·x, and how much of y it explains. */
-function linearFit(points: ScatterPoint[]) {
+/** A point the chart can place: both coordinates finite. */
+const placeable = (p: ScatterPoint) => Number.isFinite(p.x) && Number.isFinite(p.y);
+
+const within = (v: number, [a, b]: [number, number]) => v >= Math.min(a, b) && v <= Math.max(a, b);
+
+/** Space around the plot that clipped points keep, so a dot on the edge (3.5 px and its outline) is never cut. */
+const POINT_PAD = 5;
+
+/** Least squares over the finite points: y = a + b·x, and how much of y it explains. */
+function linearFit(all: ScatterPoint[]) {
+  const points = all.filter(placeable);
   const n = points.length;
   if (n < 3) return null;
   let sx = 0;
@@ -96,11 +110,19 @@ function linearFit(points: ScatterPoint[]) {
   return { a: my - b * mx, b, r2: (sxy * sxy) / (sxx * syy) };
 }
 
-/** The point nearest the pointer, within 18 px, or -1. */
-function nearestPoint(points: ScatterPoint[], sx: Scale, sy: Scale, mx: number, my: number) {
+/** The visible point nearest the pointer, within 18 px, or -1. */
+function nearestPoint(
+  points: ScatterPoint[],
+  visible: Uint8Array,
+  sx: Scale,
+  sy: Scale,
+  mx: number,
+  my: number,
+) {
   let best = -1;
   let bestD = 18 * 18;
   for (let i = 0; i < points.length; i++) {
+    if (!visible[i]) continue;
     const dx = sx(points[i]!.x) - mx;
     const dy = sy(points[i]!.y) - my;
     const d = dx * dx + dy * dy;
@@ -112,7 +134,10 @@ function nearestPoint(points: ScatterPoint[], sx: Scale, sy: Scale, mx: number, 
   return best;
 }
 
-/** Draws every point on the canvas in its group's token color, and again whenever the theme changes. */
+/**
+ * Draws every point on the canvas in its group's token color, clipped to the plot, and again whenever the theme
+ * changes. One theme observer per chart: a redraw swaps the drawing it calls, never the observer.
+ */
 function useScatterCanvas({
   canvasRef,
   hostRef,
@@ -120,6 +145,7 @@ function useScatterCanvas({
   groups,
   sx,
   sy,
+  plot,
   width,
   height,
 }: {
@@ -129,35 +155,51 @@ function useScatterCanvas({
   groups: ScatterGroup[];
   sx: Scale;
   sy: Scale;
+  plot: { left: number; top: number; width: number; height: number };
   width: number;
   height: number;
 }) {
+  const redraw = React.useRef<(() => void) | null>(null);
+  const { left, top, width: plotW, height: plotH } = plot;
   React.useEffect(() => {
     const canvas = canvasRef.current;
     const host = hostRef.current;
-    if (!canvas || !host || !width) return;
+    if (!canvas || !host || !width) {
+      redraw.current = null;
+      return;
+    }
     const draw = () => {
       const ctx = fitCanvas(canvas, width, height);
       if (!ctx) return;
       const colors = createColorReader(host);
       ctx.clearRect(0, 0, width, height);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(left - POINT_PAD, top - POINT_PAD, plotW + 2 * POINT_PAD, plotH + 2 * POINT_PAD);
+      ctx.clip();
       ctx.lineWidth = 1;
       ctx.strokeStyle = colors.get('--card');
       // Draw the first group last, so the group that matters (listed first) sits on top.
       for (const g of groups.toReversed()) {
         ctx.fillStyle = colors.get(toneVar[g.tone ?? 'primary']);
         for (const p of points) {
-          if (groupOf(p, groups) !== g.id) continue;
+          if (groupOf(p, groups) !== g.id || !placeable(p)) continue;
           ctx.beginPath();
           ctx.arc(sx(p.x), sy(p.y), 3.5, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
         }
       }
+      ctx.restore();
     };
+    redraw.current = draw;
     draw();
-    return observeTheme(host, draw);
-  }, [canvasRef, hostRef, points, groups, sx, sy, width, height]);
+  }, [canvasRef, hostRef, points, groups, sx, sy, left, top, plotW, plotH, width, height]);
+  React.useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    return observeTheme(host, () => redraw.current?.());
+  }, [hostRef]);
 }
 
 interface Geometry {
@@ -219,7 +261,9 @@ function ScatterOverlay({
   xDomain,
   called,
   active,
+  clipId,
 }: {
+  clipId: string;
   g: Geometry;
   xTicks: number[];
   yTicks: number[];
@@ -239,6 +283,11 @@ function ScatterOverlay({
       aria-hidden="true"
       className="pointer-events-none absolute inset-0 overflow-visible"
     >
+      <defs>
+        <clipPath id={clipId}>
+          <rect x={g.left - 2} y={M.top - 2} width={g.plotW + 4} height={g.plotB - M.top + 4} />
+        </clipPath>
+      </defs>
       {limits.map((l) => (
         <LimitWash key={`w${l.axis}${l.value}`} l={l} g={g} />
       ))}
@@ -257,7 +306,7 @@ function ScatterOverlay({
             textAnchor="end"
             className="fill-subtle-foreground text-caption tabular-nums"
           >
-            {t}
+            {tickFormat(yTicks)(t)}
           </text>
         </g>
       ))}
@@ -269,7 +318,7 @@ function ScatterOverlay({
           textAnchor="middle"
           className="fill-subtle-foreground text-caption tabular-nums"
         >
-          {t}
+          {tickFormat(xTicks)(t)}
         </text>
       ))}
       <line x1={g.left} x2={right} y1={crisp(g.plotB)} y2={crisp(g.plotB)} className="stroke-chart-axis" />
@@ -300,6 +349,7 @@ function ScatterOverlay({
             y2={g.sy(fit.a + fit.b * xDomain[1])}
             strokeWidth={1.5}
             strokeDasharray="6 4"
+            clipPath={`url(#${clipId})`}
             className="stroke-foreground/60"
           />
           <text
@@ -373,15 +423,13 @@ function ScatterTooltip({
   g: Geometry;
   rows: Array<[string, string]>;
 }) {
-  const px = g.sx(point.x);
+  const ref = useTooltipPlacement<HTMLDivElement>(g.sx(point.x), g.width);
   return (
     <div
+      ref={ref}
       data-slot="scatter-tooltip"
-      className="pointer-events-none absolute z-10 min-w-36 rounded-popover border border-border bg-popover/95 px-3 py-2 text-label shadow-popover backdrop-blur-material"
-      style={{
-        top: Math.max(0, g.sy(point.y) - 70),
-        ...(px > g.left + g.plotW * 0.62 ? { right: g.width - px + 12 } : { left: px + 12 }),
-      }}
+      className="pointer-events-none absolute z-10 max-w-full min-w-36 rounded-popover border border-border bg-popover/95 px-3 py-2 text-label shadow-popover backdrop-blur-material"
+      style={{ top: Math.max(0, g.sy(point.y) - 70) }}
     >
       {point.label ? <div className="mb-1 font-semibold text-foreground">{point.label}</div> : null}
       {rows.map(([k, v]) => (
@@ -436,27 +484,65 @@ export function ScatterChart({
   const descId = React.useId();
   const w = width ?? 0;
 
+  const clipId = useClipId();
   const yt = yTicks ?? scaleLinear().domain(yDomain).ticks(5);
-  const left = 28 + Math.max(...yt.map((t) => String(t).length)) * 7;
+  const left = axisGutter(yt.map(tickFormat(yt)), 28);
   const plotW = Math.max(0, w - left - M.right);
   const plotB = height - M.bottom;
+  // Scales follow the domain values, not the array: an inline [0, 1] on every render must not redraw the canvas.
+  const [x0, x1] = xDomain;
+  const [y0, y1] = yDomain;
   const sx = React.useMemo(
     () =>
       scaleLinear()
-        .domain(xDomain)
+        .domain([x0, x1])
         .range([left, left + plotW]),
-    [xDomain, left, plotW],
+    [x0, x1, left, plotW],
   );
-  const sy = React.useMemo(() => scaleLinear().domain(yDomain).range([plotB, M.top]), [yDomain, plotB]);
+  const sy = React.useMemo(() => scaleLinear().domain([y0, y1]).range([plotB, M.top]), [y0, y1, plotB]);
   const g: Geometry = { sx, sy, left, plotW, plotB, width: w, height };
-
-  // Points in x order, so the arrow keys walk across the chart.
-  const order = React.useMemo(
-    () => points.map((_, i) => i).sort((a, b) => points[a]!.x - points[b]!.x),
-    [points],
+  // Groups by value too, for an inline groups array.
+  const groupsKey = JSON.stringify(groups.map((q) => [q.id, q.label, q.tone ?? null]));
+  const stableGroups = React.useMemo(
+    () =>
+      (JSON.parse(groupsKey) as Array<[string, string, Tone | null]>).map(([id, label, tone]) => ({
+        id,
+        label,
+        ...(tone ? { tone } : {}),
+      })),
+    [groupsKey],
   );
+
+  // Points the chart can show: finite, inside both domains. Only these are hovered and read with the keyboard.
+  const visible = React.useMemo(() => {
+    const out = new Uint8Array(points.length);
+    points.forEach((p, i) => {
+      out[i] = placeable(p) && within(p.x, [x0, x1]) && within(p.y, [y0, y1]) ? 1 : 0;
+    });
+    return out;
+  }, [points, x0, x1, y0, y1]);
+  // Visible points in x order, so the arrow keys walk across the chart.
+  const order = React.useMemo(
+    () =>
+      points
+        .map((_, i) => i)
+        .filter((i) => visible[i])
+        .sort((a, b) => points[a]!.x - points[b]!.x),
+    [points, visible],
+  );
+  const hasData = order.length > 0;
   const line = React.useMemo(() => (fit ? linearFit(points) : null), [fit, points]);
-  useScatterCanvas({ canvasRef, hostRef: ref, points, groups, sx, sy, width: w, height });
+  useScatterCanvas({
+    canvasRef,
+    hostRef: ref,
+    points,
+    groups: stableGroups,
+    sx,
+    sy,
+    plot: { left, top: M.top, width: plotW, height: plotB - M.top },
+    width: w,
+    height,
+  });
 
   const rowsFor = (p: ScatterPoint): Array<[string, string]> => [
     [xLabel, withUnit(p.x, xDigits, xUnit)],
@@ -466,7 +552,8 @@ export function ScatterChart({
     groups.length > 1 ? groups.find((q) => q.id === groupOf(p, groups)) : undefined;
 
   const onKeyDown = (e: React.KeyboardEvent) => {
-    const next = stepIndex(e.key, e.shiftKey, active == null ? null : order.indexOf(active), order.length);
+    const at = active == null ? -1 : order.indexOf(active);
+    const next = stepIndex(e.key, e.shiftKey, at < 0 ? null : at, order.length);
     if (next === undefined) return;
     e.preventDefault();
     const i = next === null ? null : order[next]!;
@@ -477,7 +564,7 @@ export function ScatterChart({
     setAnnounce(`${p.label ? `${p.label}: ` : ''}${parts.join(', ')}`);
   };
 
-  const hi = highlight ? points.find((p) => p.label === highlight) : undefined;
+  const hi = highlight ? points.find((p) => p.label === highlight && placeable(p)) : undefined;
   const ap = active != null ? points[active] : undefined;
 
   return (
@@ -489,13 +576,22 @@ export function ScatterChart({
       aria-describedby={descId}
       tabIndex={0}
       className={`relative w-full touch-pan-y rounded-control select-none ${className ?? ''}`}
+      onPointerDown={(e) => {
+        const rect = plotRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const i = nearestPoint(points, visible, sx, sy, e.clientX - rect.left, e.clientY - rect.top);
+        setActive(i < 0 ? null : i);
+      }}
       onPointerMove={(e) => {
         const rect = plotRef.current?.getBoundingClientRect();
         if (!rect) return;
-        const i = nearestPoint(points, sx, sy, e.clientX - rect.left, e.clientY - rect.top);
+        const i = nearestPoint(points, visible, sx, sy, e.clientX - rect.left, e.clientY - rect.top);
         setActive(i < 0 ? null : i);
       }}
-      onPointerLeave={() => setActive(null)}
+      onPointerLeave={(e) => {
+        // A tap ends with the finger leaving: keep its point until the next tap or until focus moves on.
+        if (e.pointerType !== 'touch') setActive(null);
+      }}
       onBlur={() => setActive(null)}
       onKeyDown={onKeyDown}
     >
@@ -510,6 +606,7 @@ export function ScatterChart({
         <canvas ref={canvasRef} aria-hidden="true" className="absolute inset-0 size-full" />
         {w ? (
           <ScatterOverlay
+            clipId={clipId}
             g={g}
             xTicks={xTicks ?? sx.ticks(Math.max(3, Math.floor(plotW / 80)))}
             yTicks={yt}
@@ -523,6 +620,7 @@ export function ScatterChart({
           />
         ) : null}
         {ap ? <ScatterTooltip point={ap} group={groupFor(ap)} g={g} rows={rowsFor(ap)} /> : null}
+        {hasData ? null : <ChartEmpty />}
       </div>
     </div>
   );

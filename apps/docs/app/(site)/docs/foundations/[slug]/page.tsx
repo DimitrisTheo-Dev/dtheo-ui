@@ -34,12 +34,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 const content: Record<Slug, { description: string; body: React.ReactNode }> = {
   color: {
     description:
-      'Color marks attention, not decoration. Surfaces stay neutral, one accent carries the primary action and selection, and status colors appear only when something needs a person, always with a word or an icon.',
+      'Color marks attention, not decoration. Surfaces stay neutral. One accent carries the primary action and selection. Status colors appear only when something needs a person, always with a word or an icon.',
     body: <ColorFoundation />,
   },
   typography: {
     description:
-      'The system font (SF Pro on Apple platforms) with roles instead of sizes. Tracking tightens as text grows, numbers align in columns, and every role works in English and Greek.',
+      'The system font (SF Pro on Apple platforms) with roles instead of sizes. Tracking tightens as text grows and numbers align in columns. Every role works in English and Greek.',
     body: <TypographyFoundation />,
   },
   geometry: {
@@ -49,7 +49,7 @@ const content: Record<Slug, { description: string; body: React.ReactNode }> = {
   },
   motion: {
     description:
-      'Motion answers a press, shows where something came from, or bridges a change. Anything used a hundred times a day does not animate.',
+      'Motion answers a press, shows where something came from or bridges a change. Anything used a hundred times a day does not animate.',
     body: <MotionFoundation />,
   },
 };

@@ -25,7 +25,7 @@ export default function HistogramExample() {
         xLabel="Overshoot"
         unit="%"
         height={240}
-        ariaLabel={`Overshoot of ${S.n} runs: most sit between 3 and 8 %, and ${S.over} runs exceed the ${OVERSHOOT_USL} % limit. Cpk is ${fmt.n1.format(S.cpk)}, so the process is not capable at these gains.`}
+        ariaLabel={`Overshoot of ${S.n} runs: most sit between 3 and 8 %, and ${S.over} runs exceed the ${OVERSHOOT_USL} % limit. Cpk is ${fmt.n2.format(S.cpk)}, so the process is not capable at these gains.`}
       />
     </div>
   );

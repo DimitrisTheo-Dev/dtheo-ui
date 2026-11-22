@@ -41,8 +41,10 @@ export default function HeatmapExample() {
         xValues={speeds}
         yValues={torques}
         values={values}
-        xLabel="Speed (rpm)"
-        yLabel="Torque (N·m)"
+        xLabel="Speed"
+        xUnit="rpm"
+        yLabel="Torque"
+        yUnit="N·m"
         valueLabel="Efficiency"
         valueUnit="%"
         digits={0}

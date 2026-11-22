@@ -4,6 +4,8 @@ import { components, getComponent } from '@dtheo/ui/meta';
 import { ComponentDoc } from '@/components/component-doc';
 import { JsonLd } from '@/components/json-ld';
 import { pageMetadata } from '@/lib/metadata';
+import { site } from '@/lib/site';
+import { plainText } from '@/lib/parse-markdown';
 
 export const dynamicParams = false;
 
@@ -17,10 +19,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!meta) return {};
   return pageMetadata({
     title: meta.title,
-    description: meta.description,
+    description: plainText(meta.description),
     path: `/docs/charts/${slug}`,
     markdown: `/docs/charts/${slug}.md`,
-    ownCard: true,
+    card: {
+      url: `/docs/charts/${slug}/card.png`,
+      alt: `${meta.title}, a ${site.name} chart, and the command that installs it`,
+    },
   });
 }
 

@@ -12,7 +12,7 @@ export default function FrequencyChartExample() {
       <div className="flex flex-col">
         <span className="text-headline">Open-loop response</span>
         <span className="text-caption text-muted-foreground">
-          RA-14 hip pitch · R-0412 against the R-0409 reference
+          RA-14 hip pitch · R-0412 against the <span className="whitespace-nowrap">R-0409</span> reference
         </span>
       </div>
       <FrequencyChart
@@ -44,11 +44,11 @@ export default function FrequencyChartExample() {
             frequency: m.phaseCrossover,
             from: m.magnitudeAtPhaseCrossover,
             to: 0,
-            label: `Gain margin ${fmt(m.gainMargin)} dB`,
+            label: `Gain margin ${fmt(m.gainMargin, 1)} dB`,
           },
         ]}
         paneHeight={170}
-        ariaLabel={`Bode plot. R-0412 crosses 0 dB at ${fmt(m.gainCrossover, 1)} Hz with a ${fmt(m.phaseMargin)}° phase margin, down from ${fmt(bode.referenceMargins.phaseMargin)}° on R-0409. Gain margin is ${fmt(m.gainMargin)} dB.`}
+        ariaLabel={`Bode plot. R-0412 crosses 0 dB at ${fmt(m.gainCrossover, 1)} Hz with a ${fmt(m.phaseMargin)}° phase margin, down from ${fmt(bode.referenceMargins.phaseMargin)}° on R-0409. Gain margin is ${fmt(m.gainMargin, 1)} dB.`}
       />
     </div>
   );

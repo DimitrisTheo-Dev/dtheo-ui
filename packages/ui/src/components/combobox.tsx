@@ -5,7 +5,7 @@ import { Combobox as ComboboxPrimitive } from '@base-ui/react/combobox';
 import { CheckIcon, ChevronsUpDownIcon, XIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { usePortalContainer } from '../lib/theme';
-import { popupItemClass, popupSurfaceClass } from './select';
+import { popupItemClass, popupSurfaceClass } from '../lib/popup';
 
 export interface ComboboxOption {
   value: string;
@@ -15,7 +15,8 @@ export interface ComboboxOption {
 
 /**
  * A searchable select for long lists (actuators, firmware builds, people). Type to filter; the list
- * says so when nothing matches. Values are matched case- and accent-insensitively.
+ * says so when nothing matches. Values are matched case- and accent-insensitively. Other props (name,
+ * required, open, onOpenChange…) go to Base UI's Combobox root.
  */
 export function Combobox({
   items,
@@ -27,7 +28,11 @@ export function Combobox({
   className,
   disabled,
   'aria-label': ariaLabel,
-}: {
+  ...props
+}: Omit<
+  ComboboxPrimitive.Root.Props<ComboboxOption>,
+  'items' | 'value' | 'defaultValue' | 'onValueChange' | 'multiple' | 'itemToStringLabel' | 'children'
+> & {
   items: ComboboxOption[];
   value?: ComboboxOption | null;
   defaultValue?: ComboboxOption | null;
@@ -41,6 +46,7 @@ export function Combobox({
   const container = usePortalContainer();
   return (
     <ComboboxPrimitive.Root
+      {...props}
       items={items}
       value={value}
       defaultValue={defaultValue}
@@ -49,10 +55,10 @@ export function Combobox({
       itemToStringLabel={(item: ComboboxOption) => item.label}
     >
       <ComboboxPrimitive.InputGroup
+        data-slot="combobox-group"
         className={cn(
           'flex h-control-md w-full min-w-0 items-center rounded-control border border-input bg-card text-body',
-          'transition-[border-color,box-shadow] duration-150 ease-out',
-          'has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/25',
+          'has-[input:focus-visible]:border-ring has-[input:focus-visible]:inset-ring has-[input:focus-visible]:inset-ring-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/12',
           'data-disabled:opacity-45',
           className,
         )}

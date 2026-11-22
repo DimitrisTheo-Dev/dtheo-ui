@@ -15,21 +15,24 @@ export default function TableSelectionExample() {
   return (
     <div className="flex w-full max-w-lg flex-col gap-2">
       <div className="flex h-7 items-center justify-between gap-3 text-label font-normal text-muted-foreground">
-        {sel.count ? (
-          <>
+        {/* Always in the page, so screen readers announce each change: "2 selected". */}
+        <p aria-live="polite" className="flex items-center gap-1.5">
+          {sel.count ? (
             <span className="tabular-nums">{sel.count} selected</span>
-            <Button size="xs" variant="ghost" onClick={sel.clear}>
-              Clear
-            </Button>
-          </>
-        ) : (
-          <span className="flex items-center gap-1.5">
-            Click one, then <Kbd>⇧</Kbd> click another
-          </span>
-        )}
+          ) : (
+            <>
+              Click one, then <Kbd>⇧</Kbd> click another
+            </>
+          )}
+        </p>
+        {sel.count ? (
+          <Button size="xs" variant="ghost" onClick={sel.clear}>
+            Clear
+          </Button>
+        ) : null}
       </div>
       <div className="overflow-hidden rounded-card border border-border bg-card">
-        <Table>
+        <Table aria-label="Recent step-response runs">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-10">

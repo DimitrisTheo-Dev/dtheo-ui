@@ -2,7 +2,19 @@
 
 import * as React from 'react';
 import { scaleBand, scaleLinear } from 'd3-scale';
-import { crisp, formatNumber, toneFill, useWidth, type Tone } from './core';
+import {
+  ChartEmpty,
+  axisGutter,
+  crisp,
+  finiteExtent,
+  formatNumber,
+  haloText,
+  imageLabel,
+  tickFormat,
+  toneFill,
+  useWidth,
+  type Tone,
+} from './core';
 
 export interface Bar {
   id: string;
@@ -13,9 +25,35 @@ export interface Bar {
   current?: boolean;
 }
 
+export interface BarChartProps {
+  bars: Bar[];
+  /** Bars past this value turn critical. */
+  limit?: number;
+  limitLabel?: string;
+  /** Defaults to zero (or the lowest negative value) up to 15 % above the highest bar or the limit. */
+  yDomain?: [number, number];
+  /** The values' unit: written above the y-axis and after each value label. */
+  unit?: string;
+  digits?: number;
+  height?: number;
+  ariaLabel: string;
+  className?: string;
+}
+
+const TOP = 14;
+const UNIT_ROW = 12;
+
+/** A bar from the zero line to its value, rounded only at the data end (the top, or the bottom for a negative). */
+function barPath(x: number, w: number, zero: number, y: number, r: number) {
+  if (y > zero) {
+    return `M${x} ${zero}V${y - r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y - r}V${zero}Z`;
+  }
+  return `M${x} ${zero}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + w - r}Q${x + w} ${y} ${x + w} ${y + r}V${zero}Z`;
+}
+
 /**
  * Comparison across a handful of categories (runs, actuators). Bars are thin, rounded only at the data end,
- * separated by air; bars past `limit` turn critical so the outlier reads first.
+ * separated by air; bars past `limit` turn critical so the outlier reads first. Negative values hang below zero.
  */
 export function BarChart({
   bars,
@@ -27,27 +65,26 @@ export function BarChart({
   height = 200,
   ariaLabel,
   className,
-}: {
-  bars: Bar[];
-  limit?: number;
-  limitLabel?: string;
-  yDomain?: [number, number];
-  unit?: string;
-  digits?: number;
-  height?: number;
-  ariaLabel: string;
-  className?: string;
-}) {
+}: BarChartProps) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [hover, setHover] = React.useState<string | null>(null);
   const w = width ?? 0;
-  const max = yDomain?.[1] ?? Math.max(limit ?? 0, ...bars.map((b) => b.value)) * 1.15;
+  const top = TOP + (unit ? UNIT_ROW : 0);
+  // Without spreading the values into Math.min/max, and leaving out a missing (NaN) value.
+  const extent = React.useMemo(() => finiteExtent(bars.map((b) => b.value)), [bars]);
+  const hasData = extent !== undefined;
+  const low = Math.min(limit ?? 0, extent?.[0] ?? 0);
+  const lo = yDomain?.[0] ?? (low < 0 ? low * 1.15 : 0);
+  let hi = yDomain?.[1] ?? Math.max(limit ?? 0, extent?.[1] ?? 0) * 1.15;
+  // Nothing above zero (no data, or every bar at zero): a unit range, so the axis sits at the bottom, not mid-air.
+  if (!(hi > lo)) hi = lo + 1;
   const sy = scaleLinear()
-    .domain([yDomain?.[0] ?? 0, max])
+    .domain([lo, hi])
     .nice()
-    .range([height - 28, 14]);
+    .range([height - 28, top]);
   const ticks = sy.ticks(4);
-  const left = 12 + Math.max(...ticks.map((t) => String(t).length)) * 7;
+  const fy = tickFormat(ticks);
+  const left = axisGutter([...ticks.map(fy), unit]);
   const sx = scaleBand<string>()
     .domain(bars.map((b) => b.id))
     .range([left, Math.max(left, w - 8)])
@@ -55,21 +92,33 @@ export function BarChart({
     .paddingOuter(0.2);
   const bw = Math.min(24, sx.bandwidth());
   const r = Math.min(4, bw / 2);
-  const base = sy(sy.domain()[0]!);
+  const [d0, d1] = sy.domain() as [number, number];
+  const zero = sy(Math.min(d1, Math.max(d0, 0)));
+  const value = (v: number) => `${formatNumber(v, digits)}${unit ? ` ${unit}` : ''}`;
 
   return (
     <div
       ref={ref}
       role="img"
-      aria-label={ariaLabel}
+      aria-label={imageLabel(ariaLabel, !hasData)}
       className={`relative w-full ${className ?? ''}`}
       style={{ height }}
     >
       {w ? (
         <svg width={w} height={height} aria-hidden="true" className="block overflow-visible">
+          {unit ? (
+            <text
+              x={left - 10}
+              y={top - UNIT_ROW + 2}
+              textAnchor="end"
+              className="fill-subtle-foreground text-caption"
+            >
+              {unit}
+            </text>
+          ) : null}
           {ticks.map((t) => (
             <g key={t}>
-              {t !== sy.domain()[0] ? (
+              {crisp(sy(t)) !== crisp(zero) ? (
                 <line
                   x1={left}
                   x2={w - 8}
@@ -84,29 +133,32 @@ export function BarChart({
                 textAnchor="end"
                 className="fill-subtle-foreground text-caption tabular-nums"
               >
-                {t}
+                {fy(t)}
               </text>
             </g>
           ))}
-          <line x1={left} x2={w - 8} y1={crisp(base)} y2={crisp(base)} className="stroke-chart-axis" />
+          <line x1={left} x2={w - 8} y1={crisp(zero)} y2={crisp(zero)} className="stroke-chart-axis" />
           {bars.map((b) => {
             const x = (sx(b.id) ?? 0) + (sx.bandwidth() - bw) / 2;
-            const y = sy(b.value);
+            const finite = Number.isFinite(b.value);
+            const y = finite ? sy(b.value) : zero;
             const over = limit !== undefined && b.value > limit;
             const tone: Tone = b.tone ?? (over ? 'critical' : b.current ? 'primary' : 'muted');
-            const h = Math.max(0, base - y);
-            const d = `M${x} ${base}V${y + r}Q${x} ${y} ${x + r} ${y}H${x + bw - r}Q${x + bw} ${y} ${x + bw} ${y + r}V${base}Z`;
+            const h = Math.abs(zero - y);
             return (
               <g
                 key={b.id}
                 onPointerEnter={() => setHover(b.id)}
-                onPointerLeave={() => setHover(null)}
+                onPointerDown={() => setHover(b.id)}
+                onPointerLeave={(e) => {
+                  if (e.pointerType !== 'touch') setHover(null);
+                }}
                 className="cursor-default"
               >
-                <rect x={sx(b.id)} y={14} width={sx.bandwidth()} height={height - 42} fill="transparent" />
+                <rect x={sx(b.id)} y={top} width={sx.bandwidth()} height={height - 28 - top} fill="transparent" />
                 {h > 0 ? (
                   <path
-                    d={d}
+                    d={barPath(x, bw, zero, y, Math.min(r, h))}
                     className={`${toneFill[tone]} transition-opacity duration-150 ${hover && hover !== b.id ? 'opacity-55' : ''}`}
                   />
                 ) : null}
@@ -118,15 +170,14 @@ export function BarChart({
                 >
                   {b.label}
                 </text>
-                {hover === b.id || over || b.current ? (
+                {finite && (hover === b.id || over || b.current) ? (
                   <text
                     x={x + bw / 2}
-                    y={y - 6}
+                    y={b.value < 0 ? y + 14 : y - 6}
                     textAnchor="middle"
-                    className="fill-foreground text-caption font-semibold tabular-nums"
+                    className={`fill-foreground text-caption font-semibold tabular-nums ${haloText}`}
                   >
-                    {formatNumber(b.value, digits)}
-                    {unit}
+                    {value(b.value)}
                   </text>
                 ) : null}
               </g>
@@ -147,7 +198,7 @@ export function BarChart({
                   x={left + 4}
                   y={sy(limit) - 6}
                   textAnchor="start"
-                  className="fill-subtle-foreground text-caption [paint-order:stroke] stroke-card [stroke-width:3px]"
+                  className={`fill-subtle-foreground text-caption ${haloText}`}
                 >
                   {limitLabel}
                 </text>
@@ -156,6 +207,7 @@ export function BarChart({
           ) : null}
         </svg>
       ) : null}
+      {hasData ? null : <ChartEmpty />}
     </div>
   );
 }

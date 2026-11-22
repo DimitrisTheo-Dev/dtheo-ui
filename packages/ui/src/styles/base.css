@@ -4,6 +4,8 @@
   ::before,
   ::after {
     border-color: var(--border);
+    /* The ring color is set before focus arrives, so a transition on colors never animates the ring in. */
+    outline-color: var(--ring);
   }
 
   html {
@@ -79,18 +81,28 @@ svg.lucide {
 }
 
 /*
- * Focus. One ring for every control: a crisp 1.5px line in the ring color, 1px out, over a soft halo. The line alone
- * clears 3:1 against every surface; the halo gives it presence without weight.
+ * Focus. One ring for every control: a crisp 2px line in the ring color, 1px out, over a soft halo. The line clears
+ * 3:1 against every surface it can sit on and against its own halo (contrastPairs in @dtheo/tokens); the halo gives
+ * it presence without weight. It appears at once: nothing about it transitions, because it answers a key press.
  *
  * This block sits outside the cascade layers on purpose, so no component shadow utility can hide the ring.
  * - Fields (inputs, select triggers, number fields) draw focus on their own border and opt out with data-focus.
  * - Menus, listboxes, dialogs and their items show focus as the highlighted row, so they opt out by role.
  * - `.focus-within-ring` puts the ring on a parent when the focused element is hidden (a slider's input) or tiny
  *   (the checkbox inside a selectable card); that element opts out with data-focus="none".
- * - Move the ring with --focus-offset (negative to draw inside a clipped container).
+ * - Move the ring with --focus-offset (negative to draw inside a clipped container). It does not inherit: an offset
+ *   set on a container moves that container's ring only, never the rings of the controls inside it.
+ * - A <main> focused by a skip link draws nothing: the next Tab lands on its first control, which does.
  */
+@property --focus-offset {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 1px;
+}
+
 :focus-visible:not(
   [data-focus],
+  main,
   [role='menu'],
   [role='menuitem'],
   [role='menuitemcheckbox'],
@@ -101,16 +113,149 @@ svg.lucide {
   [role='alertdialog']
 ),
 .focus-within-ring:has(:focus-visible) {
-  outline: 1.5px solid var(--ring);
+  outline: 2px solid var(--ring);
   outline-offset: var(--focus-offset, 1px);
-  box-shadow: 0 0 0 calc(var(--focus-offset, 1px) + 3px) color-mix(in oklch, var(--ring) 24%, transparent);
+  box-shadow: 0 0 0 calc(var(--focus-offset, 1px) + 3px) color-mix(in oklch, var(--ring) 12%, transparent);
 }
 
 /* A focused element with nothing of its own to draw. */
 [data-focus='none']:focus-visible,
+main:focus-visible,
 [role='menu']:focus-visible,
 [role='listbox']:focus-visible,
 [role='dialog']:focus-visible,
 [role='alertdialog']:focus-visible {
   outline: none;
+}
+
+/*
+ * Sticky bars. Keyboard focus and in-page links scroll their target clear of the bar instead of under it. Docs set
+ * their own header height; an app shell's toolbar is 48px, plus a little air.
+ */
+html:has([data-slot='app-toolbar']) {
+  scroll-padding-top: 3.5rem;
+}
+
+/* A composer pinned to the bottom of the main column (mark it data-slot="app-composer") gets the same clearance. */
+:is(html, [data-slot='app-main']):has([data-slot='app-composer']) {
+  scroll-padding-bottom: 14rem;
+}
+
+/*
+ * Forced colors (Windows contrast themes). The browser drops backgrounds and shadows and repaints text and borders
+ * in system colors, so every state drawn with a fill gets a system-color fill, border or outline instead.
+ */
+@media (forced-colors: active) {
+  /* The halo is a shadow, which forced colors remove; the line takes the system focus color. */
+  :focus-visible:not([data-focus], main),
+  .focus-within-ring:has(:focus-visible) {
+    outline-color: Highlight;
+  }
+  /* Fields drew focus with their border and a shadow; give them the same line as everything else. */
+  [data-focus='field']:focus-visible,
+  :is([data-slot='input-group'], [data-slot='number-field-group'], [data-slot='combobox-group']):has(
+    input:focus-visible
+  ) {
+    outline: 2px solid Highlight;
+    outline-offset: 0;
+  }
+  [data-slot='input-group'] [data-focus='field']:focus-visible,
+  [data-slot='number-field-group'] [data-focus='field']:focus-visible,
+  [data-slot='combobox-group'] [data-focus='field']:focus-visible {
+    outline: none;
+  }
+
+  /* Switch: an outlined track with a ButtonText knob; on, the track fills with Highlight. */
+  [data-slot='switch'] {
+    border-color: ButtonText;
+    background-color: Canvas;
+  }
+  [data-slot='switch-thumb'] {
+    background-color: ButtonText;
+  }
+  [data-slot='switch'][data-checked] {
+    border-color: Highlight;
+    background-color: Highlight;
+  }
+  [data-slot='switch'][data-checked] [data-slot='switch-thumb'] {
+    background-color: HighlightText;
+  }
+
+  /* Slider: an outlined track like a meter's, the filled part in Highlight, and an outlined knob. */
+  [data-slot='slider-track'] {
+    outline: 1px solid CanvasText;
+    background-color: Canvas;
+  }
+  [data-slot='slider-indicator'] {
+    background-color: Highlight;
+  }
+  [data-slot='slider-thumb'] {
+    border: 2px solid ButtonText;
+    background-color: ButtonFace;
+  }
+
+  /* Disabled controls read as GrayText, not as a fainter copy of the enabled colors. */
+  [data-slot='switch'][data-disabled],
+  [data-slot='slider'][data-disabled] [data-slot='slider-thumb'] {
+    border-color: GrayText;
+  }
+  [data-slot='switch'][data-disabled] [data-slot='switch-thumb'],
+  [data-slot='slider'][data-disabled] [data-slot='slider-indicator'] {
+    background-color: GrayText;
+  }
+  [data-slot='slider'][data-disabled] [data-slot='slider-track'] {
+    outline-color: GrayText;
+  }
+
+  /* Radio: the checked dot. */
+  [data-slot='radio'][data-checked] {
+    border-color: Highlight;
+  }
+  [data-slot='radio-indicator'] {
+    background-color: Highlight;
+  }
+
+  /*
+   * Selected segments and pressed toggles: a Highlight fill with HighlightText. They opt out of forced-color
+   * adjustment, or the browser paints a Canvas backplate behind the label and hides it on the fill. Their focus
+   * line turns CanvasText, so it still shows on the Highlight fill.
+   */
+  [data-slot='tabs-indicator'] {
+    background-color: Highlight;
+  }
+  [data-slot='tabs-list'][data-variant='segmented'] {
+    border: 1px solid ButtonText;
+  }
+  [data-slot='tabs-list'][data-variant='segmented'] [data-slot='tabs-tab'][data-active],
+  :is([data-slot='toggle'], [data-slot='segmented-control-item'])[data-pressed] {
+    forced-color-adjust: none;
+    color: HighlightText;
+  }
+  :is([data-slot='toggle'], [data-slot='segmented-control-item'])[data-pressed] {
+    background-color: Highlight;
+  }
+  :is([data-slot='tabs-tab'], [data-slot='segmented-control-item'], [data-slot='toggle']):focus-visible {
+    outline-color: CanvasText;
+  }
+  [data-slot='segmented-control'] {
+    border: 1px solid ButtonText;
+  }
+
+  /* Selected table rows: a Highlight frame, since the selection fill is gone. */
+  [data-slot='table-row']:is([aria-selected='true'], [data-state='selected']) {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  /* Progress and meters: an outlined track with the value in Highlight, the limit tick in CanvasText. */
+  :is([data-slot='progress-track'], [data-slot='meter-track']) {
+    outline: 1px solid CanvasText;
+    background-color: Canvas;
+  }
+  :is([data-slot='progress-indicator'], [data-slot='meter-indicator']) {
+    background-color: Highlight;
+  }
+  [data-slot='meter-limit'] {
+    background-color: CanvasText;
+  }
 }

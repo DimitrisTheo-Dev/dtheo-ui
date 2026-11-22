@@ -1,10 +1,14 @@
-import { registryIndex, registryItem, registryNames } from '@/lib/registry';
+import { registryAliases, registryIndex, registryItem, registryNames } from '@/lib/registry';
 
 export const dynamic = 'force-static';
 export const dynamicParams = false;
 
 export function generateStaticParams() {
-  return [{ name: 'registry.json' }, ...registryNames().map((n) => ({ name: `${n}.json` }))];
+  // Aliases are served too (toggle-group.json is the toggle item), so `dtheo add` accepts a pasted import's name.
+  return [
+    { name: 'registry.json' },
+    ...[...registryNames(), ...registryAliases()].map((n) => ({ name: `${n}.json` })),
+  ];
 }
 
 const headers = {

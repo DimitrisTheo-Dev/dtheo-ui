@@ -10,15 +10,18 @@ export function Switch({ className, ...props }: React.ComponentProps<typeof Swit
     <SwitchPrimitive.Root
       data-slot="switch"
       className={cn(
-        'relative inline-flex h-4.5 w-8 shrink-0 items-center rounded-full bg-secondary p-0.5',
-        'shadow-[inset_0_0_0_1px_var(--border-strong)] transition-[background-color] duration-150 ease-out',
-        'before:absolute before:-inset-y-[3px] before:inset-x-0 before:content-[""]',
-        'data-checked:bg-primary data-checked:shadow-none data-disabled:opacity-45',
+        // The track's edge is a real border (the fill shows through it), so forced colors, which drop fills and
+        // shadows, still draw the track (base.css).
+        'relative inline-flex h-4.5 w-8 shrink-0 items-center rounded-full border border-border-strong bg-secondary p-px',
+        'transition-[background-color,border-color] duration-150 ease-out',
+        'before:absolute before:-inset-x-px before:-inset-y-1 before:content-[""]',
+        'data-checked:border-transparent data-checked:bg-primary data-disabled:opacity-45',
         className,
       )}
       {...props}
     >
       <SwitchPrimitive.Thumb
+        data-slot="switch-thumb"
         className={cn(
           // dtheo-check-ignore-next-line (the knob is white in both modes, like macOS)
           'block size-3.5 rounded-full bg-white shadow-[0_1px_2px_oklch(0_0_0/0.3),0_0_0_0.5px_oklch(0_0_0/0.08)]',

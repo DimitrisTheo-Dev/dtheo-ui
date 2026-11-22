@@ -4,21 +4,27 @@
  */
 export type AtomicLevel = 'atom' | 'molecule' | 'organism' | 'template';
 
-export type Category =
-  | 'Actions'
-  | 'Inputs'
-  | 'Selection'
-  | 'Overlays'
-  | 'Navigation'
-  | 'Feedback'
-  | 'Data display'
-  | 'Layout'
-  | 'Charts';
+/** The categories, in the order the docs list them. */
+export const categories = [
+  'Actions',
+  'Inputs',
+  'Selection',
+  'Overlays',
+  'Navigation',
+  'Feedback',
+  'Data display',
+  'Layout',
+  'Charts',
+] as const;
+
+export type Category = (typeof categories)[number];
 
 export interface PropDoc {
   name: string;
   type: string;
   default?: string;
+  /** The props type requires it; the contract test checks this against the source. */
+  required?: boolean;
   description: string;
 }
 
@@ -41,6 +47,11 @@ export interface ComponentMeta {
   dependencies: string[];
   /** Other registry items this one needs (copied alongside by the CLI). */
   registryDependencies: string[];
+  /**
+   * Other names the registry answers to: a file this item writes under another name (a pasted import says
+   * `@/components/ui/toggle-group`) or a part people look for by name (skeleton). `dtheo add <alias>` adds this item.
+   */
+  aliases?: string[];
   /** Example ids rendered on the docs page; files live in apps/docs/examples. */
   examples: string[];
   keyboard?: Array<[keys: string, action: string]>;

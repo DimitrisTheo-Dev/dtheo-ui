@@ -111,9 +111,6 @@ importers:
       d3-scale:
         specifier: 4.0.3
         version: 4.0.3
-      d3-shape:
-        specifier: 3.2.1
-        version: 3.2.1
     devDependencies:
       '@types/d3-array':
         specifier: 2.12.8
@@ -121,9 +118,6 @@ importers:
       '@types/d3-scale':
         specifier: 4.0.9
         version: 4.0.9
-      '@types/d3-shape':
-        specifier: 3.2.0
-        version: 3.2.0
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -1222,14 +1216,8 @@ packages:
   '@types/d3-array@2.12.8':
     resolution: {integrity: sha512-k+ozvEjpOc1etEyZYq/HnUtuuXuhc5OWgD2Dfvo1eLvuDTq3X2S+t8CaqNMzYxeGB6zhrQt+h8Lh8psRs3wMCA==}
 
-  '@types/d3-path@3.1.1':
-    resolution: {integrity: sha512-VMZBYyQvbGmWyWVea0EHs/BwLgxc+MKi1zLDCONksozI4YJMcTt8ZEuIR4Sb1MMTE8MMW49v0IwI5+b7RmfWlg==}
-
   '@types/d3-scale@4.0.9':
     resolution: {integrity: sha512-dLmtwB8zkAeO/juAMfnV+sItKjlsw2lKdZVVy6LRr0cBmegxSABiLEpGVmSJJ8O08i4+sGR6qQtb6WtuwJdvVw==}
-
-  '@types/d3-shape@3.2.0':
-    resolution: {integrity: sha512-kVd74ta9eof3eJOvbNd1vGKS/XERRyQbT26Og63hIsvDO84cjD5gEOhsXf26w3FSoNlPVz84DOFcKv/oou+fMw==}
 
   '@types/d3-time@3.0.4':
     resolution: {integrity: sha512-yuzZug1nkAAaBlBBikKZTgzCeA+k1uy4ZFwWANOfKw5z5LRhV0gNA7gNkKm7HoK+HRN0wX3EkxGk0fpbWhmB7g==}
@@ -1391,16 +1379,8 @@ packages:
     resolution: {integrity: sha512-IRzGU62DtxhvsnSTWMQIdnoZ6gA+BCWwBon1EJI6SjoN595799b6z/QRBzXfFhE8iupUPp3042yBNo0STPqnzQ==}
     engines: {node: '>=12'}
 
-  d3-path@3.1.1:
-    resolution: {integrity: sha512-jsbgV8zIT38ReB9O7X7gcLndTQRONSqNNd+oGIaTBdUug4r5jFmp0N6RY9R5GWbdUDucn0qoTGyfjapT4tDhcg==}
-    engines: {node: '>=12'}
-
   d3-scale@4.0.3:
     resolution: {integrity: sha512-66cWobCNzcMvlfoaDHCxuIv9TBUWG1BLOWdv9kHHFuCr1JdqAWPvTmsaEYDD5NRMyWZ5+7u0GqiCDfMXMqh3hg==}
-    engines: {node: '>=12'}
-
-  d3-shape@3.2.1:
-    resolution: {integrity: sha512-dm2o+lbKdzg9tY7GEag/dB9hcbodLfwkE/DkvqbELJXaMz0yKzWWhZqhbI7CKubukA7HnRyz0avdtvi7EPxPvw==}
     engines: {node: '>=12'}
 
   d3-time-format@4.1.1:
@@ -2731,15 +2711,9 @@ snapshots:
 
   '@types/d3-array@2.12.8': {}
 
-  '@types/d3-path@3.1.1': {}
-
   '@types/d3-scale@4.0.9':
     dependencies:
       '@types/d3-time': 3.0.4
-
-  '@types/d3-shape@3.2.0':
-    dependencies:
-      '@types/d3-path': 3.1.1
 
   '@types/d3-time@3.0.4': {}
 
@@ -2854,8 +2828,6 @@ snapshots:
     dependencies:
       d3-color: 3.1.1
 
-  d3-path@3.1.1: {}
-
   d3-scale@4.0.3:
     dependencies:
       d3-array: 3.2.5
@@ -2863,10 +2835,6 @@ snapshots:
       d3-interpolate: 3.0.2
       d3-time: 3.1.1
       d3-time-format: 4.1.1
-
-  d3-shape@3.2.1:
-    dependencies:
-      d3-path: 3.1.1
 
   d3-time-format@4.1.1:
     dependencies:

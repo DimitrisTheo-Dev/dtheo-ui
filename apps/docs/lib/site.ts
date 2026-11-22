@@ -13,5 +13,7 @@ export const site = {
   version: '0.1.0',
 } as const;
 
-export const installCommand = (slug: string) => `npx ${site.cli}@latest add ${slug}`;
-export const shadcnCommand = (slug: string) => `npx shadcn@latest add ${site.url}/r/${slug}.json`;
+/** One command that adds every named item (and what each one needs). */
+export const installCommand = (...names: string[]) => `npx ${site.cli}@latest add ${names.join(' ')}`;
+export const shadcnCommand = (...names: string[]) =>
+  `npx shadcn@latest add ${names.map((n) => `${site.url}/r/${n}.json`).join(' ')}`;

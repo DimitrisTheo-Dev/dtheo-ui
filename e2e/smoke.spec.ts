@@ -1,14 +1,9 @@
 import { expect, test } from '@playwright/test';
-import { horizontalOverflow, watchErrors } from './helpers';
+import { horizontalOverflow, sitemapPaths, watchErrors } from './helpers';
 
 // The sitemap is the list of public routes; every one must render cleanly.
-const routes = async (request: import('@playwright/test').APIRequestContext) => {
-  const xml = await (await request.get('/sitemap.xml')).text();
-  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]!).pathname);
-};
-
 test('the sitemap lists the docs, components, charts and examples', async ({ request }) => {
-  const paths = await routes(request);
+  const paths = await sitemapPaths(request);
   expect(paths.length).toBeGreaterThan(50);
   for (const prefix of [
     '/docs/components/',
@@ -39,7 +34,7 @@ test('every docs page links to the repo and credits its author', async ({ page }
 test('every route renders without errors or sideways scroll @phone', async ({ page, request }, info) => {
   test.setTimeout(10 * 60_000);
   const failures: string[] = [];
-  for (const path of await routes(request)) {
+  for (const path of await sitemapPaths(request)) {
     const errors = watchErrors(page);
     const res = await page.goto(path, { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle').catch(() => {});
@@ -71,7 +66,7 @@ test('every page shares as itself: its own title, text, address and card', async
   const home = await tags('/');
   expect(home.url && new URL(home.url).pathname).toBe('/');
   const failures: string[] = [];
-  for (const path of await routes(request)) {
+  for (const path of await sitemapPaths(request)) {
     const og = path === '/' ? home : await tags(path);
     if (path !== '/') {
       if (!og.url || new URL(og.url).pathname !== path) failures.push(`${path}: og:url is ${og.url}`);

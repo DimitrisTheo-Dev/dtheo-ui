@@ -27,6 +27,9 @@ const top = [
   { title: 'Agents', href: '/docs/agents' },
 ];
 
+/** Dispatch on window to open the header's search from anywhere on the page. */
+export const OPEN_SEARCH_EVENT = 'dtheo:open-search';
+
 const sectionIcon: Record<string, React.ReactNode> = {
   'Get started': <BookOpenIcon />,
   Foundations: <ShapesIcon />,
@@ -38,6 +41,12 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
+  // Other parts of the page (the 404's "Search the docs") open the same search without owning a second dialog.
+  React.useEffect(() => {
+    const openSearch = () => setOpen(true);
+    window.addEventListener(OPEN_SEARCH_EVENT, openSearch);
+    return () => window.removeEventListener(OPEN_SEARCH_EVENT, openSearch);
+  }, []);
   const items: CommandItemData[] = React.useMemo(
     () => [
       ...allPages.map((p) => ({
@@ -96,15 +105,19 @@ export function SiteHeader() {
           })}
         </nav>
         <div className="ml-auto flex items-center gap-1.5">
+          {/* Named by its visible words (WCAG 2.5.3), so "click Search docs" works by voice. The shortcut is
+              announced through aria-keyshortcuts rather than read out as "command K". */}
           <Button
             variant="outline"
             className="h-8 w-9 justify-center gap-2 px-0 text-muted-foreground sm:w-56 sm:justify-start sm:px-2.5"
             onClick={() => setOpen(true)}
-            aria-label="Search documentation"
+            aria-keyshortcuts="Meta+K Control+K"
           >
             <SearchIcon aria-hidden="true" />
-            <span className="hidden flex-1 text-left font-normal sm:inline">Search docs…</span>
-            <Kbd className="hidden sm:inline-flex">⌘K</Kbd>
+            <span className="sr-only sm:not-sr-only sm:flex-1 sm:text-left sm:font-normal">Search docs…</span>
+            <Kbd aria-hidden="true" className="hidden sm:inline-flex">
+              ⌘K
+            </Kbd>
           </Button>
           <GithubLink />
           <ThemeToggle />

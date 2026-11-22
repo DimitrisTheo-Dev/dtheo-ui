@@ -15,7 +15,9 @@ const homeCard = {
  *
  * Next replaces the root layout's `openGraph` as a whole when a page sets its own, and with it the home card, so
  * pages without an `opengraph-image` file of their own name it here. Pages that have one pass `ownCard`, and Next
- * adds theirs. The `twitter:*` tags are filled from these by Next, so X shows the same title, text and picture.
+ * adds theirs. Pages whose card needs alt text of its own (an `opengraph-image` file can only export one alt for
+ * every page of a route) pass `card`. The `twitter:*` tags are filled from these by Next, so X shows the same title,
+ * text and picture.
  *
  * `path` is the page's address. Leave it out only for a page with no fixed address (the 404), which then has no
  * canonical link and no `og:url` rather than the homepage's.
@@ -26,6 +28,7 @@ export function pageMetadata({
   path,
   markdown,
   ownCard = false,
+  card,
 }: {
   title: string;
   description: string;
@@ -34,6 +37,8 @@ export function pageMetadata({
   markdown?: string;
   /** The route has its own `opengraph-image` file. */
   ownCard?: boolean;
+  /** A 1200 × 630 PNG card served at `url`, described by `alt`. */
+  card?: { url: string; alt: string };
 }): Metadata {
   return {
     title,
@@ -47,7 +52,7 @@ export function pageMetadata({
       url: path,
       siteName: site.name,
       type: 'website',
-      ...(ownCard ? {} : { images: homeCard }),
+      ...(card ? { images: { ...homeCard, ...card } } : ownCard ? {} : { images: homeCard }),
     },
   };
 }

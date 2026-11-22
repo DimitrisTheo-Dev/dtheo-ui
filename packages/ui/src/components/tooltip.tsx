@@ -6,7 +6,7 @@ import { cn } from '../lib/utils';
 import { usePortalContainer } from '../lib/theme';
 
 /**
- * Wrap the app once. After the first tooltip opens, neighbours open instantly (no delay, no animation),
+ * Wrap the app once. After the first tooltip opens, neighbors open instantly (no delay, no animation),
  * so scanning a toolbar feels fast.
  */
 export function TooltipProvider({
@@ -23,6 +23,7 @@ export const TooltipTrigger = TooltipPrimitive.Trigger;
 export function TooltipContent({
   className,
   side = 'top',
+  align = 'center',
   sideOffset = 6,
   children,
   ...props
@@ -31,12 +32,12 @@ export function TooltipContent({
   const container = usePortalContainer();
   return (
     <TooltipPrimitive.Portal container={container}>
-      <TooltipPrimitive.Positioner className="z-50" side={side} sideOffset={sideOffset}>
+      <TooltipPrimitive.Positioner className="z-50" side={side} align={align} sideOffset={sideOffset}>
         <TooltipPrimitive.Popup
-          data-slot="tooltip"
+          data-slot="tooltip-content"
           className={cn(
             'max-w-64 rounded-item border border-border bg-popover px-2 py-1 text-caption text-popover-foreground shadow-popover',
-            'origin-(--transform-origin) transition-[transform,opacity] duration-120 ease-out',
+            'origin-(--transform-origin) transition-[scale,opacity] duration-120 ease-out',
             'data-starting-style:scale-97 data-starting-style:opacity-0 data-ending-style:scale-97 data-ending-style:opacity-0',
             'data-instant:duration-0',
             className,

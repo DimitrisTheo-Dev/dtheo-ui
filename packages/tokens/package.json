@@ -1,7 +1,7 @@
 {
   "name": "@dtheo/tokens",
-  "version": "0.1.0",
-  "description": "Design tokens for dtheo/ui: one OKLCH source for web CSS, JSON (DTCG), React Native and Figma variables.",
+  "version": "0.1.1",
+  "description": "Design tokens for dtheo/ui from one OKLCH source: DTCG JSON, React Native values (OKLCH and hex) and the measured contrast report.",
   "keywords": [
     "design-system",
     "design-tokens",

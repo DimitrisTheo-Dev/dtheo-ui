@@ -21,7 +21,7 @@ export default function BarChartExample() {
       <div className="flex flex-col gap-0.5">
         <h3 className="text-headline">Overshoot per run</h3>
         <p className="text-label font-normal text-muted-foreground">
-          Overshoot in % · Bench 3 · runs R-0405 to R-0412
+          Overshoot in % · Bench 3 · runs <span className="whitespace-nowrap">R-0405 to R-0412</span>
         </p>
       </div>
       <BarChart

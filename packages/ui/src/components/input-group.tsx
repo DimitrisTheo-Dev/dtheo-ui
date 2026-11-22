@@ -13,11 +13,10 @@ export function InputGroup({ className, ...props }: React.ComponentProps<'div'>)
       data-slot="input-group"
       className={cn(
         'flex h-control-md w-full min-w-0 items-center gap-1.5 rounded-control border border-input bg-card px-2 text-body',
-        'transition-[border-color,box-shadow] duration-150 ease-out',
-        'has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/25',
+        'has-[input:focus-visible]:border-ring has-[input:focus-visible]:inset-ring has-[input:focus-visible]:inset-ring-ring has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-ring/12',
         'has-[[aria-invalid=true]]:border-destructive-foreground has-[[data-invalid]]:border-destructive-foreground',
         'has-[input:disabled]:opacity-45',
-        '[&_[data-slot=input]]:h-full [&_[data-slot=input]]:border-0 [&_[data-slot=input]]:bg-transparent [&_[data-slot=input]]:px-0.5 [&_[data-slot=input]]:shadow-none [&_[data-slot=input]]:ring-0',
+        '[&_[data-slot=input]]:h-full [&_[data-slot=input]]:border-0 [&_[data-slot=input]]:bg-transparent [&_[data-slot=input]]:px-0.5 [&_[data-slot=input]]:shadow-none [&_[data-slot=input]]:ring-0 [&_[data-slot=input]]:inset-ring-0',
         className,
       )}
       {...props}

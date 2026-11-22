@@ -16,6 +16,8 @@ const MobileNavContext = React.createContext<{ open: boolean; setOpen: (open: bo
  * The frame of a product: a translucent sidebar and a main column with a sticky toolbar.
  * Below 768px the sidebar moves into a sheet opened from the toolbar's menu button.
  * Set `embedded` to fill a fixed-height parent (a preview, a panel) instead of the viewport.
+ * A full-page shell starts with a "Skip to content" link that moves focus past the sidebar and toolbar to the page's
+ * `<main>` (or the main column, if there is none).
  */
 export function AppShell({
   sidebar,
@@ -30,6 +32,18 @@ export function AppShell({
 }) {
   const [open, setOpen] = React.useState(false);
   const value = React.useMemo(() => ({ open, setOpen }), [open]);
+  const mainId = `${React.useId()}main`;
+  const mainRef = React.useRef<HTMLDivElement>(null);
+  // The link points at the main column, so it works before hydration; once hydrated it focuses the page's own
+  // <main>, so the next Tab lands on the first control of the content, not in the toolbar.
+  const skipToMain = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const column = mainRef.current;
+    const target = column?.querySelector<HTMLElement>('main') ?? column;
+    if (!target) return;
+    e.preventDefault();
+    if (!target.hasAttribute('tabindex')) target.tabIndex = -1;
+    target.focus();
+  };
   return (
     <MobileNavContext.Provider value={value}>
       <div
@@ -41,6 +55,15 @@ export function AppShell({
           className,
         )}
       >
+        {embedded ? null : (
+          <a
+            href={`#${mainId}`}
+            onClick={skipToMain}
+            className="sr-only z-50 rounded-control bg-primary px-3 py-2 text-body font-medium text-primary-foreground focus:not-sr-only focus:fixed focus:top-2 focus:left-2"
+          >
+            Skip to content
+          </a>
+        )}
         <aside
           data-slot="sidebar"
           className={cn(
@@ -57,9 +80,17 @@ export function AppShell({
           </SheetContent>
         </Sheet>
         <div
+          ref={mainRef}
+          id={mainId}
           data-slot="app-main"
+          // Focused only by the skip link, as a fallback when the page has no <main>: draws no ring.
+          data-focus="none"
           className={cn(
-            'flex min-w-0 flex-1 flex-col md:overflow-y-auto md:overscroll-contain',
+            // When this column scrolls (desktop), focus and anchors stop clear of the 48px sticky toolbar.
+            // `relative` makes it the containing block of what is positioned inside it: without it, an absolutely
+            // positioned element far down the content (an sr-only live region) escapes the column's scrolling and
+            // makes the whole page scroll past the shell.
+            'relative flex min-w-0 flex-1 scroll-pt-14 flex-col md:overflow-y-auto md:overscroll-contain',
             embedded && 'overflow-y-auto',
           )}
         >
@@ -144,10 +175,14 @@ export function SidebarSection({
   );
 }
 
-/** A navigation row. Pass `render` to use your router's link. `active` marks the current page. */
+/**
+ * A navigation row. Pass `render` to use your router's link. `active` marks the current page. `disabled` shows a
+ * destination that exists in the product but can't be opened here: it stays in the list, dimmed, and isn't a link.
+ */
 export function SidebarItem({
   className,
   active,
+  disabled,
   icon,
   count,
   children,
@@ -156,6 +191,7 @@ export function SidebarItem({
   ...props
 }: React.ComponentProps<'a'> & {
   active?: boolean;
+  disabled?: boolean;
   icon?: React.ReactNode;
   count?: React.ReactNode;
   render?: React.ReactElement<React.ComponentProps<'a'>>;
@@ -165,6 +201,7 @@ export function SidebarItem({
     'transition-colors duration-150 hover:bg-sidebar-accent pointer-coarse:h-10',
     '[&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-primary',
     active && 'bg-sidebar-accent font-medium',
+    disabled && 'text-subtle-foreground hover:bg-transparent [&_svg]:text-subtle-foreground',
     className,
   );
   const content = (
@@ -186,6 +223,13 @@ export function SidebarItem({
     'aria-current': active ? ('page' as const) : undefined,
     className: classes,
   };
+  // A link with no href and aria-disabled: read as an unavailable link, skipped by Tab, never a dead "#" jump.
+  if (disabled)
+    return (
+      <a {...shared} {...props} aria-disabled="true" data-disabled="">
+        {content}
+      </a>
+    );
   // Keep the href of a rendered link (a router <Link href>) unless one is passed here.
   if (render)
     return React.cloneElement(render, {

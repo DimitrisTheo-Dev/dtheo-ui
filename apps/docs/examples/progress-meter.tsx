@@ -5,14 +5,22 @@ import { Meter, Progress } from '@dtheo/ui/components/progress';
 import { CURRENT_LIMIT, TEMP_LIMIT, WINDING_TEMP, fmt, measuredMetrics as M } from '@/lib/lab-data';
 
 // R-0412's winding temperature and peak phase current, against their limits. The current is within 10 % of its
-// limit, so its meter is amber and says so in words.
+// limit, so its meter is amber and says so in words. Run IDs never wrap at the hyphen.
 
 export default function ProgressMeterExample() {
   return (
     <div className="grid w-full max-w-xl gap-x-10 gap-y-6 sm:grid-cols-2">
       <section aria-label="Task progress" className="flex flex-col gap-4">
         <h3 className="text-caption font-semibold text-subtle-foreground">Progress: work getting done</h3>
-        <Progress label="Uploading R-0412 traces" value={64} showValue />
+        <Progress
+          label={
+            <>
+              Uploading <span className="whitespace-nowrap">R-0412</span> traces
+            </>
+          }
+          value={64}
+          showValue
+        />
         {/* The duration is unknown, so no percentage. */}
         <Progress label="Computing efficiency map" value={null} />
       </section>

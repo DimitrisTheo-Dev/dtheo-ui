@@ -1,11 +1,11 @@
-import { components } from '@dtheo/ui/meta';
 import { DocPage } from '@/components/doc-page';
 import { ComponentGallery } from '@/components/component-gallery';
 import { pageMetadata } from '@/lib/metadata';
+import { countLabel } from '@/lib/counts';
 
 export const metadata = pageMetadata({
   title: 'Components',
-  description: `All ${components.length} components and charts, live.`,
+  description: `All ${countLabel}, live.`,
   path: '/docs/components',
   markdown: '/docs/components.md',
 });

@@ -8,7 +8,7 @@ import { parseMarkdown, type Block } from '@/lib/parse-markdown';
  * A small Markdown renderer for the docs' own content: headings, paragraphs, lists, tables, fenced code,
  * inline code, bold and links. Text renders as React children, never as raw HTML.
  */
-function inline(text: string, key = 0): React.ReactNode[] {
+export function inline(text: string, key = 0): React.ReactNode[] {
   const nodes: React.ReactNode[] = [];
   const re = /(`[^`]+`)|(\*\*[^*]+\*\*)|(\[[^\]]+\]\([^)]+\))/g;
   let last = 0;
@@ -16,7 +16,12 @@ function inline(text: string, key = 0): React.ReactNode[] {
   for (const m of text.matchAll(re)) {
     if (m.index! > last) nodes.push(text.slice(last, m.index));
     const tok = m[0];
-    if (tok.startsWith('`')) nodes.push(<code key={i++}>{tok.slice(1, -1)}</code>);
+    if (tok.startsWith('`'))
+      nodes.push(
+        <code key={i++} className="inline-code">
+          {tok.slice(1, -1)}
+        </code>,
+      );
     else if (tok.startsWith('**')) nodes.push(<strong key={i++}>{tok.slice(2, -2)}</strong>);
     else {
       const [, label, href] = tok.match(/\[([^\]]+)\]\(([^)]+)\)/)!;
@@ -148,7 +153,7 @@ export async function MarkdownPage({
 }) {
   const { title, description, blocks } = parseMarkdown(md);
   return (
-    <DocPage eyebrow={eyebrow} title={title} description={description} markdownHref={markdownHref}>
+    <DocPage eyebrow={eyebrow} title={title} description={inline(description)} markdownHref={markdownHref}>
       {children ? (
         <section aria-labelledby="demo-heading">
           <h2 id="demo-heading" className="sr-only">

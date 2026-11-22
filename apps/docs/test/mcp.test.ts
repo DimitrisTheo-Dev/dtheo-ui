@@ -31,37 +31,36 @@ interface ToolResult {
   content: Array<{ type: string; text: string }>;
 }
 
+/** Send one JSON-RPC request to a fresh copy of the route and return its result. */
+async function rpc(method: string, params: Record<string, unknown>, client: string) {
+  const { POST } = await import('@/app/mcp/route');
+  const res = await POST(
+    new Request('http://localhost/mcp', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream',
+        // The route allows 120 calls a minute per client; give each tool its own budget.
+        'x-forwarded-for': `vitest-${client}`,
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+    }),
+  );
+  const body = await res.text();
+  const json = body.startsWith('{')
+    ? body
+    : body
+        .split('\n')
+        .find((l) => l.startsWith('data: '))!
+        .slice(6);
+  return JSON.parse(json).result;
+}
+
 /** A fresh copy of the route, so module caches start cold like a new serverless instance. */
 async function route() {
   vi.resetModules();
-  const { POST } = await import('@/app/mcp/route');
-  let id = 0;
   return async (name: string, args: Record<string, unknown> = {}) => {
-    const res = await POST(
-      new Request('http://localhost/mcp', {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          accept: 'application/json, text/event-stream',
-          // The route allows 120 calls a minute per client; give each tool its own budget.
-          'x-forwarded-for': `vitest-${name}`,
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          id: ++id,
-          method: 'tools/call',
-          params: { name, arguments: args },
-        }),
-      }),
-    );
-    const body = await res.text();
-    const json = body.startsWith('{')
-      ? body
-      : body
-          .split('\n')
-          .find((l) => l.startsWith('data: '))!
-          .slice(6);
-    const result = JSON.parse(json).result as ToolResult;
+    const result = (await rpc('tools/call', { name, arguments: args }, name)) as ToolResult;
     return { ...result, text: result.content.map((c) => c.text).join('\n') };
   };
 }
@@ -127,6 +126,7 @@ describe('MCP server', () => {
         'data-table',
         'agents',
         'theming',
+        'writing',
       ].map((topic): [string, Record<string, unknown>] => ['get_guidelines', { topic }]),
       // dtheo-check-ignore-next-line (the mistakes check_ui_code is called to find)
       ['check_ui_code', { code: '<div className="bg-blue-500 transition-all" />' }],
@@ -148,5 +148,88 @@ describe('MCP server', () => {
     const read = [...fsState.read].map((f) => resolve(f));
     expect(read.length).toBeGreaterThan(slugs.length);
     expect(read.filter((f) => !shipped.has(f))).toEqual([]);
+  });
+});
+
+describe('MCP tools', () => {
+  it('are all marked read-only, with a title', async () => {
+    vi.resetModules();
+    const { tools } = (await rpc('tools/list', {}, 'list')) as {
+      tools: Array<{
+        name: string;
+        title?: string;
+        annotations?: { readOnlyHint?: boolean; title?: string };
+      }>;
+    };
+    expect(tools.length).toBeGreaterThan(5);
+    for (const tool of tools) {
+      expect(tool.annotations?.readOnlyHint, tool.name).toBe(true);
+      expect(tool.annotations?.title, tool.name).toBe(tool.title);
+    }
+  });
+
+  it('answers a name that is not a slug with the closest ones, or the component it means', async () => {
+    const call = await route();
+    const typo = await call('get_component', { slug: 'dialgo' });
+    expect(typo.isError).toBe(true);
+    expect(typo.text).toContain('There is no component "dialgo"');
+    expect(typo.text).toContain('`dialog`');
+    expect(typo.text).toContain('list_components');
+    // Not the schema's list of every slug.
+    expect(typo.text.length).toBeLessThan(300);
+
+    // The file name in a pasted import and the title both find the component.
+    expect((await call('get_component', { slug: 'toggle-group' })).text).toMatch(
+      /^# Toggle and segmented control/,
+    );
+    expect((await call('get_component', { slug: 'Command palette' })).text).toMatch(/^# Command palette/);
+    expect((await call('get_component_source', { slug: 'skeleton' })).text).toContain(
+      'components/ui/skeleton.tsx',
+    );
+
+    const unrelated = await call('get_component_source', { slug: 'xyzzy' });
+    expect(unrelated.isError).toBe(true);
+    expect(unrelated.text).toContain('list_components');
+  });
+
+  it('says when a preset has no light mode instead of showing another preset', async () => {
+    const call = await route();
+    const tokens = await call('get_tokens', { preset: 'flight-deck', mode: 'light' });
+    expect(tokens.text).toMatch(/^# Flight deck \(dark\)/);
+    expect(tokens.text).toContain('Flight deck has no light mode; only Graphite does.');
+    const graphite = await call('get_tokens', { preset: 'graphite', mode: 'light' });
+    expect(graphite.text).toMatch(/^# Graphite \(light\)/);
+    expect(graphite.text).not.toContain('no light mode');
+    // Control heights come with the tokens, including what touch does to them.
+    expect(graphite.text).toContain('h-control-md: 28px');
+    expect(graphite.text).toContain('h-control-md grows to 36px and h-control-lg to 40px');
+  });
+
+  it('serves the writing rules it advertises', async () => {
+    const call = await route();
+    const writing = await call('get_guidelines', { topic: 'writing' });
+    expect(writing.isError).toBeFalsy();
+    expect(writing.text).toMatch(/^# Writing\n\n\S/);
+    expect(writing.text).not.toContain('## ');
+  });
+
+  it('ranks plain-English questions by what they mean', async () => {
+    const call = await route();
+    const top = async (query: string) => {
+      const { text, isError } = await call('search_docs', { query });
+      expect(isError, query).toBeFalsy();
+      // Each result is a title, its Markdown URL and a one-line description.
+      expect(text, query).toMatch(/^- .+: https:\/\/\S+\.md\n {2}\S.*$/m);
+      return [...text.matchAll(/^- [^\n]*: \S+\/docs\/([\w/-]+)\.md$/gm)].map((m) => m[1]!);
+    };
+    const component = await top('find a React component for a measurement with a pass or fail limit');
+    expect(component[0]).toBe('components/metric');
+    const select = await top('get the source of an accessible select built on Base UI');
+    expect(select.slice(0, 3)).toContain('components/select');
+    const check = await top('check this Tailwind JSX against the rules');
+    expect(check.slice(0, 3)).toEqual(expect.arrayContaining(['check-rules', 'cli']));
+    const muted = await top('muted text');
+    expect(muted[0]).toBe('foundations/color');
+    expect(muted.indexOf('components/textarea')).not.toBe(0);
   });
 });

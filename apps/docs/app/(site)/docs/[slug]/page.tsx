@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { MarkdownPage } from '@/components/markdown';
-import { parseMarkdown } from '@/lib/parse-markdown';
+import { parseMarkdown, plainText } from '@/lib/parse-markdown';
 import { AtomicGraph } from '@/components/atomic-graph';
 import { pagesMarkdown } from '@/lib/pages-md';
 import { pageMetadata } from '@/lib/metadata';
@@ -19,7 +19,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const md = pagesMarkdown[slug];
   if (!md) return {};
   const { title, description } = parseMarkdown(md);
-  return pageMetadata({ title, description, path: `/docs/${slug}`, markdown: `/docs/${slug}.md` });
+  return pageMetadata({
+    title,
+    description: plainText(description),
+    path: `/docs/${slug}`,
+    markdown: `/docs/${slug}.md`,
+  });
 }
 
 export default async function GuidePage({ params }: { params: Promise<{ slug: string }> }) {

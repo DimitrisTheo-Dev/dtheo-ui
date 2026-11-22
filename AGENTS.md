@@ -12,6 +12,7 @@ The docs app runs Next.js 16; read `apps/docs/AGENTS.md` before writing Next cod
 | Everything that must pass | `pnpm check` |
 | Browser tests | `pnpm test:e2e` (needs the dev server or starts one) |
 | Visual diffs | `pnpm test:visual`, then `--update-snapshots` only for intended changes |
+| Record the Linux baselines CI uses | `pnpm test:visual:linux` (Docker) |
 | Rebuild tokens | `pnpm tokens` |
 | Regenerate example index / usage graph | `pnpm examples` / `pnpm usage` |
 | Recapture the example screenshots on the landing page | `pnpm screens` (dev server running) |
@@ -28,7 +29,7 @@ Use pnpm 11 through corepack. New dependencies must be at least two weeks old (`
   `text-headline`, `text-title-3/2/1`, `text-large-title`, `text-display`. No `text-[13px]`.
 - **Geometry is tokens.** `rounded-control`, `rounded-popover`, `rounded-card`, `rounded-dialog`; nested corners use
   `rounded-item` / `rounded-inset`. Control heights are `h-control-xs…lg`.
-- **Motion:** name the properties (`transition-[transform,opacity]`, never `transition-all`), ease out, 120–240 ms,
+- **Motion:** name the properties (`transition-[scale,opacity]`, never `transition-all`; Tailwind’s `scale-*` and `translate-*` set `scale` and `translate`, not `transform`), ease out, 120–240 ms,
   scale from 0.96 (never 0), nothing animates on keyboard actions or things used a hundred times a day.
 - **Status** carries an icon and a word, never color alone.
 - **Every control has a name:** a visible label (via `Field` + `FieldLabel`) or `aria-label` on icon-only buttons.
@@ -46,6 +47,18 @@ Use pnpm 11 through corepack. New dependencies must be at least two weeks old (`
 4. Use it in a real screen if it is new (an example app or a pattern), then `pnpm usage`. A test fails when a
    component is not used anywhere.
 5. Run `pnpm check` and `pnpm test:e2e`. If the change is visual, run `pnpm test:visual` and look at the diff.
+
+## Visual baselines
+
+`pnpm test:visual` compares against `*-darwin.png` on a Mac and `*-linux.png` in CI, which runs the suite in the
+Playwright Docker image on arm64 against a production build (`E2E_SERVER=production`). A missing `*-linux.png`
+fails the job like a changed one.
+
+After an intended visual change, update both sets and commit them with the change: `pnpm test:visual
+--update-snapshots` on a Mac, then `pnpm test:visual:linux`, which records the Linux set in that same image (Docker
+needs about 6 GB free for the build), or run the "Record visual baselines" workflow on the branch and take its
+artifact. When `@playwright/test` is upgraded, change the image tag in `ci.yml` and `visual-baselines.yml` to match;
+the script refuses to run until they agree.
 
 ## Tokens
 

@@ -21,6 +21,10 @@ test('every docs page has a Markdown mirror', async ({ request }) => {
     expect(res.headers()['content-type'], path).toContain('text/markdown');
     expect(await res.text(), path).toMatch(/^# /);
   }
+  // A component's mirror installs what its example imports and shows the example as a client component.
+  const dialog = await (await request.get('/docs/components/dialog.md')).text();
+  expect(dialog).toContain('npx dtheo@latest add dialog field number-field toast');
+  expect(dialog).toContain("```tsx\n'use client';");
 });
 
 test('the registry serves shadcn-compatible items', async ({ request }) => {
@@ -29,6 +33,20 @@ test('the registry serves shadcn-compatible items', async ({ request }) => {
   const item = await (await request.get('/r/button.json')).json();
   expect(item.files[0].content).toContain('export function Button');
   expect(item.files[0].content).not.toContain('@dtheo/');
+  // The file name a pasted import uses finds the item that writes it.
+  for (const [name, owner] of [
+    ['toggle-group', 'toggle'],
+    ['segmented-control', 'toggle'],
+    ['skeleton', 'spinner'],
+  ]) {
+    const res = await request.get(`/r/${name}.json`);
+    expect(res.ok(), name).toBe(true);
+    expect((await res.json()).name, name).toBe(owner);
+  }
+  // Popover ships its own file and gets the shared popup classes from their own item.
+  const popover = await (await request.get('/r/popover.json')).json();
+  expect(popover.files.map((f: { target: string }) => f.target)).toEqual(['components/ui/popover.tsx']);
+  expect(popover.registryDependencies.some((d: string) => d.endsWith('/r/popup.json'))).toBe(true);
 });
 
 test('the MCP server lists its tools and checks code', async ({ request }) => {
