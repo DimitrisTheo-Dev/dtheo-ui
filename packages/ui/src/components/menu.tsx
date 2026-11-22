@@ -153,7 +153,7 @@ export function MenuShortcut({ className, ...props }: React.ComponentProps<'span
   return (
     <span
       className={cn(
-        'ml-auto pl-4 text-caption tracking-wide text-subtle-foreground in-data-highlighted:text-primary-foreground/80',
+        'ml-auto pl-4 text-caption tracking-wide text-subtle-foreground in-data-highlighted:text-primary-foreground',
         className,
       )}
       {...props}

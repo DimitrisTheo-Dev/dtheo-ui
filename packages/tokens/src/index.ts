@@ -361,7 +361,7 @@ export const contrastPairs: Array<{
   { fg: 'subtle-foreground', bg: 'background', min: 4.5, note: 'Tertiary text, captions' },
   { fg: 'subtle-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Tertiary text on cards' },
   { fg: 'secondary-foreground', bg: 'secondary', over: 'card', min: 4.5, note: 'Secondary button label' },
-  { fg: 'primary-foreground', bg: 'primary', min: 4.5, note: 'Primary button label' },
+  { fg: 'primary-foreground', bg: 'primary', min: 4.5, note: 'Primary button label, and the label and hint of a highlighted menu row' },
   { fg: 'white', bg: 'destructive', min: 4.5, note: 'Destructive button label' },
   { fg: 'destructive-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Error text' },
   { fg: 'success-foreground', bg: 'card', over: 'background', min: 4.5, note: 'Success text' },

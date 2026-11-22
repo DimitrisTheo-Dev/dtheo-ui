@@ -200,12 +200,12 @@ function CommandSearch({
                     {/* The name never gives way to the hint; a long hint truncates first. */}
                     <span className="max-w-full shrink-0 grow truncate">{item.label}</span>
                     {item.hint ? (
-                      <span className="truncate text-caption text-subtle-foreground group-data-highlighted:text-primary-foreground/80">
+                      <span className="truncate text-caption text-subtle-foreground group-data-highlighted:text-primary-foreground">
                         {item.hint}
                       </span>
                     ) : null}
                     {item.shortcut ? (
-                      <span className="text-caption tracking-wide text-subtle-foreground group-data-highlighted:text-primary-foreground/80">
+                      <span className="text-caption tracking-wide text-subtle-foreground group-data-highlighted:text-primary-foreground">
                         {item.shortcut}
                       </span>
                     ) : null}
