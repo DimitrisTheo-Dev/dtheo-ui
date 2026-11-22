@@ -217,6 +217,18 @@ describe('design check rules', () => {
     for (const src of reasoned) expect(count(src, 'ignore-reason'), src).toBe(0);
   });
 
+  it('takes directives only from comments, and flags a file directive that names no real rule', () => {
+    // A string that quotes a directive excuses nothing.
+    expect(count('const tip = "dtheo-check-ignore: why"; const a = "#fff";', 'raw-color')).toBe(1);
+    expect(count('const tip = "use dtheo-check-ignore-next-line";\nconst a = "#fff";', 'raw-color')).toBe(1);
+    expect(count('const tip = "dtheo-check-ignore-next-line";', 'ignore-reason')).toBe(0);
+    // A misspelled id switches nothing off, so it is an error, not a silent no-op.
+    expect(count('// dtheo-check-disable-file raw-colour -- brand swatches\nconst a = "#fff";', 'ignore-reason')).toBe(1);
+    expect(count('// dtheo-check-disable-file raw-colour -- brand swatches\nconst a = "#fff";', 'raw-color')).toBe(1);
+    // Markdown's HTML comments still carry a directive.
+    expect(count('<!-- dtheo-check-ignore-next-line (brand swatch) -->\n<div style={{ color: "#fff" }} />', 'raw-color', 'x.md')).toBe(0);
+  });
+
   it('catches an icon-only raw <button>, even with an arrow function in its props', () => {
     const bad =
       '<button onClick={() => (a > b ? open() : close())}>\n  <TrashIcon className="size-4" />\n</button>';

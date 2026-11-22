@@ -399,8 +399,11 @@ function tokenize(src, mode) {
     return n;
   }
 
-  if (mode === 'mdx') while (i < n) children();
-  else code();
+  if (mode === 'mdx') {
+    while (i < n) children();
+    // Markdown's own comments, where a directive can sit as it does in {/* */}.
+    for (const m of src.matchAll(/<!--[\s\S]*?(?:-->|$)/g)) mark(m.index, m.index + m[0].length, COMMENT);
+  } else code();
   return { kind, tags, calls };
 }
 
@@ -782,14 +785,26 @@ function directiveHasReason(line, at, length, fileDirective) {
   return /[\p{L}]{2,}/u.test(`${head} ${tail}`);
 }
 
-/** Directive lines are checked in the first 12 lines for disable-file (where it takes effect) and everywhere else. */
+/** The rule ids a `dtheo-check-disable-file` directive names, before its "--": none means every rule. */
+const disabledRuleIds = (rest) =>
+  rest
+    .split('--')[0]
+    .split(/[\s,]+/)
+    .filter((id) => /^[a-z][\w-]*$/.test(id));
+
+/**
+ * Directives in comments (one quoted in a string is not a directive) with no reason, and file directives that name a
+ * rule that doesn't exist, which would switch nothing off. disable-file counts in the first 12 lines, where it acts.
+ */
 function bareDirectives(ctx) {
   const found = [];
   ctx.lines.forEach((line, li) => {
     for (const m of line.matchAll(/dtheo-check-(ignore-next-line|ignore|disable-file)(?![\w-])/g)) {
+      if (ctx.kind[ctx.lineStarts[li] + m.index] !== COMMENT) continue;
       const file = m[1] === 'disable-file';
       if (file && li >= 12) continue;
-      if (!directiveHasReason(line, m.index, m[0].length, file))
+      const unknown = file && disabledRuleIds(line.slice(m.index + m[0].length)).some((id) => !ruleIds.has(id));
+      if (unknown || !directiveHasReason(line, m.index, m[0].length, file))
         found.push({ index: ctx.lineStarts[li] + m.index, text: line.trim().slice(0, 120) });
     }
   });
@@ -1041,8 +1056,8 @@ const rules = [
     id: 'ignore-reason',
     severity: 'error',
     find: bareDirectives,
-    message: 'Check directive without a reason: an exception nobody can review.',
-    fix: 'Say why: // dtheo-check-ignore-next-line (the knob is white in both modes), or // dtheo-check-disable-file raw-color -- why.',
+    message: 'Check directive without a reason, or naming a rule that does not exist: an exception nobody can review.',
+    fix: 'Say why, and name rules that `dtheo rules` lists: // dtheo-check-ignore-next-line (the knob is white in both modes), or // dtheo-check-disable-file raw-color -- why.',
   },
 ];
 
@@ -1084,18 +1099,19 @@ export function checkSource(source, options = {}) {
   };
   const ctx = { source, lines, lineStarts, ...tokenize(source, modeFor(options.file)) };
 
+  // Directives count only in comments: a string that quotes one excuses nothing.
+  const inComment = (index) => ctx.kind[index] === COMMENT;
   // `dtheo-check-disable-file raw-color, ease-in -- reason` (or with no ids, every rule) near the top of a file.
-  const directive = /dtheo-check-disable-file\b([^\n]*)/.exec(lines.slice(0, 12).join('\n'));
-  const disabledIds = directive
-    ? directive[1]
-        .split('--')[0]
-        .split(/[\s,]+/)
-        .filter((id) => /^[a-z][\w-]*$/.test(id))
-    : null;
-  const disabled = (id) => directive !== null && (disabledIds.length === 0 || disabledIds.includes(id));
-  const ignored = (i) =>
-    /dtheo-check-ignore(?!-next-line)/.test(lines[i] ?? '') ||
-    /dtheo-check-ignore-next-line/.test(lines[i - 1] ?? '');
+  const directive = [...source.matchAll(/dtheo-check-disable-file\b([^\n]*)/g)].find(
+    (m) => inComment(m.index) && lineOf(m.index) < 12,
+  );
+  const disabledIds = directive ? disabledRuleIds(directive[1]) : null;
+  const disabled = (id) => directive !== undefined && (disabledIds.length === 0 || disabledIds.includes(id));
+  const ignoreLines = new Set();
+  const ignoreNextLines = new Set();
+  for (const m of source.matchAll(/dtheo-check-ignore(-next-line)?(?![\w-])/g))
+    if (inComment(m.index)) (m[1] ? ignoreNextLines : ignoreLines).add(lineOf(m.index));
+  const ignored = (i) => ignoreLines.has(i) || ignoreNextLines.has(i - 1);
 
   for (const rule of rules) {
     // A directive cannot excuse itself.
@@ -1129,3 +1145,4 @@ export function checkSource(source, options = {}) {
 }
 
 export const ruleList = rules.map(({ id, severity, message, fix }) => ({ id, severity, message, fix }));
+const ruleIds = new Set(rules.map((r) => r.id));
