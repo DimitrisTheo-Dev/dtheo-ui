@@ -21,11 +21,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@dtheo/ui/components/table';
 import { useToast } from '@dtheo/ui/components/toast';
 import { ChartLegend, Heatmap, LineChart, Sparkline } from '@dtheo/charts';
+import { checkStatus } from '@/lib/lab-data';
 import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar } from '../_shared/lab-sidebar';
 
 // ---- Synthetic permanent-magnet traction motor (PM-220) ----
 const T_MAX = 220; // N·m
+/** Coolant temperature rise across the motor at the operating point, graded by the same rule as every other check. */
+const COOLANT_DT = 8.4; // K
+const COOLANT_DT_LIMIT = 10; // K
+const COOLANT_DT_SCALE = 12; // K, the meter's full scale
 const N_BASE = 5600; // rpm, end of constant torque
 const N_MAX = 16000; // rpm
 const P_PEAK = (T_MAX * N_BASE * Math.PI) / 30 / 1000; // kW at base speed
@@ -231,12 +236,12 @@ export function MotorMap() {
             <Metric label="Peak torque" value={String(T_MAX)} unit="N·m" />
             <Metric
               label="Coolant ΔT"
-              value="8.4"
+              value={nf(1).format(COOLANT_DT)}
               unit="K"
-              status="warn"
-              progress={8.4 / 12}
-              limit={10 / 12}
-              limitLabel="Limit ≤ 10 K"
+              status={checkStatus(COOLANT_DT, COOLANT_DT_LIMIT)}
+              progress={COOLANT_DT / COOLANT_DT_SCALE}
+              limit={COOLANT_DT_LIMIT / COOLANT_DT_SCALE}
+              limitLabel={`Limit ≤ ${COOLANT_DT_LIMIT} K`}
             />
           </MetricGroup>
 
