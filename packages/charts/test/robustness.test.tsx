@@ -200,6 +200,27 @@ const flatSpectrum = (frequency: number[]) =>
     />,
   ).container;
 
+describe('Heatmap with bands', () => {
+  it('shades each band one even step apart, however close its edges are, and labels the edges', () => {
+    const { container } = render(
+      <Heatmap
+        xValues={[1, 2, 3, 4]}
+        yValues={[1]}
+        values={[[75, 91, 95.5, 97]]}
+        bands={[90, 95, 96]}
+        valueLabel="Efficiency"
+        valueUnit="%"
+        ariaLabel="Map"
+      />,
+    );
+    const shades = [...container.querySelectorAll('rect.fill-chart-1')].map((r) => Number(r.getAttribute('fill-opacity')));
+    // Cells first, then one legend swatch per band: below 90, 90–95, 95–96, from 96.
+    expect(shades.slice(0, 4).map((o) => o.toFixed(3))).toEqual(['0.150', '0.433', '0.717', '1.000']);
+    expect(shades.slice(4).map((o) => o.toFixed(3))).toEqual(['0.150', '0.433', '0.717', '1.000']);
+    expect(container.textContent).toContain('909596%');
+  });
+});
+
 describe('FrequencyChart on a narrow range', () => {
 
   it('labels the 2 and 5 steps when fewer than two decades are in view', () => {

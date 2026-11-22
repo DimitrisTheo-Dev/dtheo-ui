@@ -22,6 +22,12 @@ export interface HeatmapProps {
    * legend says so ("≤ 86.0 %").
    */
   domain?: [number, number];
+  /**
+   * Band edges in the value's unit, ascending: [90, 92, 94, 95, 96] for efficiency. Each band gets its own shade,
+   * evenly stepped however close its edges are, so values crowded near the top still read apart, as on an
+   * iso-efficiency map; the legend shows the bands. Without bands the shade follows the value across `domain`.
+   */
+  bands?: number[];
   /** An operating point to mark on the map. */
   marker?: { x: number; y: number; label: string };
   /** Axis tick values; any value inside the axis range, such as round numbers between grid points. */
@@ -60,11 +66,26 @@ function gridPosition(grid: number[], v: number) {
   return b === a ? lo : lo + (v - a) / (b - a);
 }
 
+/**
+ * A cell's opacity for its value: stepped by band when there are band edges (below the first edge is the floor, at or
+ * above the last is full), otherwise linear across [vmin, vmax].
+ */
+function shadeScale(vmin: number, vmax: number, edges: readonly number[]): (v: number) => number {
+  if (edges.length) {
+    return (v) => {
+      let k = 0;
+      while (k < edges.length && v >= edges[k]!) k++;
+      return FLOOR + ((1 - FLOOR) * k) / edges.length;
+    };
+  }
+  const t = scaleLinear().domain([vmin, vmax]).range([FLOOR, 1]).clamp(true);
+  return (v) => t(v);
+}
+
 /** Every cell. Memoized, so hovering one cell redraws the outline, not the whole map. */
 const HeatmapCells = React.memo(function HeatmapCells({
   values,
-  vmin,
-  vmax,
+  shade,
   left,
   top,
   plotH,
@@ -73,8 +94,7 @@ const HeatmapCells = React.memo(function HeatmapCells({
   onHover,
 }: {
   values: number[][];
-  vmin: number;
-  vmax: number;
+  shade: (v: number) => number;
   left: number;
   top: number;
   plotH: number;
@@ -82,7 +102,6 @@ const HeatmapCells = React.memo(function HeatmapCells({
   ch: number;
   onHover: (cell: { r: number; c: number }) => void;
 }) {
-  const t = scaleLinear().domain([vmin, vmax]).range([FLOOR, 1]).clamp(true);
   return values.map((row, r) =>
     row.map((v, c) =>
       Number.isFinite(v) ? (
@@ -94,7 +113,7 @@ const HeatmapCells = React.memo(function HeatmapCells({
           height={Math.max(0, ch - 1)}
           rx={1.5}
           className="fill-chart-1"
-          fillOpacity={t(v)}
+          fillOpacity={shade(v)}
           onPointerEnter={() => onHover({ r, c })}
           onPointerDown={() => onHover({ r, c })}
         />
@@ -103,6 +122,18 @@ const HeatmapCells = React.memo(function HeatmapCells({
   );
 });
 const title = (label: string, unit: string) => (unit ? `${label} (${unit})` : label);
+
+/** One band in the legend, shaded like its cells. */
+function BandSwatch({ opacity }: { opacity: number }) {
+  return (
+    <svg aria-hidden="true" width="16" height="8" className="shrink-0">
+      <rect width="16" height="8" rx="2" className="fill-chart-1" fillOpacity={opacity} />
+    </svg>
+  );
+}
+
+/** Digits that write every band edge exactly: 0 for 90, 92, 94; 1 for 94.5. */
+const bandDigits = (edges: readonly number[]) => (edges.some((e) => !Number.isInteger(e)) ? 1 : 0);
 
 /**
  * A sequential map over two axes, such as motor efficiency over speed and torque. One hue, light to strong,
@@ -120,6 +151,7 @@ export function Heatmap({
   valueUnit = '',
   digits = 1,
   domain,
+  bands,
   marker,
   xTicks: xTickValues,
   yTicks: yTickValues,
@@ -146,6 +178,12 @@ export function Heatmap({
   const hasData = extent !== undefined && xValues.length > 0 && yValues.length > 0;
   const [dataMin, dataMax] = extent ?? [Number.NaN, Number.NaN];
   const [vmin, vmax] = domain ?? [dataMin, dataMax];
+  const bandKey = bands?.join(',') ?? '';
+  const edges = React.useMemo(
+    () => (bandKey ? bandKey.split(',').map(Number).filter(Number.isFinite).sort((a, b) => a - b) : []),
+    [bandKey],
+  );
+  const shade = React.useMemo(() => shadeScale(vmin, vmax, edges), [vmin, vmax, edges]);
   const left = 44;
   const right = 12;
   const top = 8;
@@ -199,8 +237,7 @@ export function Heatmap({
             {hasData ? (
               <HeatmapCells
                 values={values}
-                vmin={vmin}
-                vmax={vmax}
+                shade={shade}
                 left={left}
                 top={top}
                 plotH={plotH}
@@ -299,20 +336,34 @@ export function Heatmap({
       </div>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-11 text-caption whitespace-nowrap text-subtle-foreground">
         <span>{valueLabel}</span>
-        <span className={`flex items-center gap-3 ${hasData || domain ? '' : 'invisible'}`}>
-          <span className="tabular-nums">
-            {dataMin < vmin ? '≤ ' : ''}
-            {formatNumber(vmin, digits)}
+        {edges.length ? (
+          // A swatch per band with the edges between them: ▮ 90 ▮ 92 ▮ 94 … the way the cells are shaded.
+          <span className={`flex items-center gap-1.5 tabular-nums ${hasData ? '' : 'invisible'}`}>
+            {edges.map((e, k) => (
+              <React.Fragment key={e}>
+                <BandSwatch opacity={shade(k ? edges[k - 1]! : e - 1)} />
+                <span>{formatNumber(e, bandDigits(edges))}</span>
+              </React.Fragment>
+            ))}
+            <BandSwatch opacity={1} />
+            {valueUnit ? <span>{valueUnit}</span> : null}
           </span>
-          <span
-            aria-hidden="true"
-            className="h-2 w-32 rounded-full bg-[linear-gradient(to_right,color-mix(in_oklch,var(--chart-1)_15%,transparent),var(--chart-1))]"
-          />
-          <span className="tabular-nums">
-            {dataMax > vmax ? '≥ ' : ''}
-            {withUnit(formatNumber(vmax, digits), valueUnit)}
+        ) : (
+          <span className={`flex items-center gap-3 ${hasData || domain ? '' : 'invisible'}`}>
+            <span className="tabular-nums">
+              {dataMin < vmin ? '≤ ' : ''}
+              {formatNumber(vmin, digits)}
+            </span>
+            <span
+              aria-hidden="true"
+              className="h-2 w-32 rounded-full bg-[linear-gradient(to_right,color-mix(in_oklch,var(--chart-1)_15%,transparent),var(--chart-1))]"
+            />
+            <span className="tabular-nums">
+              {dataMax > vmax ? '≥ ' : ''}
+              {withUnit(formatNumber(vmax, digits), valueUnit)}
+            </span>
           </span>
-        </span>
+        )}
       </div>
     </div>
   );
