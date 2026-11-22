@@ -261,6 +261,13 @@ describe('tickFormat', () => {
     expect(tickFormat([1e-5])(3e-5)).toBe('0.00003');
     expect(tickFormat([0, 1 / 3])(1 / 3)).toBe('0.3333');
   });
+
+  it('never writes two neighboring ticks alike, far from zero', () => {
+    const near12 = [12, 12.00001, 12.00002, 12.00003];
+    expect(near12.map(tickFormat(near12))).toEqual(['12.00000', '12.00001', '12.00002', '12.00003']);
+    const near1000 = [1000, 1000.0002, 1000.0004];
+    expect(new Set(near1000.map(tickFormat(near1000))).size).toBe(3);
+  });
 });
 
 describe('lttb over a range', () => {
