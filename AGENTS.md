@@ -29,8 +29,10 @@ Use pnpm 11 through corepack. New dependencies must be at least two weeks old (`
   `text-headline`, `text-title-3/2/1`, `text-large-title`, `text-display`. No `text-[13px]`.
 - **Geometry is tokens.** `rounded-control`, `rounded-popover`, `rounded-card`, `rounded-dialog`; nested corners use
   `rounded-item` / `rounded-inset`. Control heights are `h-control-xs…lg`.
-- **Motion:** name the properties (`transition-[scale,opacity]`, never `transition-all`; Tailwind’s `scale-*` and `translate-*` set `scale` and `translate`, not `transform`), ease out, 120–240 ms,
-  scale from 0.96 (never 0), nothing animates on keyboard actions or things used a hundred times a day.
+- **Motion:** name the properties (`transition-[scale,opacity]`, never `transition-all`; Tailwind’s `scale-*` and
+  `translate-*` set `scale` and `translate`, not `transform`), ease out, 120–240 ms (400 for toasts and sheets), scale
+  from 0.96 (never 0; an icon swapping in place may crossfade from a smaller scale), nothing animates on keyboard
+  actions or things used a hundred times a day.
 - **Status** carries an icon and a word, never color alone.
 - **Every control has a name:** a visible label (via `Field` + `FieldLabel`) or `aria-label` on icon-only buttons.
 - Exceptions to the design check need a reason: `// dtheo-check-ignore-next-line (why)`, or

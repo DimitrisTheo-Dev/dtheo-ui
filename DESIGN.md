@@ -78,8 +78,11 @@ on the part you see.
 Motion explains a change; it is never decoration.
 
 - Ease out (`cubic-bezier(0.23, 1, 0.32, 1)`) for things that enter, 120 ms for presses, 150 for hover, 180 for
-  popovers, 240 for dialogs.
+  popovers, 240 for dialogs. Toasts and sheets travel across the screen, so they take 400 ms (`--duration-toast`;
+  sheets ease with `--ease-drawer`). Nothing else is slower than 240 ms.
 - Popovers grow from their trigger, scaling from 0.96, never from 0. Dialogs stay centered.
+- An icon that swaps in place (copy to check, sun to moon) crossfades with a small scale and a 2 px blur, so the
+  change reads as one icon becoming another.
 - Nothing animates on keyboard actions or high-frequency interactions: the command palette opens instantly.
 - Reduced motion makes every transition and animation instant (1 ms), fades included.
 
