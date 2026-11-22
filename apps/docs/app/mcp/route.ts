@@ -6,6 +6,7 @@ import { checkSource } from 'dtheo/check';
 import { componentMarkdown, foundationMarkdown } from '@/lib/markdown';
 import { foundations, patterns } from '@/lib/nav';
 import { pagesMarkdown } from '@/lib/pages-md';
+import { clientKey, createLimiter } from '@/lib/rate-limit';
 import { componentByName, registryItem } from '@/lib/registry';
 import { searchDocs } from '@/lib/search';
 import { site } from '@/lib/site';
@@ -319,25 +320,14 @@ const handler = createMcpHandler(
   },
 );
 
-// Best-effort per-client limit, 120 requests per minute. It lives in this instance's memory, so it slows a runaway
-// agent loop rather than stopping a determined client; abuse protection belongs to the platform's firewall.
-const hits = new Map<string, { n: number; reset: number }>();
-let swept = 0;
+// 120 requests a minute per client (an IPv6 client is its /64), in this instance's memory: see lib/rate-limit.
+const limiter = createLimiter({ limit: 120, windowMs: 60_000, maxClients: 5000 });
 async function limited(req: Request) {
-  const id = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
-  const now = Date.now();
-  // Forget windows that have ended, at most once a second, so many one-off clients can neither grow the map without
-  // bound nor reset everyone's count (clearing the whole map would).
-  if (hits.size > 5000 && now - swept > 1000) {
-    swept = now;
-    for (const [key, h] of hits) if (h.reset < now) hits.delete(key);
-  }
-  const h = hits.get(id);
-  if (!h || h.reset < now) hits.set(id, { n: 1, reset: now + 60_000 });
-  else if (++h.n > 120)
+  const verdict = limiter.check(clientKey(req.headers));
+  if (!verdict.ok)
     return new Response('Too many requests. Try again in a minute.', {
       status: 429,
-      headers: { 'retry-after': String(Math.ceil((h.reset - now) / 1000)) },
+      headers: { 'retry-after': String(verdict.retryAfter) },
     });
   return handler(req);
 }
