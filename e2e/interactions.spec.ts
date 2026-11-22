@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { watchErrors } from './helpers';
 
@@ -240,9 +241,15 @@ for (const [width, height] of [
   });
 }
 
-test('⌘E exports the run review samples, as the menu says', async ({ page }) => {
+test('⌘E downloads the run review samples, as the menu says', async ({ page }) => {
   await page.goto('/examples/run-review');
   await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const download = page.waitForEvent('download');
   await page.keyboard.press('ControlOrMeta+e');
-  await expect(page.getByText('Export started')).toBeVisible();
+  const file = await download;
+  expect(file.suggestedFilename()).toBe('r-0412-samples.csv');
+  const lines = readFileSync(await file.path(), 'utf8').trim().split('\n');
+  expect(lines[0]).toBe('time_ms,command_Nm,torque_Nm,reference_torque_Nm,phase_current_A,reference_phase_current_A');
+  expect(lines).toHaveLength(1002);
+  await expect(page.getByText('Exported r-0412-samples.csv')).toBeVisible();
 });

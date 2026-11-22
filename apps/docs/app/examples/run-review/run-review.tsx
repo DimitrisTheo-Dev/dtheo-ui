@@ -99,6 +99,45 @@ const kpRise = (gains.kp / referenceGains.kp - 1) * 100;
 const failed = runHistory.filter((r) => r.overshoot > OVERSHOOT_LIMIT).map((r) => r.id);
 const overLimit = `${failed.slice(0, -1).join(', ')} and ${failed.at(-1)}`;
 
+const SAMPLES_FILE = 'r-0412-samples.csv';
+
+/** A CSV number: four decimals, a plain minus and no negative zero. */
+function csvNumber(v: number) {
+  const s = v.toFixed(4);
+  return s === '-0.0000' ? '0.0000' : s;
+}
+
+/** Both runs, one row per millisecond, as plain numbers a spreadsheet or a script reads without a locale. */
+function samplesCsv() {
+  const rows = measured.t.map((t, i) =>
+    [
+      String(t),
+      csvNumber(command[i]!),
+      csvNumber(measured.torque[i]!),
+      csvNumber(reference.torque[i]!),
+      csvNumber(measured.current[i]!),
+      csvNumber(reference.current[i]!),
+    ].join(','),
+  );
+  const head = 'time_ms,command_Nm,torque_Nm,reference_torque_Nm,phase_current_A,reference_phase_current_A';
+  return `${[head, ...rows].join('\n')}\n`;
+}
+
+function download(name: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' }));
+  const link = Object.assign(document.createElement('a'), { href: url, download: name });
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+/** The E of ⌘E on any layout: the letter on a Latin layout, the physical key on Greek or Cyrillic (as isKKey does). */
+const isEKey = (e: KeyboardEvent) => (/^[a-z]$/i.test(e.key) ? e.key.toLowerCase() === 'e' : e.code === 'KeyE');
+
+const isEditable = (target: EventTarget | null) =>
+  target instanceof HTMLElement && (target.isContentEditable || /^(?:INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+
 const resultMeta = {
   fail: { label: 'Fail', variant: 'destructive', Icon: CircleXIcon },
   review: { label: 'Review', variant: 'warning', Icon: TriangleAlertIcon },
@@ -130,21 +169,21 @@ export function RunReview() {
     temp: checkStatus(WINDING_TEMP, TEMP_LIMIT),
   };
   const failing = Object.values(status).filter((s) => s === 'fail').length;
-  const exportSamples = React.useCallback(
-    () =>
-      toast.add({
-        title: 'Export started',
-        description: `r-0412-samples.csv, ${fmt.n0.format(SAMPLES)} rows.`,
-      }),
-    [toast],
-  );
+  const exportSamples = React.useCallback(() => {
+    download(SAMPLES_FILE, samplesCsv());
+    toast.add({
+      title: `Exported ${SAMPLES_FILE}`,
+      description: `${fmt.n0.format(SAMPLES)} rows: command, torque and phase current for ${RUN} and ${REFERENCE}.`,
+    });
+  }, [toast]);
   // ⌘E / Ctrl+E exports, as the menu and the palette say it does.
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'e') {
-        e.preventDefault();
-        exportSamples();
-      }
+      if (e.repeat || e.shiftKey || e.altKey || !isEKey(e)) return;
+      // In a text field Ctrl+E moves to the end of the line on a Mac, so there only ⌘E exports.
+      if (!e.metaKey && !(e.ctrlKey && !isEditable(e.target))) return;
+      e.preventDefault();
+      exportSamples();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
