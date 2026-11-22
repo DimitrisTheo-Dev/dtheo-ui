@@ -4,6 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { components } from '@dtheo/ui/meta';
 import { pageUsage } from '@/lib/usage';
+import { docsPath } from '@/lib/paths';
 
 type Node = { id: string; title: string; href: string; column: number };
 
@@ -17,7 +18,7 @@ const nodes: Node[] = [
       .replace(' and segmented control', '')
       .replace(' and meter', '')
       .replace(' and skeleton', ''),
-    href: `/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}`,
+    href: docsPath(c),
     column: levelColumn[c.level],
   })),
   ...Object.entries(pageUsage).map(([id, p]) => ({

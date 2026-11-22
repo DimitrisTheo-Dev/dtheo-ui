@@ -4,6 +4,7 @@ import { checkRulesMarkdown, foundationMarkdown } from './markdown';
 import { foundations, getStarted, patterns, type NavItem } from './nav';
 import { pagesMarkdown } from './pages-md';
 import { site } from './site';
+import { docsPath } from './paths';
 
 /**
  * Ranked search for the MCP server's search_docs: plain-English questions in, the pages that answer them out.
@@ -57,7 +58,7 @@ const navFor = (href: string, items: NavItem[]) => items.find((i) => i.href === 
 
 function corpus(): SearchDoc[] {
   const docs: SearchDoc[] = components.map((c) => {
-    const page = `/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}`;
+    const page = docsPath(c);
     return {
       title: c.title,
       url: `${site.url}${page}.md`,

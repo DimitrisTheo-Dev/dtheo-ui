@@ -10,8 +10,7 @@ import { countLabel } from './counts';
 import { foundations, getStarted, patterns, examples as exampleNav } from './nav';
 import { usedIn } from './usage';
 import { pagesMarkdown } from './pages-md';
-
-const docPath = (m: ComponentMeta) => `/docs/${m.package === 'charts' ? 'charts' : 'components'}/${m.slug}`;
+import { docsPath } from './paths';
 
 /** The Markdown mirror of a component page. Same contract, same examples, readable without JavaScript. */
 export function componentMarkdown(meta: ComponentMeta) {
@@ -22,7 +21,7 @@ export function componentMarkdown(meta: ComponentMeta) {
     `> ${meta.description}`,
     '',
     `Category: ${meta.category} · Atomic level: ${meta.level}${meta.primitive ? ` · Built on Base UI ${meta.primitive}` : ''}`,
-    `Page: ${site.url}${docPath(meta)}`,
+    `Page: ${site.url}${docsPath(meta)}`,
     '',
     '## Install',
     '',
@@ -79,7 +78,7 @@ export function componentMarkdown(meta: ComponentMeta) {
     ...(pages.length || composedBy.length
       ? [
           ...pages.map((p) => `- ${p.title} (${p.level}): ${site.url}${p.href}`),
-          ...composedBy.map((c) => `- ${c.title} (${c.level}): ${site.url}${docPath(c)}`),
+          ...composedBy.map((c) => `- ${c.title} (${c.level}): ${site.url}${docsPath(c)}`),
         ]
       : ['- Not used by an example yet.']),
     '',
@@ -188,7 +187,7 @@ export function componentsIndexMarkdown() {
   for (const cat of new Set(components.map((c) => c.category))) {
     lines.push(`## ${cat}`, '');
     for (const c of components.filter((x) => x.category === cat))
-      lines.push(`- [${c.title}](${site.url}${docPath(c)}.md) \`${c.slug}\`: ${c.description}`);
+      lines.push(`- [${c.title}](${site.url}${docsPath(c)}.md) \`${c.slug}\`: ${c.description}`);
     lines.push('');
   }
   return lines.join('\n');
@@ -220,13 +219,13 @@ export function llmsTxt() {
     '',
     ...components
       .filter((c) => c.package === 'ui')
-      .map((c) => `- [${c.title}](${md(docPath(c))}): ${c.description}`),
+      .map((c) => `- [${c.title}](${md(docsPath(c))}): ${c.description}`),
     '',
     '## Charts',
     '',
     ...components
       .filter((c) => c.package === 'charts')
-      .map((c) => `- [${c.title}](${md(docPath(c))}): ${c.description}`),
+      .map((c) => `- [${c.title}](${md(docsPath(c))}): ${c.description}`),
     '',
     '## Patterns',
     '',

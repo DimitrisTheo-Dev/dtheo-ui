@@ -9,6 +9,7 @@ import { Radio, RadioGroup } from '@dtheo/ui/components/radio-group';
 import { getComponent } from '@dtheo/ui/meta';
 import { CopyButton } from './copy-button';
 import { site } from '@/lib/site';
+import { docsSection } from '@/lib/paths';
 
 // ---------- Little pictures of each thing you can build. Decorative; the card's words carry the meaning. ----------
 
@@ -197,7 +198,7 @@ type Writer = (typeof writers)[number]['id'];
 
 const docHref = (slug: string) => {
   const meta = getComponent(slug);
-  return `/docs/${meta?.package === 'charts' ? 'charts' : 'components'}/${slug}`;
+  return `/docs/${docsSection(meta)}/${slug}`;
 };
 
 function Step({

@@ -1,4 +1,5 @@
 import { categories, components } from '@dtheo/ui/meta';
+import { docsPath } from './paths';
 
 export interface NavItem {
   title: string;
@@ -197,7 +198,7 @@ const componentItems = (category: string): NavItem[] =>
     .filter((c) => c.category === category)
     .map((c) => ({
       title: c.title,
-      href: `/docs/${c.package === 'charts' ? 'charts' : 'components'}/${c.slug}`,
+      href: docsPath(c),
       description: c.description,
       // The contract already says what each one is for and what it exports; search reads the same words.
       keywords: [c.category, ...c.use, ...c.exports],

@@ -1,13 +1,14 @@
 import type { ComponentMeta } from '@dtheo/ui/meta';
 import { site } from '@/lib/site';
 import { plainText } from '@/lib/parse-markdown';
+import { docsSection } from '@/lib/paths';
 
 /**
  * Machine-readable facts for each component page, so search engines and agents can tell what the page documents
  * and where its Markdown copy is without parsing the layout. The same facts are visible on the page.
  */
 export function JsonLd({ meta }: { meta: ComponentMeta }) {
-  const base = meta.package === 'charts' ? 'charts' : 'components';
+  const base = docsSection(meta);
   const data = {
     '@context': 'https://schema.org',
     '@type': 'TechArticle',
