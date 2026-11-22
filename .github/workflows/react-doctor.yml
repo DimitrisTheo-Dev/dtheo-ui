@@ -37,16 +37,24 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # React Doctor is a devDependency, so pnpm installs it and everything it depends on from the lockfile, under the
+      # two-week minimumReleaseAge, instead of the action fetching whatever its dependencies' latest versions are.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+
       # Advisory by default: React Doctor reports findings on every PR (a sticky summary comment, inline review
       # comments and a commit status with the health score) but never fails the check. To gate on it, uncomment
       # `blocking` below and set it to "error" (fail on new error-severity findings) or "warning" (any finding).
       # Full reference: https://www.react.doctor/ci
       #
-      # Pinned to a commit (v2.4.0, 2026-10-12) and an npm version at least 14 days old, like every dependency here
-      # (minimumReleaseAge in pnpm-workspace.yaml): a floating tag could change what runs with write permissions.
+      # Pinned to a commit (v2.4.0, 2026-10-12): a floating tag could change what runs with write permissions.
+      # `version: latest` tells the action to run the installed devDependency (package.json pins the version).
       - uses: millionco/react-doctor@695e46eee203a5d1855020191aa7e9c010a1250e # v2.4.0
         with:
-          version: "0.9.22"
+          version: latest
           # blocking: error          # Gate level: "none" (advisory, the default) | "warning" | "error"
           # scope: full              # On PRs, scan the whole project instead of just changed files
           # comment: false           # Disable the sticky PR summary comment

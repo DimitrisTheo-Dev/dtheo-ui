@@ -24,7 +24,7 @@
     "examples": "node scripts/gen-examples.mjs",
     "screens": "node scripts/screens.mjs",
     "release": "node scripts/release.mjs",
-    "doctor": "npx react-doctor@0.9.22"
+    "doctor": "react-doctor"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
@@ -39,6 +39,7 @@
     "jsdom": "30.1.3",
     "oxfmt": "0.76.0",
     "oxlint": "1.91.0",
+    "react-doctor": "0.9.22",
     "typescript": "6.0.3",
     "vitest": "5.1.0"
   },
