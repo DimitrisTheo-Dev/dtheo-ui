@@ -190,6 +190,28 @@ describe('core: empty data', () => {
   });
 });
 
+const flatSpectrum = (frequency: number[]) =>
+  render(
+    <FrequencyChart
+      frequency={frequency}
+      magnitude={[{ id: 'm', label: 'Gain', values: frequency.map(() => 0) }]}
+      magnitudeDomain={[-10, 10]}
+      ariaLabel="Spectrum"
+    />,
+  ).container;
+
+describe('FrequencyChart on a narrow range', () => {
+
+  it('labels the 2 and 5 steps when fewer than two decades are in view', () => {
+    expect(decadeLabels(flatSpectrum([20, 40, 60, 80]))).toEqual(['20', '50 Hz']);
+    expect(decadeLabels(flatSpectrum([1, 3, 9]))).toEqual(['1', '2', '5 Hz']);
+  });
+
+  it('labels the ends of a range with fewer than two grid lines', () => {
+    expect(decadeLabels(flatSpectrum([21, 25, 29]))).toEqual(['21', '29 Hz']);
+  });
+});
+
 describe('FrequencyChart with frequencies at or below zero', () => {
   it('leaves out an FFT 0 Hz bin instead of looping forever', () => {
     const { container } = render(

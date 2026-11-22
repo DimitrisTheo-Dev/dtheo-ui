@@ -83,7 +83,8 @@ type XScale = ScaleLogarithmic<number, number>;
 type YScale = ScaleLinear<number, number>;
 
 /**
- * 0.01, 0.1, 1, 10, 100, 1k, 1M: decades are labeled, the steps between them are faint grid lines. Below 1 Hz a
+ * 0.01, 0.1, 1, 10, 100, 1k, 1M: decades are labeled (see axisLabels for narrow ranges), the steps between them are
+ * faint grid lines. Below 1 Hz a
  * value keeps two significant digits (0.25, 0.01); from 1 kHz it is in k, from 1 MHz in M.
  */
 function formatHz(f: number) {
@@ -115,6 +116,23 @@ function logGrid(min: number, max: number) {
     for (let k = 2; k < 10; k++) if (d * k >= min && d * k <= max) minors.push(d * k);
   }
   return { decades, minors };
+}
+
+/** The leading digit of a grid frequency: 2 for 0.2, 20 and 2k. */
+const leadingDigit = (f: number) => Math.round(f / 10 ** Math.floor(Math.log10(f) + 1e-9));
+
+/**
+ * The frequencies the axis labels: every decade when two or more are in view; otherwise the 1, 2 and 5 steps, so a
+ * 20–80 Hz axis still reads 20 and 50 Hz; otherwise every grid line; and for a range with fewer than two grid lines
+ * (21–29 Hz), its two ends.
+ */
+function axisLabels(min: number, max: number, decades: number[], minors: number[]) {
+  if (decades.length >= 2) return decades;
+  const lines = [...decades, ...minors].sort((a, b) => a - b);
+  const steps = lines.filter((f) => [1, 2, 5].includes(leadingDigit(f)));
+  if (steps.length >= 2) return steps;
+  if (lines.length >= 2) return lines;
+  return min > 0 && max > min ? [min, max] : lines;
 }
 
 /** A frequency a log axis can place. */
@@ -195,6 +213,7 @@ function Pane({
   const fy = tickFormat(yTicks);
   const [f0, f1] = sx.domain() as [number, number];
   const { decades, minors } = React.useMemo(() => logGrid(f0, f1), [f0, f1]);
+  const labels = React.useMemo(() => axisLabels(f0, f1, decades, minors), [f0, f1, decades, minors]);
   const right = width - M.right;
   // Paths depend on the data and the scales, not on the cursor, so moving the pointer never rebuilds them.
   const paths = React.useMemo(
@@ -386,15 +405,15 @@ function Pane({
         className="stroke-chart-axis"
       />
       {xAxis
-        ? decades.map((f, k) => (
+        ? labels.map((f, k) => (
             <text
               key={f}
               x={sx(f)}
               y={plotBottom + 16}
-              textAnchor={k === decades.length - 1 && right - sx(f) < 30 ? 'end' : 'middle'}
+              textAnchor={k === labels.length - 1 && right - sx(f) < 30 ? 'end' : 'middle'}
               className="fill-subtle-foreground text-caption tabular-nums"
             >
-              {k === decades.length - 1 ? withHz(f) : formatHz(f)}
+              {k === labels.length - 1 ? withHz(f) : formatHz(f)}
             </text>
           ))
         : null}
