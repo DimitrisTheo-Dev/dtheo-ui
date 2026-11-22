@@ -70,6 +70,8 @@ export interface Marker {
 export interface VerticalMarker {
   x: number;
   label: string;
+  /** Shown instead of `label` on a narrow chart (under 520 px), where the full label would not fit. */
+  shortLabel?: string;
 }
 
 export interface ReadoutRow {
@@ -351,6 +353,17 @@ function AxesLayer({
 }
 
 /**
+ * Where a vertical marker's label goes: right of its line, or left of it when it would run past the plot, or against
+ * the plot's right edge when it fits on neither side.
+ */
+function verticalLabelPlace(f: Frame, lineX: number, width: number): { x: number; anchor: 'start' | 'end' } {
+  const right = f.left + f.plotW;
+  if (lineX + 6 + width <= right) return { x: lineX + 6, anchor: 'start' };
+  if (lineX - 6 - width >= f.left) return { x: lineX - 6, anchor: 'end' };
+  return { x: right, anchor: 'end' };
+}
+
+/**
  * Threshold and vertical-marker labels, drawn after the series: a trace passing through a limit label must never
  * paint over the words a quality engineer reads first.
  */
@@ -382,16 +395,21 @@ function ContextLabels({
       )}
       {verticals
         .filter((v) => v.x >= f.x0 && v.x <= f.x1)
-        .map((v) => (
-          <text
-            key={`${v.x}-${v.label}`}
-            x={f.sx(v.x) + 6}
-            y={f.top + f.plotH - 7}
-            className={`fill-subtle-foreground text-caption ${haloText}`}
-          >
-            {v.label}
-          </text>
-        ))}
+        .map((v) => {
+          const label = narrow ? (v.shortLabel ?? v.label) : v.label;
+          const at = verticalLabelPlace(f, f.sx(v.x), label.length * CAPTION_CHAR_W);
+          return (
+            <text
+              key={`${v.x}-${v.label}`}
+              x={at.x}
+              y={f.top + f.plotH - 7}
+              textAnchor={at.anchor}
+              className={`fill-subtle-foreground text-caption ${haloText}`}
+            >
+              {label}
+            </text>
+          );
+        })}
     </>
   );
 }

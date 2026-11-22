@@ -446,6 +446,7 @@ export function RunReview() {
                         {
                           x: DELAY + M.settle,
                           label: `Settled ${fmt.n0.format(M.settle)} ms after the step`,
+                          shortLabel: `Settled ${fmt.n0.format(M.settle)} ms`,
                         },
                       ]}
                       extraReadout={(i) => [
@@ -518,7 +519,8 @@ export function RunReview() {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead>Run</TableHead>
-                      <TableHead>Profile</TableHead>
+                      {/* On a phone the run, its overshoot and its result fill the width; the profile joins from sm. */}
+                      <TableHead className="hidden sm:table-cell">Profile</TableHead>
                       <TableHead numeric className="hidden sm:table-cell">
                         Kp
                       </TableHead>
@@ -542,7 +544,7 @@ export function RunReview() {
                       return (
                         <TableRow key={run.id} aria-selected={run.id === RUN || undefined}>
                           <TableCell className="font-mono text-label">{run.id}</TableCell>
-                          <TableCell className="max-w-40 truncate text-muted-foreground sm:max-w-none">
+                          <TableCell className="hidden text-muted-foreground sm:table-cell">
                             <span className="text-foreground">{run.profile}</span>
                             {run.note ? (
                               <span className="ml-1.5 text-caption text-subtle-foreground">{run.note}</span>
