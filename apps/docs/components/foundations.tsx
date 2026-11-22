@@ -211,8 +211,11 @@ export function ColorFoundation() {
                 const d = rows.find((r) => r.preset === 'graphite' && r.mode === 'dark' && r.index === i);
                 return (
                   <TableRow key={i}>
-                    <TableCell className="font-mono text-label">{pair}</TableCell>
-                    <TableCell className="hidden text-muted-foreground sm:table-cell">{p.note}</TableCell>
+                    {/* Pair and use wrap, so the ratios, the point of the table, stay in view without scrolling. */}
+                    <TableCell className="py-2 font-mono text-label whitespace-normal">{pair}</TableCell>
+                    <TableCell className="hidden py-2 whitespace-normal text-muted-foreground sm:table-cell">
+                      {p.note}
+                    </TableCell>
                     <TableCell numeric>
                       <RatioCell r={l} />
                     </TableCell>
