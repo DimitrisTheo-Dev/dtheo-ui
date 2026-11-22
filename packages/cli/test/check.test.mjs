@@ -422,6 +422,26 @@ describe('design check rules', () => {
   it('lets token files define colors', () => {
     expect(count('--primary: oklch(0.55 0.2 257);', 'raw-color', 'tokens.css')).toBe(0);
   });
+
+  it('reads an icon import that spans lines', () => {
+    const src = `import {\n  Trash2,\n  type LucideIcon,\n} from 'lucide-react';\nexport const a = <button><Trash2 /></button>;`;
+    expect(count(src, 'icon-button-label')).toBe(1);
+  });
+
+  // The MCP check_ui_code tool runs the check on up to 60,000 characters from anyone.
+  it('stays fast and in one piece on input built to be slow or deeply nested', () => {
+    const crafted = [
+      `// import${'\n'.repeat(59_990)}`,
+      'import x '.repeat(6_000),
+      '`${'.repeat(20_000),
+      '<div className={'.repeat(3_700),
+    ];
+    for (const src of crafted) {
+      const start = performance.now();
+      expect(() => checkSource(src, { file: 'x.tsx' })).not.toThrow();
+      expect(performance.now() - start).toBeLessThan(1_000);
+    }
+  });
 });
 
 describe('dtheo CLI', () => {

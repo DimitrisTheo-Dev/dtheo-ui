@@ -62,6 +62,7 @@ const EXPRESSION_WORDS = new Set([
 const ID_START = /[A-Za-z_$]/;
 const ID = /[\w$]/;
 const SPACE = /\s/;
+const MAX_NESTING = 200;
 
 /** Sentence punctuation, Markdown code or an apostrophe: a sentence, not a class list. */
 const looksLikeProse = (text) =>
@@ -92,6 +93,21 @@ function tokenize(src, mode) {
     return { kind, tags, calls };
   }
   const jsx = mode !== 'js';
+  // Real code nests a few levels deep. Past MAX_NESTING the rest is left as code, so input crafted to nest thousands
+  // of `${` or `{<` deep (the MCP check_ui_code tool takes code from anyone) can't overflow the stack.
+  let depth = 0;
+  const nested = (fn) => {
+    if (depth >= MAX_NESTING) {
+      i = n;
+      return;
+    }
+    depth++;
+    try {
+      fn();
+    } finally {
+      depth--;
+    }
+  };
 
   const lineComment = () => {
     const e = src.indexOf('\n', i);
@@ -194,6 +210,9 @@ function tokenize(src, mode) {
    * that will be rendered, unless they are arguments to a class helper such as cn().
    */
   function code(stop = null, textual = false) {
+    nested(() => codeUntil(stop, textual));
+  }
+  function codeUntil(stop, textual) {
     let expr = true;
     let word = null;
     let wordEnd = -1;
@@ -275,6 +294,9 @@ function tokenize(src, mode) {
 
   /** A JSX element from its "<": the opening tag, then its children up to the closing tag. */
   function element() {
+    nested(elementAt);
+  }
+  function elementAt() {
     const start = i++;
     let s = i;
     while (i < n && /[\w$.:-]/.test(src[i])) i++;
@@ -478,11 +500,18 @@ const hasAttr = (top, names) => new RegExp(`(?<![\\w-])(?:${names})=`).test(top)
 const ICON_MODULE =
   /^(?:lucide-react|@radix-ui\/react-icons|@heroicons\/react(?:\/.*)?|react-icons(?:\/.*)?|@phosphor-icons\/react|@tabler\/icons-react)$/;
 
+/**
+ * An import with a clause, `import { A, B as C } from 'x'`: group 1 is the clause, group 2 the module. The clause starts
+ * at a non-space and is bounded, so blank lines or an unfinished import cost linear time. Three whitespace matchers in
+ * a row once made 2,000 blank lines take three seconds, on input the MCP check_ui_code tool takes from anyone.
+ */
+const IMPORT_STATEMENT = /import\s+(?:type\s+)?([^'";\s][^'";]{0,4000}?)\bfrom\s*['"]([^'"]+)['"]/g;
+
 /** The JSX names a file imports from an icon library: `Trash2`, and `Icons` for `import * as Icons`. */
 function iconImports(source) {
   const names = new Set();
   const namespaces = new Set();
-  for (const m of source.matchAll(/import\s+(?:type\s+)?([^'";]*?)\s+from\s*['"]([^'"]+)['"]/g)) {
+  for (const m of source.matchAll(IMPORT_STATEMENT)) {
     if (!ICON_MODULE.test(m[2])) continue;
     const named = /\{([^}]*)\}/.exec(m[1]);
     for (const part of named?.[1].split(',') ?? []) {
@@ -530,7 +559,7 @@ function isIcon(name, tag, icons) {
 /** The names a file imports from anywhere, to tell an unknown component from one whose source is known. */
 const importedNames = (source) =>
   new Set(
-    [...source.matchAll(/import\s+(?:type\s+)?([^'";]*?)\s+from\s*['"][^'"]+['"]/g)].flatMap((m) =>
+    [...source.matchAll(IMPORT_STATEMENT)].flatMap((m) =>
       [...m[1].matchAll(/(?:\bas\s+)?\b([A-Z]\w*)\b(?!\s+as\b)/g)].map((n) => n[1]),
     ),
   );
