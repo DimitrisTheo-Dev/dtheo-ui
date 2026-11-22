@@ -15,14 +15,13 @@ import {
   nearestIndex,
   stepIndex,
   tickFormat,
-  toneBg,
   toneFill,
   toneStroke,
   useClipId,
-  useTooltipPlacement,
   useWidth,
   type Tone,
 } from './core';
+import { ReadoutTooltip } from './readout';
 
 export interface FrequencySeries {
   id: string;
@@ -117,6 +116,9 @@ function logGrid(min: number, max: number) {
   }
   return { decades, minors };
 }
+
+/** Space between a span label and the edge of the chip behind it. */
+const CHIP_PAD = 5;
 
 /** The leading digit of a grid frequency: 2 for 0.2, 20 and 2k. */
 const leadingDigit = (f: number) => Math.round(f / 10 ** Math.floor(Math.log10(f) + 1e-9));
@@ -336,13 +338,13 @@ function Pane({
               <rect
                 x={x + 6}
                 y={(y0 + y1) / 2 - 9}
-                width={sp.label.length * CAPTION_CHAR_W + 10}
+                width={sp.label.length * CAPTION_CHAR_W + 2 * CHIP_PAD}
                 height={18}
                 rx={4}
                 className="fill-card stroke-border"
               />
               <text
-                x={x + 11}
+                x={x + 6 + CHIP_PAD}
                 y={(y0 + y1) / 2 + 4}
                 className="fill-foreground text-caption font-semibold tabular-nums"
               >
@@ -452,25 +454,6 @@ function readoutRows(
       tone: s.tone,
     })),
   ];
-}
-
-function FrequencyReadout({ title, rows, x, width }: { title: string; rows: Row[]; x: number; width: number }) {
-  const ref = useTooltipPlacement<HTMLDivElement>(x, width);
-  return (
-    <div
-      ref={ref}
-      className="pointer-events-none absolute top-6 z-10 max-w-full min-w-40 rounded-popover border border-border bg-popover/95 px-3 py-2.5 text-label shadow-popover backdrop-blur-material"
-    >
-      <div className="mb-1.5 font-semibold text-foreground tabular-nums">{title}</div>
-      {rows.map((r) => (
-        <div key={r.key} className="grid grid-cols-[12px_auto_1fr] items-center gap-2 leading-6">
-          <span aria-hidden="true" className={`h-0.5 w-3 rounded-full ${toneBg[r.tone ?? 'primary']}`} />
-          <span className="text-right font-semibold text-foreground tabular-nums">{r.value}</span>
-          <span className="truncate font-normal text-muted-foreground">{r.label}</span>
-        </div>
-      ))}
-    </div>
-  );
 }
 
 /**
@@ -606,7 +589,7 @@ export function FrequencyChart({
         </>
       ) : null}
       {cursor != null && w ? (
-        <FrequencyReadout title={withHz(frequency[cursor]!)} rows={readout(cursor)} x={cx} width={w} />
+        <ReadoutTooltip title={withHz(frequency[cursor]!)} rows={readout(cursor)} x={cx} width={w} className="top-6" />
       ) : null}
       {hasData ? null : <ChartEmpty />}
     </div>

@@ -72,6 +72,10 @@ export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, n
 /** Snap a coordinate to the pixel grid so 1px lines stay crisp. */
 export const crisp = (v: number) => Math.round(v) + 0.5;
 
+/** The surface every chart tooltip sits on: a translucent popover over the plot that never takes the pointer. */
+export const tooltipSurface =
+  'pointer-events-none absolute z-10 max-w-full rounded-popover border border-border bg-popover/95 text-label shadow-popover backdrop-blur-material';
+
 /** A label over data: a card-colored stroke painted under the glyphs keeps it readable where a trace passes. */
 export const haloText = '[paint-order:stroke] stroke-card [stroke-width:3px]';
 
@@ -114,6 +118,9 @@ export function tickFormat(ticks: readonly number[]) {
   const digits = ticks.reduce((d, t) => Math.max(d, exactDigits(t, max)), 0);
   return (t: number) => formatNumber(t, digits);
 }
+
+/** The `axisGutter` pad when a rotated y-axis title sits left of the ticks (drawn at x = 12). */
+export const TITLED_AXIS_PAD = 28;
 
 /** Left gutter for a y-axis: room for the widest tick label plus `pad`. */
 export function axisGutter(labels: readonly string[], pad = 12) {
@@ -495,13 +502,6 @@ export function hasFinite(values: ArrayLike<number>, from = 0, to = values.lengt
   for (let i = Math.max(0, from); i <= to && i < values.length; i++)
     if (Number.isFinite(values[i]!)) return true;
   return false;
-}
-
-/** The widest tick label, in characters, for sizing the y-axis gutter. */
-export function longestLabel(ticks: readonly number[]) {
-  let n = 0;
-  for (const t of ticks) n = Math.max(n, String(t).length);
-  return n;
 }
 
 /**

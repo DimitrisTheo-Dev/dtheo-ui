@@ -5,6 +5,7 @@ import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
 import {
   ChartEmpty,
+  TITLED_AXIS_PAD,
   axisGutter,
   createColorReader,
   crisp,
@@ -16,6 +17,7 @@ import {
   tickFormat,
   toneBg,
   toneVar,
+  tooltipSurface,
   useClipId,
   useTooltipPlacement,
   useWidth,
@@ -428,7 +430,7 @@ function ScatterTooltip({
     <div
       ref={ref}
       data-slot="scatter-tooltip"
-      className="pointer-events-none absolute z-10 max-w-full min-w-36 rounded-popover border border-border bg-popover/95 px-3 py-2 text-label shadow-popover backdrop-blur-material"
+      className={`${tooltipSurface} min-w-36 px-3 py-2`}
       style={{ top: Math.max(0, g.sy(point.y) - 70) }}
     >
       {point.label ? <div className="mb-1 font-semibold text-foreground">{point.label}</div> : null}
@@ -486,7 +488,7 @@ export function ScatterChart({
 
   const clipId = useClipId();
   const yt = yTicks ?? scaleLinear().domain(yDomain).ticks(5);
-  const left = axisGutter(yt.map(tickFormat(yt)), 28);
+  const left = axisGutter(yt.map(tickFormat(yt)), TITLED_AXIS_PAD);
   const plotW = Math.max(0, w - left - M.right);
   const plotB = height - M.bottom;
   // Scales follow the domain values, not the array: an inline [0, 1] on every render must not redraw the canvas.
