@@ -228,7 +228,9 @@ export function capability(
  * with roughly `threshold` points, so a 100k-sample capture renders as fast as a 1k one.
  *
  * A non-finite y (NaN for a dropout) is a gap: each stretch between gaps is downsampled on its own share of the
- * points, and the first index of every gap is kept, so a line drawn from the result lifts the pen there.
+ * points, and the first index of every gap is kept, so a line drawn from the result lifts the pen there. A stretch
+ * keeps at least its two ends and its most prominent sample, so a capture riddled with dropouts can come back with
+ * more than `threshold` points: every gap stays visible, which matters more here than the point budget.
  *
  * `from` and `to` pick the samples [from, to) to downsample, so a zoomed view reads the visible part of a typed
  * array in place instead of copying it; the returned indices point into the full arrays.
