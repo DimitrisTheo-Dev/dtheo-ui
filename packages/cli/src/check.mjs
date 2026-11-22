@@ -727,7 +727,7 @@ function primaryAsText(m, ctx) {
   );
 }
 
-/** UI motion is 120–240 ms; 400 ms is the toast and drawer token. Nothing else is on the scale. */
+/** UI motion is 120–240 ms, and 400 ms for toasts and sheets (DESIGN.md, Motion). Nothing else is on the scale. */
 const offScale = (ms) => ms > 240 && ms !== 400;
 const toMs = (value, unit) => Number(value) * (unit === 's' ? 1000 : 1);
 

@@ -54,7 +54,7 @@ export function Progress({
       >
         <ProgressPrimitive.Indicator
           data-slot="progress-indicator"
-          className="h-full rounded-full bg-primary transition-[width] duration-400 ease-out data-indeterminate:w-1/3 data-indeterminate:animate-[dtheo-indeterminate_1.4s_var(--ease-in-out)_infinite]"
+          className="h-full rounded-full bg-primary transition-[width] duration-240 ease-out data-indeterminate:w-1/3 data-indeterminate:animate-[dtheo-indeterminate_1.4s_var(--ease-in-out)_infinite]"
         />
       </ProgressPrimitive.Track>
     </ProgressPrimitive.Root>
