@@ -192,7 +192,7 @@ function channelIndices(stream: Stream, series: StreamSeries[]) {
 
 /**
  * The draw loop, outside React: one canvas draw per animation frame when the stream has new samples, a readout
- * eight times a second, and a theme observer. Returns a cleanup function.
+ * eight times a second, and a theme observer. Returns `redraw` (draw now, with the current props) and `stop`.
  */
 function startDrawing({
   canvas,
@@ -308,15 +308,17 @@ function startDrawing({
     draw(performance.now());
   };
   const stopObserving = observeTheme(host, redraw);
+  const drawing = { redraw: () => draw(performance.now()), stop: stopObserving };
   if (!live) {
     draw(performance.now());
-    return stopObserving;
+    return drawing;
   }
   raf = requestAnimationFrame(loop);
-  return () => {
+  drawing.stop = () => {
     cancelAnimationFrame(raf);
     stopObserving();
   };
+  return drawing;
 }
 
 /**
@@ -369,10 +371,15 @@ export function StreamChart({
     return Array.from({ length: Math.floor(seconds / step) + 1 }, (_, k) => k * step);
   }, [seconds]);
 
-  // The draw loop lives in an effect and reads props through a ref, so a new prop never restarts it.
+  // The draw loop lives in an effect and reads props through a ref, so a new prop never restarts it. A paused chart,
+  // or a live one between samples, draws only when told to, so a change to anything it draws redraws it here.
   const props = React.useRef({ series, limits, span, sy, left, top, plotW, plotH });
+  const drawing = React.useRef<{ redraw: () => void } | null>(null);
   React.useLayoutEffect(() => {
-    props.current = { series, limits, span, sy, left, top, plotW, plotH };
+    const next = { series, limits, span, sy, left, top, plotW, plotH };
+    const prev = props.current;
+    props.current = next;
+    if ((Object.keys(next) as Array<keyof typeof next>).some((k) => next[k] !== prev[k])) drawing.current?.redraw();
   });
 
   // While paused, the chart draws from a copy taken the moment it paused, so redraws (a theme change, a resize,
@@ -385,7 +392,7 @@ export function StreamChart({
     const canvas = canvasRef.current;
     const host = ref.current;
     if (!canvas || !host || !w) return;
-    return startDrawing({
+    const d = startDrawing({
       canvas,
       host,
       stream: frozen.current?.copy ?? stream,
@@ -396,6 +403,11 @@ export function StreamChart({
       onReadout: setLatest,
       onAnnounce: setAnnounce,
     });
+    drawing.current = d;
+    return () => {
+      drawing.current = null;
+      d.stop();
+    };
   }, [stream, w, height, paused, inView, ref, props]);
 
   return (
