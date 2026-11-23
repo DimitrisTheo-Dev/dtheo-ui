@@ -369,3 +369,31 @@ for (const [path, state, text] of [
     expect(errors).toEqual([]);
   });
 }
+
+// The landing hero is the system at work, not a picture of it: the failing run can be fixed in place.
+test('the landing hero re-runs the checks as the gain moves, and resets to the measured run', async ({
+  page,
+}) => {
+  const errors = watchErrors(page);
+  await page.goto('/');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const hero = page.locator('main > section').first();
+  await expect(hero.getByText('Overshoot is 7.6 points over its 10 % limit.')).toBeVisible();
+  const kp = hero.getByRole('slider', { name: 'Proportional gain, Kp' });
+  await kp.focus();
+  // 4.20 down to 3.60 in steps of 0.05: the gain the run review recommends.
+  for (let i = 0; i < 12; i++) await page.keyboard.press('ArrowLeft');
+  await expect(hero.getByText('All four checks pass at Kp 3.60.')).toBeVisible();
+  const checks = hero.getByRole('group', { name: 'Acceptance checks' });
+  await expect(checks.getByText('Fail')).toHaveCount(0);
+  await expect(checks.getByText('Pass')).toHaveCount(4);
+  // More gain than measured fails more than one check, and says so.
+  for (let i = 0; i < 20; i++) await page.keyboard.press('ArrowRight');
+  await expect(
+    hero.getByText(/Overshoot is .* points over its 10 % limit, and 2 more checks fail\./),
+  ).toBeVisible();
+  await hero.getByRole('button', { name: 'Reset' }).click();
+  await expect(hero.getByText('Overshoot is 7.6 points over its 10 % limit.')).toBeVisible();
+  await expect(hero.getByText('as measured in R-0412')).toBeVisible();
+  expect(errors).toEqual([]);
+});

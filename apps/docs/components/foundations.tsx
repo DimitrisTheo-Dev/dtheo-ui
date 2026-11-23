@@ -93,54 +93,58 @@ export function ColorFoundation() {
     <>
       <DocSection
         title="Presets"
-        description="The same components in three characters. Pick one per tool; the suite still reads as one family."
+        description="The same components in two characters, each in light and dark. Graphite has one accent; Carbon has none, so the only colors left are status and data."
       >
-        <div className="grid gap-3 md:grid-cols-3">
-          {presets.map((p) => (
-            <ThemeScope
-              key={p.id}
-              mode="dark"
-              preset={p.id as 'graphite'}
-              className="flex flex-col gap-3 rounded-card border border-border p-4"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-headline">{p.name}</span>
-                <code className="text-caption text-subtle-foreground">{p.id}</code>
-              </div>
-              <p className="min-h-12 text-label font-normal text-muted-foreground">{p.description}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button size="sm" variant="primary">
-                  Queue run
-                </Button>
-                <Button size="sm">Compare</Button>
-                <Badge variant="destructive">
-                  <CircleXIcon aria-hidden="true" />
-                  Fail
-                </Badge>
-              </div>
-              <div className="flex gap-1">
-                {(
-                  [
-                    'background',
-                    'card',
-                    'popover',
-                    'primary',
-                    'chart-1',
-                    'chart-muted',
-                    'destructive-foreground',
-                    'warning',
-                  ] as const
-                ).map((r) => (
-                  <span
-                    key={r}
-                    title={r}
-                    className="h-6 flex-1 rounded-item shadow-[inset_0_0_0_1px_var(--border)]"
-                    style={{ background: `var(--${r})` }}
-                  />
-                ))}
-              </div>
-            </ThemeScope>
-          ))}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {presets.flatMap((p) =>
+            (Object.keys(p.modes) as Array<'light' | 'dark'>).map((mode) => (
+              <ThemeScope
+                key={`${p.id}-${mode}`}
+                mode={mode}
+                preset={p.id as 'graphite'}
+                className="flex flex-col gap-3 rounded-card border border-border p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-headline">
+                    {p.name} <span className="font-normal text-muted-foreground">{mode}</span>
+                  </span>
+                  <code className="text-caption text-subtle-foreground">{p.id}</code>
+                </div>
+                <p className="min-h-12 text-label font-normal text-muted-foreground">{p.description}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button size="sm" variant="primary">
+                    Queue run
+                  </Button>
+                  <Button size="sm">Compare</Button>
+                  <Badge variant="destructive">
+                    <CircleXIcon aria-hidden="true" />
+                    Fail
+                  </Badge>
+                </div>
+                <div className="flex gap-1">
+                  {(
+                    [
+                      'background',
+                      'card',
+                      'popover',
+                      'primary',
+                      'chart-1',
+                      'chart-muted',
+                      'destructive-foreground',
+                      'warning',
+                    ] as const
+                  ).map((r) => (
+                    <span
+                      key={r}
+                      title={r}
+                      className="h-6 flex-1 rounded-item shadow-[inset_0_0_0_1px_var(--border)]"
+                      style={{ background: `var(--${r})` }}
+                    />
+                  ))}
+                </div>
+              </ThemeScope>
+            )),
+          )}
         </div>
       </DocSection>
 
