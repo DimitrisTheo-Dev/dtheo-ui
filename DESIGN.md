@@ -30,9 +30,9 @@ Three presets share every component and change only color, radius and material:
   `warning`, `info` with `-foreground`), `selection`, sidebar roles and chart roles.
 - Defined in OKLCH. Hover and pressed states move lightness, not hue.
 - Borders and fills on dark are white at low alpha, so they adapt to whatever surface they sit on.
-- **Contrast is a build step.** 40 pairs, including layered cases such as a status badge on a selected table row
+- **Contrast is a build step.** 43 pairs, including layered cases such as a status badge on a selected table row
   and the focus ring on its own halo, are composited the way the browser does and measured in every theme they
-  appear in (Graphite light and dark, Flight deck, Deep space). All 159 checks must pass WCAG AA (3:1 for the focus
+  appear in (Graphite light and dark, Flight deck, Deep space). All 171 checks must pass WCAG AA (3:1 for the focus
   ring), or the build fails.
 - Status always ships as icon + word + color. Red is for failure only, amber for near a limit, green for pass.
 
@@ -98,6 +98,21 @@ Motion explains a change; it is never decoration.
 - Frequency is a log axis with labeled decades. Margins, peaks and Cpk carry their number and a word, not color.
 - Live and dense data (a 1 kHz feed, thousands of points) draws on a canvas in token colors; axes, labels and
   limits stay vector. Live charts stop drawing off screen and step instead of glide under reduced motion.
+
+## Engineering data
+
+How a number is written is part of the design. `Quantity` and the format functions in `lib/quantity.ts` do it one
+way; the full guide is the Engineering data foundation page.
+
+- Units are SI symbols after a no-break space (`17.6 %`, `71.2 °C`, `12 N·m`); an angle's degree sign sits against
+  the number (`48°`). In a table the unit goes in the column head, once.
+- Decimals follow what the sensor resolves and are the same on every screen. Fixed decimals, tabular figures,
+  right-aligned.
+- Differences are signed with a real minus. The gap between two percentages is in points ("+7.6 points"), a relative
+  change in percent ("+50 %").
+- One limit rule everywhere: past the limit fails, above 90 % of it is near the limit. A missing value is a dash and
+  "No data", never 0 and never a pass.
+- One word per thing across the tools: run, check, limit, near limit, fail (not error), review, reference run.
 
 ## Writing
 

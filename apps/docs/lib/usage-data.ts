@@ -3,6 +3,12 @@
 export type PageUsage = { title: string; href: string; level: 'template' | 'page'; uses: string[] };
 
 export const pageUsage: Record<string, PageUsage> = {
+  'run-history': {
+    title: 'Run history',
+    href: '/examples/run-history',
+    level: 'page',
+    uses: ['button', 'toggle', 'input', 'input-group', 'dialog', 'menu', 'command', 'toast', 'app-shell', 'alert', 'empty', 'progress', 'spinner', 'badge', 'card', 'table', 'quantity', 'data-table', 'avatar', 'kbd', 'separator'],
+  },
   'run-review': {
     title: 'Run review',
     href: '/examples/run-review',

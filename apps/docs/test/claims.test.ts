@@ -34,6 +34,7 @@ const claims: Array<[RegExp, keyof typeof actual]> = [
   [/\b(\d+) example apps\b/g, 'apps'],
   [/\b(\d+) (?:MCP )?tools\b/g, 'tools'],
   [/\b(\d+) routes\b/g, 'routes'],
+  [/\b(\d+) key pages\b/g, 'routes'],
 ];
 
 describe('counts the docs state', () => {
@@ -42,10 +43,18 @@ describe('counts the docs state', () => {
     for (const [name, n] of Object.entries(actual)) expect(n, name).toBeGreaterThan(0);
   });
 
-  for (const file of ['README.md', 'DESIGN.md', 'packages/cli/README.md']) {
+  // The landing page types one count by hand, in a client component that cannot read the e2e list.
+  for (const file of [
+    'README.md',
+    'DESIGN.md',
+    'packages/cli/README.md',
+    'apps/docs/components/home/bento.tsx',
+  ]) {
     it(`in ${file} match the code`, () => {
       const text = read(file);
-      const stated = claims.flatMap(([re, key]) => [...text.matchAll(re)].map((m) => [key, Number(m[1])] as const));
+      const stated = claims.flatMap(([re, key]) =>
+        [...text.matchAll(re)].map((m) => [key, Number(m[1])] as const),
+      );
       expect(stated.length).toBeGreaterThan(0);
       for (const [key, n] of stated) expect(n, `${file}: "${n} ${key}"`).toBe(actual[key]);
     });

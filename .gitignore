@@ -11,6 +11,8 @@ node_modules/
 dist/
 # Token outputs are generated but tracked, like the CSS: the docs import them and `pnpm tokens:check` keeps them in sync.
 !packages/tokens/dist/
+# The built Figma plugin is committed, so the library can be imported without a build; a test keeps it current.
+!packages/figma/dist/
 .next/
 out/
 coverage/

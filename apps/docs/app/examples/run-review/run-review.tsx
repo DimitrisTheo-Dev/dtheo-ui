@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import {
   ArchiveIcon,
   ChevronRightIcon,
@@ -69,6 +70,14 @@ import { isShortcut } from '@dtheo/ui/components/command';
 import { BarChart, ChartLegend, LineChart } from '@dtheo/charts';
 import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar, labUser } from '../_shared/lab-sidebar';
+import {
+  DataSlot,
+  MetricSkeletons,
+  PreviewStateMenu,
+  SlotError,
+  SlotGap,
+  usePreviewState,
+} from '../_shared/preview-state';
 import { ThemeToggle } from '@/components/theme-controls';
 import {
   CURRENT_LIMIT,
@@ -109,14 +118,15 @@ function csvNumber(v: number) {
 }
 
 /** Both runs, one row per millisecond, as plain numbers a spreadsheet or a script reads without a locale. */
-function samplesCsv() {
+function samplesCsv(noCurrent = false) {
   const rows = measured.t.map((t, i) =>
     [
       String(t),
       csvNumber(command[i]!),
       csvNumber(measured.torque[i]!),
       csvNumber(reference.torque[i]!),
-      csvNumber(measured.current[i]!),
+      // Not recorded is an empty cell, never a zero a script would average in.
+      noCurrent ? '' : csvNumber(measured.current[i]!),
       csvNumber(reference.current[i]!),
     ].join(','),
   );
@@ -154,6 +164,10 @@ export function RunReview() {
   const [archiveOpen, setArchiveOpen] = React.useState(false);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const [notes, setNotes] = React.useState<Note[]>([]);
+  const [preview, setPreview, retry] = usePreviewState();
+  const loading = preview === 'loading';
+  // Partial data: the phase shunt did not record, so the current check is open rather than near its limit.
+  const noCurrent = preview === 'partial';
   const span = Number(timeWindow[0] ?? 400);
 
   const status = {
@@ -163,14 +177,17 @@ export function RunReview() {
     rise: checkStatus(M.rise, RISE_LIMIT),
     temp: checkStatus(WINDING_TEMP, TEMP_LIMIT),
   };
-  const failing = Object.values(status).filter((s) => s === 'fail').length;
+  const checked = Object.entries(status).filter(([k]) => !(noCurrent && k === 'current'));
+  const failing = checked.filter(([, s]) => s === 'fail').length;
   const exportSamples = React.useCallback(() => {
-    download(SAMPLES_FILE, samplesCsv());
+    download(SAMPLES_FILE, samplesCsv(noCurrent));
     toast.add({
       title: `Exported ${SAMPLES_FILE}`,
-      description: `${fmt.n0.format(SAMPLES)} rows: command, torque and phase current for ${RUN} and ${REFERENCE}.`,
+      description: noCurrent
+        ? `${fmt.n0.format(SAMPLES)} rows. ${RUN}’s phase current was not recorded; that column is empty.`
+        : `${fmt.n0.format(SAMPLES)} rows: command, torque and phase current for ${RUN} and ${REFERENCE}.`,
     });
-  }, [toast]);
+  }, [toast, noCurrent]);
   // ⌘E / Ctrl+E exports, as the menu and the palette say it does.
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -181,14 +198,18 @@ export function RunReview() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [exportSamples]);
-  const nearLimit = Object.values(status).filter((s) => s === 'warn').length;
+  const nearLimit = checked.filter(([, s]) => s === 'warn').length;
 
   return (
     <AppShell sidebar={<LabSidebar current="runs" onSearch={() => setPaletteOpen(true)} />}>
       <AppToolbar>
         <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-body">
-          {/* The runs list isn't part of this demo, so the trail names it without linking to nowhere. */}
-          <span className="text-muted-foreground">Runs</span>
+          <Link
+            href="/examples/run-history"
+            className="rounded-control text-muted-foreground hover:text-foreground"
+          >
+            Runs
+          </Link>
           <ChevronRightIcon className="size-3.5 shrink-0 text-subtle-foreground" aria-hidden="true" />
           <span aria-current="page" className="truncate font-mono text-label text-foreground">
             R-0412
@@ -199,6 +220,11 @@ export function RunReview() {
             Synthetic data
           </Badge>
           <Separator orientation="vertical" className="mx-1.5 hidden h-4 sm:block" />
+          <PreviewStateMenu
+            value={preview}
+            onValueChange={setPreview}
+            states={['live', 'loading', 'error', 'partial']}
+          />
           <Tooltip>
             <TooltipTrigger
               render={
@@ -271,20 +297,23 @@ export function RunReview() {
             </span>
           }
           actions={
-            <>
-              {failing ? (
-                <Badge variant="destructive">
-                  <CircleXIcon aria-hidden="true" />
-                  {failing} failed
-                </Badge>
-              ) : null}
-              {nearLimit ? (
-                <Badge variant="warning">
-                  <TriangleAlertIcon aria-hidden="true" />
-                  {nearLimit} near limit
-                </Badge>
-              ) : null}
-            </>
+            loading ? null : (
+              <>
+                {failing ? (
+                  <Badge variant="destructive">
+                    <CircleXIcon aria-hidden="true" />
+                    {failing} failed
+                  </Badge>
+                ) : null}
+                {nearLimit ? (
+                  <Badge variant="warning">
+                    <TriangleAlertIcon aria-hidden="true" />
+                    {nearLimit} near limit
+                  </Badge>
+                ) : null}
+                {noCurrent ? <Badge variant="outline">1 not checked</Badge> : null}
+              </>
+            )
           }
         />
 
@@ -294,56 +323,69 @@ export function RunReview() {
             {/* Five checks never leave one alone on a row: on a phone the first (failing) check spans the width. */}
             <MetricGroup
               aria-label="Acceptance checks"
+              aria-busy={loading || undefined}
               className="order-1 grid-cols-2 xl:order-none sm:grid-cols-3 lg:grid-cols-5 [&>:first-child]:col-span-2 sm:[&>:first-child]:col-span-1"
             >
-              <Metric
-                label="Overshoot"
-                value={fmt.n1.format(M.overshoot)}
-                unit="%"
-                status={status.overshoot}
-                progress={M.overshoot / (OVERSHOOT_LIMIT * 1.5)}
-                limit={1 / 1.5}
-                limitLabel={`Limit ≤ ${OVERSHOOT_LIMIT} %`}
-                hint={`Peak above the ${TARGET} N·m command`}
-              />
-              <Metric
-                label="Peak current"
-                value={fmt.n1.format(M.peakCurrent)}
-                unit="A"
-                status={status.current}
-                progress={M.peakCurrent / (CURRENT_LIMIT * 1.25)}
-                limit={1 / 1.25}
-                limitLabel={`Limit ≤ ${CURRENT_LIMIT} A`}
-                hint="Peak phase current"
-              />
-              <Metric
-                label="Settling, 2 %"
-                value={fmt.n0.format(M.settle)}
-                unit="ms"
-                status={status.settle}
-                progress={M.settle / (SETTLE_LIMIT * 1.5)}
-                limit={1 / 1.5}
-                limitLabel={`Limit ≤ ${SETTLE_LIMIT} ms`}
-                hint="Time after the step until torque stays inside ±2 %"
-              />
-              <Metric
-                label="Rise, 10–90 %"
-                value={fmt.n0.format(M.rise)}
-                unit="ms"
-                status={status.rise}
-                progress={M.rise / (RISE_LIMIT * 1.5)}
-                limit={1 / 1.5}
-                limitLabel={`Limit ≤ ${RISE_LIMIT} ms`}
-              />
-              <Metric
-                label="Winding temp"
-                value={fmt.n1.format(WINDING_TEMP)}
-                unit="°C"
-                status={status.temp}
-                progress={WINDING_TEMP / (TEMP_LIMIT * 1.5)}
-                limit={1 / 1.5}
-                limitLabel={`Limit ≤ ${TEMP_LIMIT} °C`}
-              />
+              {loading ? (
+                <MetricSkeletons count={5} />
+              ) : (
+                <>
+                  <Metric
+                    label="Overshoot"
+                    value={fmt.n1.format(M.overshoot)}
+                    unit="%"
+                    status={status.overshoot}
+                    progress={M.overshoot / (OVERSHOOT_LIMIT * 1.5)}
+                    limit={1 / 1.5}
+                    limitLabel={`Limit ≤ ${OVERSHOOT_LIMIT} %`}
+                    hint={`Peak above the ${TARGET} N·m command`}
+                  />
+                  <Metric
+                    label="Peak current"
+                    value={
+                      noCurrent ? (
+                        <span className="text-subtle-foreground">—</span>
+                      ) : (
+                        fmt.n1.format(M.peakCurrent)
+                      )
+                    }
+                    unit={noCurrent ? undefined : 'A'}
+                    status={noCurrent ? 'none' : status.current}
+                    progress={noCurrent ? undefined : M.peakCurrent / (CURRENT_LIMIT * 1.25)}
+                    limit={1 / 1.25}
+                    limitLabel={noCurrent ? 'Not recorded' : `Limit ≤ ${CURRENT_LIMIT} A`}
+                    hint="Peak phase current"
+                  />
+                  <Metric
+                    label="Settling, 2 %"
+                    value={fmt.n0.format(M.settle)}
+                    unit="ms"
+                    status={status.settle}
+                    progress={M.settle / (SETTLE_LIMIT * 1.5)}
+                    limit={1 / 1.5}
+                    limitLabel={`Limit ≤ ${SETTLE_LIMIT} ms`}
+                    hint="Time after the step until torque stays inside ±2 %"
+                  />
+                  <Metric
+                    label="Rise, 10–90 %"
+                    value={fmt.n0.format(M.rise)}
+                    unit="ms"
+                    status={status.rise}
+                    progress={M.rise / (RISE_LIMIT * 1.5)}
+                    limit={1 / 1.5}
+                    limitLabel={`Limit ≤ ${RISE_LIMIT} ms`}
+                  />
+                  <Metric
+                    label="Winding temp"
+                    value={fmt.n1.format(WINDING_TEMP)}
+                    unit="°C"
+                    status={status.temp}
+                    progress={WINDING_TEMP / (TEMP_LIMIT * 1.5)}
+                    limit={1 / 1.5}
+                    limitLabel={`Limit ≤ ${TEMP_LIMIT} °C`}
+                  />
+                </>
+              )}
             </MetricGroup>
 
             <Card className="order-3 xl:order-none">
@@ -363,143 +405,160 @@ export function RunReview() {
                     <SegmentedControlItem value="400">400 ms</SegmentedControlItem>
                     <SegmentedControlItem value="1000">1 s</SegmentedControlItem>
                   </SegmentedControl>
-                  <Toggle
-                    pressed={showSamples}
-                    onPressedChange={setShowSamples}
-                    aria-label="Samples"
-                  >
+                  <Toggle pressed={showSamples} onPressedChange={setShowSamples} aria-label="Samples">
                     <TableIcon aria-hidden="true" />
                     <span className="hidden sm:inline">Samples</span>
                   </Toggle>
                 </CardAction>
               </CardHeader>
               <CardContent className="flex flex-col gap-3 pt-3">
-                <ChartLegend
-                  items={[
-                    { label: 'R-0412 measured', tone: 'primary' },
-                    { label: 'R-0409 reference', tone: 'muted' },
-                    { label: 'Command', tone: 'faint', kind: 'thin' },
-                    { label: '±2 % settling band', kind: 'band' },
-                    { label: 'Over limit', tone: 'critical', kind: 'area' },
-                  ]}
-                />
-                {showSamples ? (
-                  <SampleTable span={span} />
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    <span className="text-label text-muted-foreground">Output torque</span>
-                    <LineChart
-                      ariaLabel={`Output torque. R-0412 peaks at ${fmt.n1.format(M.peak)} N·m, ${fmt.n1.format(M.overshoot)} % over the command, above the ${OVERSHOOT_LIMIT} % limit. R-0409 overshoots ${fmt.n1.format(R.overshoot)} %.`}
-                      x={measured.t}
-                      xDomain={[0, span]}
-                      xUnit="ms"
-                      yDomain={[0, 16]}
-                      yTicks={[0, 4, 8, 12, 16]}
-                      height={250}
-                      syncId="r-0412"
-                      series={[
-                        {
-                          id: 'cmd',
-                          label: 'Command',
-                          values: command,
-                          tone: 'faint',
-                          width: 1,
-                          unit: 'N·m',
-                          dot: false,
-                        },
-                        {
-                          id: 'ref',
-                          label: 'R-0409',
-                          values: reference.torque,
-                          tone: 'muted',
-                          width: 1.5,
-                          unit: 'N·m',
-                        },
-                        {
-                          id: 'meas',
-                          label: 'R-0412',
-                          values: measured.torque,
-                          tone: 'primary',
-                          width: 2,
-                          unit: 'N·m',
-                        },
-                      ]}
-                      bands={[{ from: TARGET * 0.98, to: TARGET * 1.02, fromX: DELAY }]}
-                      thresholds={[
-                        {
-                          value: TORQUE_LIMIT,
-                          label: `Overshoot limit ${fmt.n1.format(TORQUE_LIMIT)} N·m`,
-                          shortLabel: `Limit +${OVERSHOOT_LIMIT} %`,
-                          shadeSeries: 'meas',
-                        },
-                      ]}
-                      markers={[
-                        {
-                          x: M.peakAt,
-                          y: M.peak,
-                          label: `${fmt.n1.format(M.peak)} N·m`,
-                          sublabel: `+${fmt.n1.format(M.overshoot)} %`,
-                          tone: 'critical',
-                        },
-                      ]}
-                      verticals={[
-                        {
-                          x: DELAY + M.settle,
-                          label: `Settled ${fmt.n0.format(M.settle)} ms after the step`,
-                          shortLabel: `Settled ${fmt.n0.format(M.settle)} ms`,
-                        },
-                      ]}
-                      extraReadout={(i) => [
-                        {
-                          label: 'R-0412 current',
-                          value: `${fmt.n1.format(measured.current[i]!)} A`,
-                          tone: 'primary',
-                        },
-                      ]}
-                    />
-                    <span className="mt-3 text-label text-muted-foreground">Phase current</span>
-                    <LineChart
-                      ariaLabel={`Phase current. R-0412 peaks at ${fmt.n1.format(M.peakCurrent)} A, ${fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)} % of the ${CURRENT_LIMIT} A limit.`}
-                      x={measured.t}
-                      xDomain={[0, span]}
-                      xUnit="ms"
-                      yDomain={[0, 40]}
-                      yTicks={[0, 20, 40]}
-                      height={130}
-                      syncId="r-0412"
-                      series={[
-                        {
-                          id: 'ref',
-                          label: 'R-0409',
-                          values: reference.current,
-                          tone: 'muted',
-                          width: 1.5,
-                          unit: 'A',
-                          digits: 1,
-                        },
-                        {
-                          id: 'meas',
-                          label: 'R-0412',
-                          values: measured.current,
-                          tone: 'primary',
-                          width: 2,
-                          unit: 'A',
-                          digits: 1,
-                        },
-                      ]}
-                      thresholds={[{ value: CURRENT_LIMIT, label: `Limit ${CURRENT_LIMIT} A` }]}
-                      markers={[
-                        {
-                          x: M.peakCurrentAt,
-                          y: M.peakCurrent,
-                          label: `${fmt.n1.format(M.peakCurrent)} A`,
-                          sublabel: `${fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)} % of limit`,
-                          tone: 'warning',
-                        },
-                      ]}
-                    />
-                  </div>
+                {preview === 'error' ? null : (
+                  <ChartLegend
+                    items={[
+                      { label: 'R-0412 measured', tone: 'primary' },
+                      { label: 'R-0409 reference', tone: 'muted' },
+                      { label: 'Command', tone: 'faint', kind: 'thin' },
+                      { label: '±2 % settling band', kind: 'band' },
+                      { label: 'Over limit', tone: 'critical', kind: 'area' },
+                    ]}
+                  />
                 )}
+                <DataSlot
+                  state={preview}
+                  label="step response"
+                  height={420}
+                  error={
+                    <SlotError title="Traces could not be loaded" onRetry={retry}>
+                      The sample store did not answer within 10 s. Nothing was lost: the checks above come
+                      from the run summary and are current.
+                    </SlotError>
+                  }
+                >
+                  {showSamples ? (
+                    <SampleTable span={span} noCurrent={noCurrent} />
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      <span className="text-label text-muted-foreground">Output torque</span>
+                      <LineChart
+                        ariaLabel={`Output torque. R-0412 peaks at ${fmt.n1.format(M.peak)} N·m, ${fmt.n1.format(M.overshoot)} % over the command, above the ${OVERSHOOT_LIMIT} % limit. R-0409 overshoots ${fmt.n1.format(R.overshoot)} %.`}
+                        x={measured.t}
+                        xDomain={[0, span]}
+                        xUnit="ms"
+                        yDomain={[0, 16]}
+                        yTicks={[0, 4, 8, 12, 16]}
+                        height={250}
+                        syncId="r-0412"
+                        series={[
+                          {
+                            id: 'cmd',
+                            label: 'Command',
+                            values: command,
+                            tone: 'faint',
+                            width: 1,
+                            unit: 'N·m',
+                            dot: false,
+                          },
+                          {
+                            id: 'ref',
+                            label: 'R-0409',
+                            values: reference.torque,
+                            tone: 'muted',
+                            width: 1.5,
+                            unit: 'N·m',
+                          },
+                          {
+                            id: 'meas',
+                            label: 'R-0412',
+                            values: measured.torque,
+                            tone: 'primary',
+                            width: 2,
+                            unit: 'N·m',
+                          },
+                        ]}
+                        bands={[{ from: TARGET * 0.98, to: TARGET * 1.02, fromX: DELAY }]}
+                        thresholds={[
+                          {
+                            value: TORQUE_LIMIT,
+                            label: `Overshoot limit ${fmt.n1.format(TORQUE_LIMIT)} N·m`,
+                            shortLabel: `Limit +${OVERSHOOT_LIMIT} %`,
+                            shadeSeries: 'meas',
+                          },
+                        ]}
+                        markers={[
+                          {
+                            x: M.peakAt,
+                            y: M.peak,
+                            label: `${fmt.n1.format(M.peak)} N·m`,
+                            sublabel: `+${fmt.n1.format(M.overshoot)} %`,
+                            tone: 'critical',
+                          },
+                        ]}
+                        verticals={[
+                          {
+                            x: DELAY + M.settle,
+                            label: `Settled ${fmt.n0.format(M.settle)} ms after the step`,
+                            shortLabel: `Settled ${fmt.n0.format(M.settle)} ms`,
+                          },
+                        ]}
+                        extraReadout={(i) => [
+                          {
+                            label: 'R-0412 current',
+                            value: noCurrent ? 'Not recorded' : `${fmt.n1.format(measured.current[i]!)} A`,
+                            tone: 'primary',
+                          },
+                        ]}
+                      />
+                      <span className="mt-3 text-label text-muted-foreground">Phase current</span>
+                      {noCurrent ? (
+                        <SlotGap title="Phase current was not recorded" height={130}>
+                          Bench 3’s phase shunt did not report during this run, so the current check is open.
+                          Torque, overshoot, settling and rise are complete.
+                        </SlotGap>
+                      ) : (
+                        <LineChart
+                          ariaLabel={`Phase current. R-0412 peaks at ${fmt.n1.format(M.peakCurrent)} A, ${fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)} % of the ${CURRENT_LIMIT} A limit.`}
+                          x={measured.t}
+                          xDomain={[0, span]}
+                          xUnit="ms"
+                          yDomain={[0, 40]}
+                          yTicks={[0, 20, 40]}
+                          height={130}
+                          syncId="r-0412"
+                          series={[
+                            {
+                              id: 'ref',
+                              label: 'R-0409',
+                              values: reference.current,
+                              tone: 'muted',
+                              width: 1.5,
+                              unit: 'A',
+                              digits: 1,
+                            },
+                            {
+                              id: 'meas',
+                              label: 'R-0412',
+                              values: measured.current,
+                              tone: 'primary',
+                              width: 2,
+                              unit: 'A',
+                              digits: 1,
+                            },
+                          ]}
+                          thresholds={[{ value: CURRENT_LIMIT, label: `Limit ${CURRENT_LIMIT} A` }]}
+                          markers={[
+                            {
+                              x: M.peakCurrentAt,
+                              y: M.peakCurrent,
+                              label: `${fmt.n1.format(M.peakCurrent)} A`,
+                              sublabel: `${fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)} % of limit`,
+                              tone: 'warning',
+                            },
+                          ]}
+                        />
+                      )}
+                    </div>
+                  )}
+                </DataSlot>
               </CardContent>
               <CardFooter className="justify-between">
                 <span>Sampled at 1 kHz · load cell and phase shunt, Bench 3</span>
@@ -513,103 +572,126 @@ export function RunReview() {
                   <CardTitle level={2}>Run history</CardTitle>
                   <CardDescription>RA-14 hip pitch, last 8 runs</CardDescription>
                 </div>
+                <CardAction>
+                  <Button variant="ghost" size="sm" render={<Link href="/examples/run-history" />}>
+                    All 412 runs
+                    <ChevronRightIcon aria-hidden="true" />
+                  </Button>
+                </CardAction>
               </CardHeader>
               <CardContent className="px-0 pb-1">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead>Run</TableHead>
-                      {/* On a phone the run, its overshoot and its result fill the width; the profile joins from sm. */}
-                      <TableHead className="hidden sm:table-cell">Profile</TableHead>
-                      <TableHead numeric className="hidden sm:table-cell">
-                        Kp
-                      </TableHead>
-                      <TableHead numeric>Overshoot</TableHead>
-                      <TableHead numeric className="hidden md:table-cell">
-                        Settling
-                      </TableHead>
-                      <TableHead numeric className="hidden md:table-cell">
-                        Peak current
-                      </TableHead>
-                      <TableHead>Result</TableHead>
-                      <TableHead className="hidden lg:table-cell">Started</TableHead>
-                      <TableHead>
-                        <span className="sr-only">Actions</span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {runHistory.map((run) => {
-                      const meta = resultMeta[run.result];
-                      return (
-                        <TableRow key={run.id} aria-selected={run.id === RUN || undefined}>
-                          <TableCell className="font-mono text-label">{run.id}</TableCell>
-                          <TableCell className="hidden text-muted-foreground sm:table-cell">
-                            <span className="text-foreground">{run.profile}</span>
-                            {run.note ? (
-                              <span className="ml-1.5 text-caption text-subtle-foreground">{run.note}</span>
-                            ) : null}
-                          </TableCell>
-                          <TableCell numeric className="hidden sm:table-cell">
-                            {fmt.n2.format(run.kp)}
-                          </TableCell>
-                          <TableCell
-                            numeric
-                            className={
-                              run.overshoot > OVERSHOOT_LIMIT ? 'font-medium text-destructive-foreground' : ''
-                            }
-                          >
-                            {fmt.n1.format(run.overshoot)} %
-                          </TableCell>
-                          <TableCell numeric className="hidden md:table-cell">
-                            {fmt.n0.format(run.settle)} ms
-                          </TableCell>
-                          <TableCell
-                            numeric
-                            className={`hidden md:table-cell ${checkStatus(run.current, CURRENT_LIMIT) === 'pass' ? '' : 'font-medium text-warning-foreground'}`}
-                          >
-                            {fmt.n1.format(run.current)} A
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={meta.variant}>
-                              <meta.Icon aria-hidden="true" />
-                              {meta.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="hidden text-muted-foreground lg:table-cell">
-                            {run.started}
-                          </TableCell>
-                          <TableCell className="w-10 pr-2">
-                            <Menu>
-                              <MenuTrigger
-                                render={
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    aria-label={`Actions for ${run.id}`}
-                                  />
-                                }
+                {loading ? (
+                  <div className="px-4 pb-3">
+                    <DataSlot state={preview} label="run history" height={300}>
+                      {null}
+                    </DataSlot>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead>Run</TableHead>
+                        {/* On a phone the run, its overshoot and its result fill the width; the profile joins from sm. */}
+                        <TableHead className="hidden sm:table-cell">Profile</TableHead>
+                        <TableHead numeric className="hidden sm:table-cell">
+                          Kp
+                        </TableHead>
+                        <TableHead numeric>Overshoot</TableHead>
+                        <TableHead numeric className="hidden md:table-cell">
+                          Settling
+                        </TableHead>
+                        <TableHead numeric className="hidden md:table-cell">
+                          Peak current
+                        </TableHead>
+                        <TableHead>Result</TableHead>
+                        <TableHead className="hidden lg:table-cell">Started</TableHead>
+                        <TableHead>
+                          <span className="sr-only">Actions</span>
+                        </TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {runHistory.map((run) => {
+                        const meta = resultMeta[run.result];
+                        return (
+                          <TableRow key={run.id} aria-selected={run.id === RUN || undefined}>
+                            <TableCell className="font-mono text-label">{run.id}</TableCell>
+                            <TableCell className="hidden text-muted-foreground sm:table-cell">
+                              <span className="text-foreground">{run.profile}</span>
+                              {run.note ? (
+                                <span className="ml-1.5 text-caption text-subtle-foreground">{run.note}</span>
+                              ) : null}
+                            </TableCell>
+                            <TableCell numeric className="hidden sm:table-cell">
+                              {fmt.n2.format(run.kp)}
+                            </TableCell>
+                            <TableCell
+                              numeric
+                              className={
+                                run.overshoot > OVERSHOOT_LIMIT
+                                  ? 'font-medium text-destructive-foreground'
+                                  : ''
+                              }
+                            >
+                              {fmt.n1.format(run.overshoot)} %
+                            </TableCell>
+                            <TableCell numeric className="hidden md:table-cell">
+                              {fmt.n0.format(run.settle)} ms
+                            </TableCell>
+                            {noCurrent && run.id === RUN ? (
+                              <TableCell numeric className="hidden text-subtle-foreground md:table-cell">
+                                <span aria-hidden="true">—</span>
+                                <span className="sr-only">Not recorded</span>
+                              </TableCell>
+                            ) : (
+                              <TableCell
+                                numeric
+                                className={`hidden md:table-cell ${checkStatus(run.current, CURRENT_LIMIT) === 'pass' ? '' : 'font-medium text-warning-foreground'}`}
                               >
-                                <MoreHorizontalIcon aria-hidden="true" />
-                              </MenuTrigger>
-                              <MenuContent align="end">
-                                <MenuItem>Open {run.id}</MenuItem>
-                                {/* A run is never compared with itself, and the reference is already set. */}
-                                {run.id === RUN ? null : (
-                                  <MenuItem>
-                                    <GitCompareIcon aria-hidden="true" />
-                                    Compare with {RUN}
-                                  </MenuItem>
-                                )}
-                                {run.id === REFERENCE ? null : <MenuItem>Set as reference</MenuItem>}
-                              </MenuContent>
-                            </Menu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                                {fmt.n1.format(run.current)} A
+                              </TableCell>
+                            )}
+                            <TableCell>
+                              <Badge variant={meta.variant}>
+                                <meta.Icon aria-hidden="true" />
+                                {meta.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="hidden text-muted-foreground lg:table-cell">
+                              {run.started}
+                            </TableCell>
+                            <TableCell className="w-10 pr-2">
+                              <Menu>
+                                <MenuTrigger
+                                  render={
+                                    <Button
+                                      variant="ghost"
+                                      size="icon-sm"
+                                      aria-label={`Actions for ${run.id}`}
+                                    />
+                                  }
+                                >
+                                  <MoreHorizontalIcon aria-hidden="true" />
+                                </MenuTrigger>
+                                <MenuContent align="end">
+                                  <MenuItem>Open {run.id}</MenuItem>
+                                  {/* A run is never compared with itself, and the reference is already set. */}
+                                  {run.id === RUN ? null : (
+                                    <MenuItem>
+                                      <GitCompareIcon aria-hidden="true" />
+                                      Compare with {RUN}
+                                    </MenuItem>
+                                  )}
+                                  {run.id === REFERENCE ? null : <MenuItem>Set as reference</MenuItem>}
+                                </MenuContent>
+                              </Menu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -618,50 +700,65 @@ export function RunReview() {
             aria-label="Run inspector"
             className="contents xl:sticky xl:top-18 xl:flex xl:min-w-0 xl:flex-col xl:gap-5 xl:self-start"
           >
-            <Card className="order-2 xl:order-none">
-              <CardContent className="flex flex-col gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="grid size-8 place-items-center rounded-control bg-destructive/15 text-destructive-foreground">
-                    <CircleXIcon className="size-4.5" aria-hidden="true" />
-                  </span>
-                  <div className="flex flex-col">
-                    <h2 className="text-headline">Needs retune</h2>
-                    <span className="text-caption text-subtle-foreground">Not ready for sign-off</span>
+            <Card className="order-2 xl:order-none" aria-busy={loading || undefined}>
+              {loading ? (
+                <CardContent className="flex flex-col gap-3">
+                  <DataSlot state={preview} label="the decision" height={220}>
+                    {null}
+                  </DataSlot>
+                </CardContent>
+              ) : (
+                <CardContent className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid size-8 place-items-center rounded-control bg-destructive/15 text-destructive-foreground">
+                      <CircleXIcon className="size-4.5" aria-hidden="true" />
+                    </span>
+                    <div className="flex flex-col">
+                      <h2 className="text-headline">Needs retune</h2>
+                      <span className="text-caption text-subtle-foreground">Not ready for sign-off</span>
+                    </div>
                   </div>
-                </div>
-                <p className="text-body text-muted-foreground text-pretty">
-                  Overshoot is{' '}
-                  <strong className="font-semibold text-foreground">
-                    {fmt.n1.format(M.overshoot - OVERSHOOT_LIMIT)} points over
-                  </strong>{' '}
-                  the {OVERSHOOT_LIMIT}&nbsp;% limit, and phase current peaked at{' '}
-                  <strong className="font-semibold text-foreground">
-                    {fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)}&nbsp;%
-                  </strong>{' '}
-                  of its {CURRENT_LIMIT}&nbsp;A limit. Kp rose {fmt.n0.format(kpRise)}&nbsp;% since the
-                  reference run.
-                </p>
-                <p className="text-body text-muted-foreground">
-                  Lower Kp or raise Kd, then rerun the same step on Bench&nbsp;3.
-                </p>
-                <div className="mt-1 flex flex-col gap-2">
-                  <Button variant="primary" onClick={() => setRetuneOpen(true)}>
-                    <RotateCcwIcon aria-hidden="true" />
-                    Queue retune run
-                  </Button>
-                  <Button
-                    onClick={() =>
-                      toast.add({
-                        title: `Comparing with ${REFERENCE}`,
-                        description: 'Reference overlay is on the chart.',
-                      })
-                    }
-                  >
-                    <GitCompareIcon aria-hidden="true" />
-                    Compare with {REFERENCE}
-                  </Button>
-                </div>
-              </CardContent>
+                  <p className="text-body text-muted-foreground text-pretty">
+                    Overshoot is{' '}
+                    <strong className="font-semibold text-foreground">
+                      {fmt.n1.format(M.overshoot - OVERSHOOT_LIMIT)} points over
+                    </strong>{' '}
+                    the {OVERSHOOT_LIMIT}&nbsp;% limit,{' '}
+                    {noCurrent ? (
+                      <>and phase current was not recorded, so its check is open.</>
+                    ) : (
+                      <>
+                        and phase current peaked at{' '}
+                        <strong className="font-semibold text-foreground">
+                          {fmt.n0.format((M.peakCurrent / CURRENT_LIMIT) * 100)}&nbsp;%
+                        </strong>{' '}
+                        of its {CURRENT_LIMIT}&nbsp;A limit.
+                      </>
+                    )}{' '}
+                    Kp rose {fmt.n0.format(kpRise)}&nbsp;% since the reference run.
+                  </p>
+                  <p className="text-body text-muted-foreground">
+                    Lower Kp or raise Kd, then rerun the same step on Bench&nbsp;3.
+                  </p>
+                  <div className="mt-1 flex flex-col gap-2">
+                    <Button variant="primary" onClick={() => setRetuneOpen(true)}>
+                      <RotateCcwIcon aria-hidden="true" />
+                      Queue retune run
+                    </Button>
+                    <Button
+                      onClick={() =>
+                        toast.add({
+                          title: `Comparing with ${REFERENCE}`,
+                          description: 'Reference overlay is on the chart.',
+                        })
+                      }
+                    >
+                      <GitCompareIcon aria-hidden="true" />
+                      Compare with {REFERENCE}
+                    </Button>
+                  </div>
+                </CardContent>
+              )}
             </Card>
 
             <Card className="order-5 xl:order-none">
@@ -671,19 +768,21 @@ export function RunReview() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-1 pb-2">
-                <BarChart
-                  ariaLabel={`Overshoot for the last ${runHistory.length} runs. ${overLimit} exceed the ${OVERSHOOT_LIMIT} % limit.`}
-                  bars={runHistory.toReversed().map((r) => ({
-                    id: r.id,
-                    label: r.id.slice(-2),
-                    value: r.overshoot,
-                    current: r.id === RUN,
-                  }))}
-                  limit={OVERSHOOT_LIMIT}
-                  limitLabel={`Limit ${OVERSHOOT_LIMIT} %`}
-                  unit="%"
-                  height={170}
-                />
+                <DataSlot state={preview} label="overshoot by run" height={170}>
+                  <BarChart
+                    ariaLabel={`Overshoot for the last ${runHistory.length} runs. ${overLimit} exceed the ${OVERSHOOT_LIMIT} % limit.`}
+                    bars={runHistory.toReversed().map((r) => ({
+                      id: r.id,
+                      label: r.id.slice(-2),
+                      value: r.overshoot,
+                      current: r.id === RUN,
+                    }))}
+                    limit={OVERSHOOT_LIMIT}
+                    limitLabel={`Limit ${OVERSHOOT_LIMIT} %`}
+                    unit="%"
+                    height={170}
+                  />
+                </DataSlot>
               </CardContent>
             </Card>
 
@@ -694,35 +793,37 @@ export function RunReview() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-1">
-                <dl className="grid grid-cols-[auto_1fr] text-body">
-                  {[
-                    [
-                      'Kp',
-                      fmt.n2.format(gains.kp),
-                      `was ${fmt.n2.format(referenceGains.kp)}`,
-                      `+${fmt.n0.format(kpRise)} %`,
-                    ],
-                    ['Ki', fmt.n2.format(gains.ki), '', ''],
-                    ['Kd', fmt.n2.format(gains.kd), '', ''],
-                    ['Supply', '48.0 V', '', ''],
-                    ['Ambient', '23.4 °C', '', ''],
-                  ].map(([k, v, was, delta], i) => (
-                    <React.Fragment key={k}>
-                      <dt className={`py-1.5 text-muted-foreground ${i ? 'border-t border-border' : ''}`}>
-                        {k}
-                      </dt>
-                      <dd className={`py-1.5 text-right tabular-nums ${i ? 'border-t border-border' : ''}`}>
-                        {v}
-                        {was ? (
-                          <span className="ml-1.5 text-caption text-subtle-foreground">{was}</span>
-                        ) : null}
-                        {delta ? (
-                          <span className="ml-1.5 font-semibold text-warning-foreground">{delta}</span>
-                        ) : null}
-                      </dd>
-                    </React.Fragment>
-                  ))}
-                </dl>
+                <DataSlot state={preview} label="controller gains" height={180}>
+                  <dl className="grid grid-cols-[auto_1fr] text-body">
+                    {[
+                      [
+                        'Kp',
+                        fmt.n2.format(gains.kp),
+                        `was ${fmt.n2.format(referenceGains.kp)}`,
+                        `+${fmt.n0.format(kpRise)} %`,
+                      ],
+                      ['Ki', fmt.n2.format(gains.ki), '', ''],
+                      ['Kd', fmt.n2.format(gains.kd), '', ''],
+                      ['Supply', '48.0 V', '', ''],
+                      ['Ambient', '23.4 °C', '', ''],
+                    ].map(([k, v, was, delta], i) => (
+                      <React.Fragment key={k}>
+                        <dt className={`py-1.5 text-muted-foreground ${i ? 'border-t border-border' : ''}`}>
+                          {k}
+                        </dt>
+                        <dd className={`py-1.5 text-right tabular-nums ${i ? 'border-t border-border' : ''}`}>
+                          {v}
+                          {was ? (
+                            <span className="ml-1.5 text-caption text-subtle-foreground">{was}</span>
+                          ) : null}
+                          {delta ? (
+                            <span className="ml-1.5 font-semibold text-warning-foreground">{delta}</span>
+                          ) : null}
+                        </dd>
+                      </React.Fragment>
+                    ))}
+                  </dl>
+                </DataSlot>
               </CardContent>
             </Card>
 
@@ -802,7 +903,7 @@ export function RunReview() {
   );
 }
 
-function SampleTable({ span }: { span: number }) {
+function SampleTable({ span, noCurrent }: { span: number; noCurrent: boolean }) {
   const rows = Array.from({ length: span / 10 + 1 }, (_, k) => k * 10);
   return (
     <div className="max-h-96 overflow-auto rounded-inset border border-border">
@@ -826,7 +927,14 @@ function SampleTable({ span }: { span: number }) {
                 {fmt.n2.format(measured.torque[t]!)} N·m
               </TableCell>
               <TableCell numeric>{fmt.n2.format(reference.torque[t]!)} N·m</TableCell>
-              <TableCell numeric>{fmt.n1.format(measured.current[t]!)} A</TableCell>
+              {noCurrent ? (
+                <TableCell numeric className="text-subtle-foreground">
+                  <span aria-hidden="true">—</span>
+                  <span className="sr-only">Not recorded</span>
+                </TableCell>
+              ) : (
+                <TableCell numeric>{fmt.n1.format(measured.current[t]!)} A</TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

@@ -28,7 +28,7 @@ import {
 export const labUser = { name: 'Lena Varga', first: 'Lena' };
 
 /**
- * The shared sidebar of the "Actuator Lab" suite. Run review, Motor map, Loop tuning and the Lab assistant are different tools
+ * The shared sidebar of the "Actuator Lab" suite. Runs, the run review, Motor map, Loop tuning and the Lab assistant are different tools
  * with their own character, but the frame, navigation and vocabulary are the same.
  */
 export function LabSidebar({
@@ -64,7 +64,7 @@ export function LabSidebar({
       <SidebarContent>
         <SidebarSection title="Bench">
           <SidebarItem
-            render={<Link href="/examples/run-review" />}
+            render={<Link href="/examples/run-history" />}
             icon={<ActivityIcon />}
             count={412}
             active={current === 'runs'}

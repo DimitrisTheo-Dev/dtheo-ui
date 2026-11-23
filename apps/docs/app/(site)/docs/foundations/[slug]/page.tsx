@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { DocPage, DocSection } from '@/components/doc-page';
+import { EngineeringDataFoundation } from '@/components/engineering-data';
 import {
   ColorFoundation,
   GeometryFoundation,
@@ -10,7 +11,7 @@ import {
 import { foundations } from '@/lib/nav';
 import { pageMetadata } from '@/lib/metadata';
 
-const slugs = ['color', 'typography', 'geometry', 'motion'] as const;
+const slugs = ['color', 'typography', 'geometry', 'motion', 'engineering-data'] as const;
 type Slug = (typeof slugs)[number];
 
 export const dynamicParams = false;
@@ -47,6 +48,11 @@ const content: Record<Slug, { description: string; body: React.ReactNode }> = {
       'Controls of the same size align in one row. Corners nest concentrically. Borders are quiet hairlines; focus is always visible.',
     body: <GeometryFoundation />,
   },
+  'engineering-data': {
+    description:
+      'How the tools write a number: its unit, its precision, its limit and its status. One way on every screen, so nobody wonders whether 17.6 and 17.60 are the same run.',
+    body: <EngineeringDataFoundation />,
+  },
   motion: {
     description:
       'Motion answers a press, shows where something came from or bridges a change. Anything used a hundred times a day does not animate.',
@@ -68,10 +74,18 @@ export default async function FoundationPage({ params }: { params: Promise<{ slu
     >
       {body}
       <DocSection title="Source">
-        <p className="docs-prose">
-          Every value on this page is read from <code>packages/tokens/src/index.ts</code>, the same source
-          that generates the CSS, the DTCG JSON and the React Native values.
-        </p>
+        {slug === 'engineering-data' ? (
+          <p className="docs-prose">
+            Every specimen on this page is written by <code>Quantity</code> and the format functions in{' '}
+            <code>packages/ui/src/lib/quantity.ts</code>, the same code the example apps and the data table
+            use.
+          </p>
+        ) : (
+          <p className="docs-prose">
+            Every value on this page is read from <code>packages/tokens/src/index.ts</code>, the same source
+            that generates the CSS, the DTCG JSON and the React Native values.
+          </p>
+        )}
       </DocSection>
     </DocPage>
   );

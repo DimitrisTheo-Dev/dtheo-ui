@@ -163,6 +163,36 @@
     "preset": "graphite",
     "mode": "light",
     "index": 16,
+    "pair": "destructive-foreground on selection over card",
+    "ratio": 5.96,
+    "min": 4.5,
+    "ok": true,
+    "note": "A value over its limit in a checked table row"
+  },
+  {
+    "preset": "graphite",
+    "mode": "light",
+    "index": 17,
+    "pair": "warning-foreground on selection over card",
+    "ratio": 5.36,
+    "min": 4.5,
+    "ok": true,
+    "note": "A value near its limit in a checked table row"
+  },
+  {
+    "preset": "graphite",
+    "mode": "light",
+    "index": 18,
+    "pair": "muted-foreground on selection over card",
+    "ratio": 6.69,
+    "min": 4.5,
+    "ok": true,
+    "note": "Secondary text in a checked table row"
+  },
+  {
+    "preset": "graphite",
+    "mode": "light",
+    "index": 19,
     "pair": "sidebar-foreground on sidebar",
     "ratio": 15.19,
     "min": 4.5,
@@ -172,7 +202,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 17,
+    "index": 20,
     "pair": "input on card",
     "ratio": 3.14,
     "min": 3,
@@ -182,7 +212,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 18,
+    "index": 21,
     "pair": "ring on background",
     "ratio": 4.07,
     "min": 3,
@@ -192,7 +222,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 19,
+    "index": 22,
     "pair": "ring on card",
     "ratio": 4.37,
     "min": 3,
@@ -202,7 +232,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 20,
+    "index": 23,
     "pair": "ring on sidebar",
     "ratio": 3.79,
     "min": 3,
@@ -212,7 +242,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 21,
+    "index": 24,
     "pair": "ring on secondary over card",
     "ratio": 3.87,
     "min": 3,
@@ -222,7 +252,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 23,
+    "index": 26,
     "pair": "ring on selection over card",
     "ratio": 3.61,
     "min": 3,
@@ -232,7 +262,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 24,
+    "index": 27,
     "pair": "ring on ring 12 %",
     "ratio": 3.5,
     "min": 3,
@@ -242,7 +272,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 25,
+    "index": 28,
     "pair": "ring on ring 12 % over card",
     "ratio": 3.75,
     "min": 3,
@@ -252,7 +282,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 26,
+    "index": 29,
     "pair": "ring on ring 12 % over popover",
     "ratio": 3.7,
     "min": 3,
@@ -262,7 +292,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 27,
+    "index": 30,
     "pair": "ring on ring 12 % over sidebar",
     "ratio": 3.28,
     "min": 3,
@@ -272,7 +302,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 28,
+    "index": 31,
     "pair": "ring on ring 12 % over secondary over card",
     "ratio": 3.34,
     "min": 3,
@@ -282,7 +312,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 29,
+    "index": 32,
     "pair": "ring on ring 12 % over selection over card",
     "ratio": 3.14,
     "min": 3,
@@ -292,7 +322,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 30,
+    "index": 33,
     "pair": "chart-1 on card",
     "ratio": 4.92,
     "min": 3,
@@ -302,7 +332,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 31,
+    "index": 34,
     "pair": "link on background",
     "ratio": 5.23,
     "min": 4.5,
@@ -312,7 +342,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 32,
+    "index": 35,
     "pair": "link on card",
     "ratio": 5.62,
     "min": 4.5,
@@ -322,7 +352,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 33,
+    "index": 36,
     "pair": "link on popover",
     "ratio": 5.54,
     "min": 4.5,
@@ -332,7 +362,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 34,
+    "index": 37,
     "pair": "subtle-foreground on secondary over card",
     "ratio": 5.54,
     "min": 4.5,
@@ -342,7 +372,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 35,
+    "index": 38,
     "pair": "subtle-foreground on sidebar-accent over sidebar",
     "ratio": 4.65,
     "min": 4.5,
@@ -352,7 +382,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 36,
+    "index": 39,
     "pair": "destructive-foreground on destructive 15 % over selection over card",
     "ratio": 4.73,
     "min": 4.5,
@@ -362,7 +392,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 37,
+    "index": 40,
     "pair": "success-foreground on success 15 % over selection over card",
     "ratio": 4.79,
     "min": 4.5,
@@ -372,7 +402,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 38,
+    "index": 41,
     "pair": "warning-foreground on warning 15 % over selection over card",
     "ratio": 4.84,
     "min": 4.5,
@@ -382,7 +412,7 @@
   {
     "preset": "graphite",
     "mode": "light",
-    "index": 39,
+    "index": 42,
     "pair": "info-foreground on info 15 % over selection over card",
     "ratio": 4.86,
     "min": 4.5,
@@ -553,6 +583,36 @@
     "preset": "graphite",
     "mode": "dark",
     "index": 16,
+    "pair": "destructive-foreground on selection over card",
+    "ratio": 5.03,
+    "min": 4.5,
+    "ok": true,
+    "note": "A value over its limit in a checked table row"
+  },
+  {
+    "preset": "graphite",
+    "mode": "dark",
+    "index": 17,
+    "pair": "warning-foreground on selection over card",
+    "ratio": 6.79,
+    "min": 4.5,
+    "ok": true,
+    "note": "A value near its limit in a checked table row"
+  },
+  {
+    "preset": "graphite",
+    "mode": "dark",
+    "index": 18,
+    "pair": "muted-foreground on selection over card",
+    "ratio": 5.44,
+    "min": 4.5,
+    "ok": true,
+    "note": "Secondary text in a checked table row"
+  },
+  {
+    "preset": "graphite",
+    "mode": "dark",
+    "index": 19,
     "pair": "sidebar-foreground on sidebar",
     "ratio": 14.87,
     "min": 4.5,
@@ -562,7 +622,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 17,
+    "index": 20,
     "pair": "input on card",
     "ratio": 3.31,
     "min": 3,
@@ -572,7 +632,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 18,
+    "index": 21,
     "pair": "ring on background",
     "ratio": 7.16,
     "min": 3,
@@ -582,7 +642,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 19,
+    "index": 22,
     "pair": "ring on card",
     "ratio": 6.61,
     "min": 3,
@@ -592,7 +652,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 20,
+    "index": 23,
     "pair": "ring on sidebar",
     "ratio": 6.78,
     "min": 3,
@@ -602,7 +662,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 21,
+    "index": 24,
     "pair": "ring on secondary over card",
     "ratio": 4.9,
     "min": 3,
@@ -612,7 +672,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 22,
+    "index": 25,
     "pair": "ring on foreground 15 % over secondary over card",
     "ratio": 3.17,
     "min": 3,
@@ -622,7 +682,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 23,
+    "index": 26,
     "pair": "ring on selection over card",
     "ratio": 4.67,
     "min": 3,
@@ -632,7 +692,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 24,
+    "index": 27,
     "pair": "ring on ring 12 %",
     "ratio": 5.93,
     "min": 3,
@@ -642,7 +702,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 25,
+    "index": 28,
     "pair": "ring on ring 12 % over card",
     "ratio": 5.41,
     "min": 3,
@@ -652,7 +712,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 26,
+    "index": 29,
     "pair": "ring on ring 12 % over popover",
     "ratio": 4.94,
     "min": 3,
@@ -662,7 +722,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 27,
+    "index": 30,
     "pair": "ring on ring 12 % over sidebar",
     "ratio": 5.56,
     "min": 3,
@@ -672,7 +732,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 28,
+    "index": 31,
     "pair": "ring on ring 12 % over secondary over card",
     "ratio": 4.02,
     "min": 3,
@@ -682,7 +742,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 29,
+    "index": 32,
     "pair": "ring on ring 12 % over selection over card",
     "ratio": 3.83,
     "min": 3,
@@ -692,7 +752,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 30,
+    "index": 33,
     "pair": "chart-1 on card",
     "ratio": 5.74,
     "min": 3,
@@ -702,7 +762,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 31,
+    "index": 34,
     "pair": "link on background",
     "ratio": 7.77,
     "min": 4.5,
@@ -712,7 +772,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 32,
+    "index": 35,
     "pair": "link on card",
     "ratio": 7.18,
     "min": 4.5,
@@ -722,7 +782,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 33,
+    "index": 36,
     "pair": "link on popover",
     "ratio": 6.58,
     "min": 4.5,
@@ -732,7 +792,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 34,
+    "index": 37,
     "pair": "subtle-foreground on secondary over card",
     "ratio": 4.58,
     "min": 4.5,
@@ -742,7 +802,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 35,
+    "index": 38,
     "pair": "subtle-foreground on sidebar-accent over sidebar",
     "ratio": 4.72,
     "min": 4.5,
@@ -752,7 +812,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 36,
+    "index": 39,
     "pair": "destructive-foreground on destructive 15 % over selection over card",
     "ratio": 4.75,
     "min": 4.5,
@@ -762,7 +822,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 37,
+    "index": 40,
     "pair": "success-foreground on success 15 % over selection over card",
     "ratio": 5.1,
     "min": 4.5,
@@ -772,7 +832,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 38,
+    "index": 41,
     "pair": "warning-foreground on warning 15 % over selection over card",
     "ratio": 5.17,
     "min": 4.5,
@@ -782,7 +842,7 @@
   {
     "preset": "graphite",
     "mode": "dark",
-    "index": 39,
+    "index": 42,
     "pair": "info-foreground on info 15 % over selection over card",
     "ratio": 4.64,
     "min": 4.5,
@@ -953,6 +1013,36 @@
     "preset": "flight-deck",
     "mode": "dark",
     "index": 16,
+    "pair": "destructive-foreground on selection over card",
+    "ratio": 5.88,
+    "min": 4.5,
+    "ok": true,
+    "note": "A value over its limit in a checked table row"
+  },
+  {
+    "preset": "flight-deck",
+    "mode": "dark",
+    "index": 17,
+    "pair": "warning-foreground on selection over card",
+    "ratio": 7.94,
+    "min": 4.5,
+    "ok": true,
+    "note": "A value near its limit in a checked table row"
+  },
+  {
+    "preset": "flight-deck",
+    "mode": "dark",
+    "index": 18,
+    "pair": "muted-foreground on selection over card",
+    "ratio": 7.06,
+    "min": 4.5,
+    "ok": true,
+    "note": "Secondary text in a checked table row"
+  },
+  {
+    "preset": "flight-deck",
+    "mode": "dark",
+    "index": 19,
     "pair": "sidebar-foreground on sidebar",
     "ratio": 17.3,
     "min": 4.5,
@@ -962,7 +1052,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 17,
+    "index": 20,
     "pair": "input on card",
     "ratio": 3.34,
     "min": 3,
@@ -972,7 +1062,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 18,
+    "index": 21,
     "pair": "ring on background",
     "ratio": 10.97,
     "min": 3,
@@ -982,7 +1072,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 19,
+    "index": 22,
     "pair": "ring on card",
     "ratio": 10.34,
     "min": 3,
@@ -992,7 +1082,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 20,
+    "index": 23,
     "pair": "ring on sidebar",
     "ratio": 11.22,
     "min": 3,
@@ -1002,7 +1092,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 21,
+    "index": 24,
     "pair": "ring on secondary over card",
     "ratio": 7.86,
     "min": 3,
@@ -1012,7 +1102,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 22,
+    "index": 25,
     "pair": "ring on foreground 15 % over secondary over card",
     "ratio": 5,
     "min": 3,
@@ -1022,7 +1112,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 23,
+    "index": 26,
     "pair": "ring on selection over card",
     "ratio": 7.77,
     "min": 3,
@@ -1032,7 +1122,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 24,
+    "index": 27,
     "pair": "ring on ring 12 %",
     "ratio": 8.85,
     "min": 3,
@@ -1042,7 +1132,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 25,
+    "index": 28,
     "pair": "ring on ring 12 % over card",
     "ratio": 8.15,
     "min": 3,
@@ -1052,7 +1142,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 26,
+    "index": 29,
     "pair": "ring on ring 12 % over popover",
     "ratio": 7.12,
     "min": 3,
@@ -1062,7 +1152,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 27,
+    "index": 30,
     "pair": "ring on ring 12 % over sidebar",
     "ratio": 9.2,
     "min": 3,
@@ -1072,7 +1162,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 28,
+    "index": 31,
     "pair": "ring on ring 12 % over secondary over card",
     "ratio": 6.04,
     "min": 3,
@@ -1082,7 +1172,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 29,
+    "index": 32,
     "pair": "ring on ring 12 % over selection over card",
     "ratio": 5.94,
     "min": 3,
@@ -1092,7 +1182,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 30,
+    "index": 33,
     "pair": "chart-1 on card",
     "ratio": 10.34,
     "min": 3,
@@ -1102,7 +1192,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 31,
+    "index": 34,
     "pair": "link on background",
     "ratio": 10.97,
     "min": 4.5,
@@ -1112,7 +1202,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 32,
+    "index": 35,
     "pair": "link on card",
     "ratio": 10.34,
     "min": 4.5,
@@ -1122,7 +1212,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 33,
+    "index": 36,
     "pair": "link on popover",
     "ratio": 9.23,
     "min": 4.5,
@@ -1132,7 +1222,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 34,
+    "index": 37,
     "pair": "subtle-foreground on secondary over card",
     "ratio": 4.62,
     "min": 4.5,
@@ -1142,7 +1232,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 35,
+    "index": 38,
     "pair": "subtle-foreground on sidebar-accent over sidebar",
     "ratio": 5.4,
     "min": 4.5,
@@ -1152,7 +1242,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 36,
+    "index": 39,
     "pair": "destructive-foreground on destructive 15 % over selection over card",
     "ratio": 5.42,
     "min": 4.5,
@@ -1162,7 +1252,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 37,
+    "index": 40,
     "pair": "success-foreground on success 15 % over selection over card",
     "ratio": 5.84,
     "min": 4.5,
@@ -1172,7 +1262,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 38,
+    "index": 41,
     "pair": "warning-foreground on warning 15 % over selection over card",
     "ratio": 5.91,
     "min": 4.5,
@@ -1182,7 +1272,7 @@
   {
     "preset": "flight-deck",
     "mode": "dark",
-    "index": 39,
+    "index": 42,
     "pair": "info-foreground on info 15 % over selection over card",
     "ratio": 5.36,
     "min": 4.5,
@@ -1353,6 +1443,36 @@
     "preset": "deep-space",
     "mode": "dark",
     "index": 16,
+    "pair": "destructive-foreground on selection over card",
+    "ratio": 6.08,
+    "min": 4.5,
+    "ok": true,
+    "note": "A value over its limit in a checked table row"
+  },
+  {
+    "preset": "deep-space",
+    "mode": "dark",
+    "index": 17,
+    "pair": "warning-foreground on selection over card",
+    "ratio": 8.2,
+    "min": 4.5,
+    "ok": true,
+    "note": "A value near its limit in a checked table row"
+  },
+  {
+    "preset": "deep-space",
+    "mode": "dark",
+    "index": 18,
+    "pair": "muted-foreground on selection over card",
+    "ratio": 8.05,
+    "min": 4.5,
+    "ok": true,
+    "note": "Secondary text in a checked table row"
+  },
+  {
+    "preset": "deep-space",
+    "mode": "dark",
+    "index": 19,
     "pair": "sidebar-foreground on sidebar",
     "ratio": 17.66,
     "min": 4.5,
@@ -1362,7 +1482,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 17,
+    "index": 20,
     "pair": "input on card",
     "ratio": 3.3,
     "min": 3,
@@ -1372,7 +1492,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 18,
+    "index": 21,
     "pair": "ring on background",
     "ratio": 10.22,
     "min": 3,
@@ -1382,7 +1502,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 19,
+    "index": 22,
     "pair": "ring on card",
     "ratio": 9.72,
     "min": 3,
@@ -1392,7 +1512,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 20,
+    "index": 23,
     "pair": "ring on sidebar",
     "ratio": 10.22,
     "min": 3,
@@ -1402,7 +1522,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 21,
+    "index": 24,
     "pair": "ring on secondary over card",
     "ratio": 7.92,
     "min": 3,
@@ -1412,7 +1532,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 22,
+    "index": 25,
     "pair": "ring on foreground 15 % over secondary over card",
     "ratio": 5.01,
     "min": 3,
@@ -1422,7 +1542,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 23,
+    "index": 26,
     "pair": "ring on selection over card",
     "ratio": 7.16,
     "min": 3,
@@ -1432,7 +1552,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 24,
+    "index": 27,
     "pair": "ring on ring 12 %",
     "ratio": 8.61,
     "min": 3,
@@ -1442,7 +1562,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 25,
+    "index": 28,
     "pair": "ring on ring 12 % over card",
     "ratio": 7.94,
     "min": 3,
@@ -1452,7 +1572,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 26,
+    "index": 29,
     "pair": "ring on ring 12 % over popover",
     "ratio": 6.8,
     "min": 3,
@@ -1462,7 +1582,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 27,
+    "index": 30,
     "pair": "ring on ring 12 % over sidebar",
     "ratio": 8.61,
     "min": 3,
@@ -1472,7 +1592,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 28,
+    "index": 31,
     "pair": "ring on ring 12 % over secondary over card",
     "ratio": 6.19,
     "min": 3,
@@ -1482,7 +1602,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 29,
+    "index": 32,
     "pair": "ring on ring 12 % over selection over card",
     "ratio": 5.58,
     "min": 3,
@@ -1492,7 +1612,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 30,
+    "index": 33,
     "pair": "chart-1 on card",
     "ratio": 10.46,
     "min": 3,
@@ -1502,7 +1622,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 31,
+    "index": 34,
     "pair": "link on background",
     "ratio": 10.27,
     "min": 4.5,
@@ -1512,7 +1632,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 32,
+    "index": 35,
     "pair": "link on card",
     "ratio": 9.77,
     "min": 4.5,
@@ -1522,7 +1642,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 33,
+    "index": 36,
     "pair": "link on popover",
     "ratio": 8.67,
     "min": 4.5,
@@ -1532,7 +1652,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 34,
+    "index": 37,
     "pair": "subtle-foreground on secondary over card",
     "ratio": 5.81,
     "min": 4.5,
@@ -1542,7 +1662,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 35,
+    "index": 38,
     "pair": "subtle-foreground on sidebar-accent over sidebar",
     "ratio": 5.96,
     "min": 4.5,
@@ -1552,7 +1672,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 36,
+    "index": 39,
     "pair": "destructive-foreground on destructive 15 % over selection over card",
     "ratio": 5.46,
     "min": 4.5,
@@ -1562,7 +1682,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 37,
+    "index": 40,
     "pair": "success-foreground on success 15 % over selection over card",
     "ratio": 6.13,
     "min": 4.5,
@@ -1572,7 +1692,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 38,
+    "index": 41,
     "pair": "warning-foreground on warning 15 % over selection over card",
     "ratio": 6.07,
     "min": 4.5,
@@ -1582,7 +1702,7 @@
   {
     "preset": "deep-space",
     "mode": "dark",
-    "index": 39,
+    "index": 42,
     "pair": "info-foreground on info 15 % over selection over card",
     "ratio": 5.56,
     "min": 4.5,

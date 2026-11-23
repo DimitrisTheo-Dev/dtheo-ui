@@ -5,7 +5,8 @@ import { CommandDialog, type CommandItemData } from '@dtheo/ui/components/comman
 
 /** Where the palette can take you: every tool in the suite but the one you are in, and the docs. */
 const destinations = [
-  { value: 'runs', label: 'Run review', href: '/examples/run-review' },
+  { value: 'history', label: 'Runs', href: '/examples/run-history' },
+  { value: 'runs', label: 'Run review: R-0412', href: '/examples/run-review' },
   { value: 'motors', label: 'Motor maps', href: '/examples/motor-map' },
   { value: 'tuning', label: 'Loop tuning', href: '/examples/tuning' },
   { value: 'assistant', label: 'Lab assistant', href: '/examples/assistant' },

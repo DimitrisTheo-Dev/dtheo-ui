@@ -1,0 +1,14 @@
+{
+  "name": "@dtheo/figma",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A Figma plugin that builds the dtheo/ui library from the token build: variables, styles and components.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "1.142.0"
+  }
+}

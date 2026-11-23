@@ -12,12 +12,19 @@ import { Stats } from '@/components/home/stats';
 import { SpaceBackdrop } from '@/components/space-backdrop';
 import { StarTrails } from '@/components/star-trails';
 import { site } from '@/lib/site';
+import runHistoryShot from '@/assets/screens/run-history.png';
 import runReviewShot from '@/assets/screens/run-review.png';
 import motorMapShot from '@/assets/screens/motor-map.png';
 import assistantShot from '@/assets/screens/assistant.png';
 import tuningShot from '@/assets/screens/tuning.png';
 
 const examples: Array<{ title: string; text: string; href: string; image: StaticImageData }> = [
+  {
+    title: 'Run history',
+    text: '412 runs. Filter to the one that matters.',
+    href: '/examples/run-history',
+    image: runHistoryShot,
+  },
   {
     title: 'Run review',
     text: 'Find what failed. Fix it.',
@@ -185,18 +192,26 @@ export default function Home() {
 
       <section className={`mx-auto flex w-full max-w-6xl flex-col gap-6 py-16 ${gutter}`}>
         <SectionHead eyebrow="Examples" title="Whole apps, built only from the system" />
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {examples.map((e) => (
-            <li key={e.href}>
+        {/* Two wide cards for the bench pair (the list and the run it leads to), then three. */}
+        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          {examples.map((e, i) => (
+            <li
+              key={e.href}
+              className={
+                i === 0 ? 'sm:col-span-2 lg:col-span-3' : i === 1 ? 'lg:col-span-3' : 'lg:col-span-2'
+              }
+            >
               <Link
                 href={e.href}
                 className="group flex flex-col overflow-hidden rounded-card border border-border bg-card shadow-lift transition-[border-color] duration-150 hover:border-border-strong"
               >
-                <span className="relative block aspect-[16/10] overflow-hidden border-b border-border bg-background">
+                <span
+                  className={`relative block aspect-[16/10] overflow-hidden border-b border-border bg-background ${i < 2 ? 'lg:aspect-[2/1]' : ''}`}
+                >
                   <Image
                     src={e.image}
                     alt=""
-                    sizes="(min-width: 1152px) 280px, (min-width: 640px) 50vw, 100vw"
+                    sizes="(min-width: 1152px) 570px, (min-width: 640px) 50vw, 100vw"
                     placeholder="blur"
                     className="size-full object-cover object-top-left transition-transform duration-240 ease-out group-hover:scale-[1.02]"
                   />

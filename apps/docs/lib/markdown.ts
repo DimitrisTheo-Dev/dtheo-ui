@@ -8,6 +8,7 @@ import { exampleSource } from './source';
 import { installCommand, shadcnCommand, site } from './site';
 import { countLabel } from './counts';
 import { foundations, getStarted, patterns, examples as exampleNav } from './nav';
+import { engineeringDataMarkdown } from './engineering-data';
 import { usedIn } from './usage';
 import { pagesMarkdown } from './pages-md';
 import { docsPath } from './paths';
@@ -88,6 +89,7 @@ export function componentMarkdown(meta: ComponentMeta) {
 
 /** Foundations pages rendered from the token source, so the numbers in Markdown are the numbers in CSS. */
 export function foundationMarkdown(slug: string) {
+  if (slug === 'engineering-data') return engineeringDataMarkdown;
   if (slug === 'color') {
     const rows = colorRoles.map(
       (r) => `| \`--${r}\` | \`${presets[0]!.modes.light![r]}\` | \`${presets[0]!.modes.dark![r]}\` |`,
@@ -244,7 +246,7 @@ export function llmsFullTxt() {
   return [
     llmsTxt(),
     ...Object.values(pagesMarkdown),
-    ...['color', 'typography', 'geometry', 'motion'].map((s) => foundationMarkdown(s)!),
+    ...['color', 'typography', 'geometry', 'motion', 'engineering-data'].map((s) => foundationMarkdown(s)!),
     ...components.map(componentMarkdown),
     checkRulesMarkdown(),
   ].join('\n\n---\n\n');

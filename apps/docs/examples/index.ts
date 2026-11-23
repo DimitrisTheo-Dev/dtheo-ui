@@ -16,6 +16,7 @@ import Card from './card';
 import Checkbox from './checkbox';
 import Combobox from './combobox';
 import Command from './command';
+import DataTable from './data-table';
 import Dialog from './dialog';
 import Empty from './empty';
 import FieldValidation from './field-validation';
@@ -33,6 +34,7 @@ import Metric from './metric';
 import NumberField from './number-field';
 import Popover from './popover';
 import ProgressMeter from './progress-meter';
+import Quantity from './quantity';
 import RadioGroup from './radio-group';
 import ScatterChart from './scatter-chart';
 import ScrollArea from './scroll-area';
@@ -67,6 +69,7 @@ export const examples: Record<string, React.ComponentType> = {
   'checkbox': Checkbox,
   'combobox': Combobox,
   'command': Command,
+  'data-table': DataTable,
   'dialog': Dialog,
   'empty': Empty,
   'field-validation': FieldValidation,
@@ -84,6 +87,7 @@ export const examples: Record<string, React.ComponentType> = {
   'number-field': NumberField,
   'popover': Popover,
   'progress-meter': ProgressMeter,
+  'quantity': Quantity,
   'radio-group': RadioGroup,
   'scatter-chart': ScatterChart,
   'scroll-area': ScrollArea,

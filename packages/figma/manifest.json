@@ -1,0 +1,9 @@
+{
+  "name": "dtheo/ui library",
+  "id": "dtheo-ui-library",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": { "allowedDomains": ["none"] }
+}

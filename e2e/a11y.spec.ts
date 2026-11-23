@@ -10,10 +10,13 @@ const pages = [
   '/docs/components/button',
   '/docs/components/field',
   '/docs/components/table',
+  '/docs/components/data-table',
   '/docs/charts/line-chart',
   '/docs/foundations/color',
+  '/docs/foundations/engineering-data',
   '/docs/patterns/forms',
   '/docs/patterns/data-table',
+  '/examples/run-history',
   '/examples/run-review',
   '/examples/motor-map',
   '/examples/tuning',
@@ -21,8 +24,22 @@ const pages = [
   '/examples/assistant',
 ];
 
+// The example apps in the states their toolbar previews: placeholders, errors and gaps must be as accessible as the
+// data they stand in for. Checked in the dark theme, where the warning and error fills are lowest in contrast.
+const states = [
+  '/examples/run-history?state=loading',
+  '/examples/run-history?state=no-results',
+  '/examples/run-history?state=partial',
+  '/examples/run-review?state=loading',
+  '/examples/run-review?state=error',
+  '/examples/run-review?state=partial',
+  '/examples/motor-map?state=error',
+  '/examples/tuning?state=error',
+  '/examples/tuning?state=partial',
+];
+
 for (const theme of ['dark', 'light'] as const) {
-  for (const path of pages) {
+  for (const path of [...pages, ...(theme === 'dark' ? states : [])]) {
     test(`${path} has no serious accessibility violations (${theme})`, async ({ page }) => {
       await page.addInitScript((t) => {
         try {
@@ -33,6 +50,16 @@ for (const theme of ['dark', 'light'] as const) {
       await page.waitForLoadState('networkidle');
       // Audit the page people use: after React has hydrated and Base UI has wired up labels and ids.
       await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+      // Entrances fade in for a second or two. A contrast check taken mid-fade measures the fade, not the design,
+      // so wait for every animation that ends (a spinner never does) before auditing.
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter((a) => a.playState === 'running' && a.effect?.getComputedTiming().iterations !== Infinity)
+            .map((a) => a.finished.catch(() => undefined)),
+        ),
+      );
       const { violations } = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
         .analyze();

@@ -13,6 +13,17 @@ const lab = ['apps/docs/app/examples/_shared/lab-sidebar.tsx', 'apps/docs/app/ex
 
 const pages = [
   {
+    id: 'run-history',
+    title: 'Run history',
+    href: '/examples/run-history',
+    level: 'page',
+    sources: [
+      'apps/docs/app/examples/run-history/run-history.tsx',
+      'apps/docs/app/examples/_shared/preview-state.tsx',
+      ...lab,
+    ],
+  },
+  {
     id: 'run-review',
     title: 'Run review',
     href: '/examples/run-review',

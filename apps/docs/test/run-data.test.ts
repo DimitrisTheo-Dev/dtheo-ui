@@ -12,6 +12,7 @@ import { capability } from '@dtheo/charts';
 import { Toaster } from '@dtheo/ui/components/toast';
 import { examples } from '@/examples';
 import { Assistant } from '@/app/examples/assistant/assistant';
+import { RunHistory } from '@/app/examples/run-history/run-history';
 import { RunReview } from '@/app/examples/run-review/run-review';
 import { Tuning } from '@/app/examples/tuning/tuning';
 import { A11yDemo } from '@/components/home/a11y-demo';
@@ -36,7 +37,9 @@ import {
   overshootStats,
   referenceGains,
   referenceMetrics as R,
+  runChecks,
   runHistory,
+  runLog,
   runs,
 } from '@/lib/lab-data';
 
@@ -113,6 +116,38 @@ describe('the run review model', () => {
     }
   });
 
+  it('lists all 412 runs in the run log, newest first, agreeing with the population and the history', () => {
+    expect(runLog).toHaveLength(runs.length);
+    expect(new Set(runLog.map((r) => r.id)).size).toBe(runLog.length);
+    // Run numbers count up with time.
+    for (let i = 1; i < runLog.length; i++) {
+      expect(runLog[i]!.id < runLog[i - 1]!.id, runLog[i]!.id).toBe(true);
+      expect(runLog[i]!.startedAt < runLog[i - 1]!.startedAt, runLog[i]!.id).toBe(true);
+    }
+    // The history runs are the newest eight, unchanged; every other run keeps its plotted gain and overshoot.
+    expect(runLog.slice(0, runHistory.length)).toEqual(runHistory);
+    const point = new Map(runs.map((r) => [r.id, r]));
+    for (const r of runLog) {
+      expect(Number(r.kp.toFixed(2)), r.id).toBe(point.get(r.id)!.kp);
+      expect(Number(r.overshoot.toFixed(1)), r.id).toBe(point.get(r.id)!.overshoot);
+    }
+  });
+
+  it('gives every run in the log the result its five checks explain', () => {
+    for (const r of runLog) {
+      const s = runChecks.map((c) => checkStatus(r[c.key], c.limit));
+      const result = s.includes('fail') ? 'fail' : s.includes('warn') ? 'review' : 'pass';
+      expect(r.result, r.id).toBe(result);
+    }
+    // The run under review is the newest, on 4.18.2 on Bench 3, as its own page says.
+    expect(runLog[0]).toMatchObject({
+      id: 'R-0412',
+      firmware: '4.18.2',
+      bench: 'Bench 3',
+      startedAt: '2026-11-18T14:32',
+    });
+  });
+
   it('states the capability the histogram computes: Cpk from σ within, Ppk from σ overall', () => {
     const c = capability(
       runs.map((r) => r.overshoot),
@@ -151,6 +186,7 @@ const surfaces: Array<[string, React.ComponentType]> = [
   ['landing hero', HeroPreview],
   ['landing accessibility demo', A11yDemo],
   ['landing tiles', Bento],
+  ['run history', RunHistory],
   ['run review', RunReview],
   ['lab assistant', Assistant],
   ['loop tuning', Tuning],
