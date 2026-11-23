@@ -15,7 +15,7 @@ const bind = (paint, field, variable) => ({
 let nextId = 1;
 const id = (prefix) => `${prefix}:${nextId++}`;
 
-function fakeFigma({ fonts = [] } = {}) {
+function fakeFigma({ fonts = [], maxModes = Infinity, maxPages = Infinity } = {}) {
   const loaded = new Set();
   const collections = [];
   const variables = [];
@@ -52,8 +52,15 @@ function fakeFigma({ fonts = [] } = {}) {
         this.parent = null;
       },
       resize(w, h) {
+        if (!(w >= 0.01) || !(h >= 0.01)) throw new Error(`resize(${w}, ${h})`);
         this.width = w;
         this.height = h;
+        // As in Figma: resizing an auto-layout frame pins both axes to fixed, whatever they were.
+        if (this.layoutMode !== 'NONE') this.primaryAxisSizingMode = this.counterAxisSizingMode = 'FIXED';
+      },
+      rescale(scale) {
+        this.width *= scale;
+        this.height *= scale;
       },
       setBoundVariable(field, variable) {
         if (!variable) throw new Error(`setBoundVariable(${field}) without a variable`);
@@ -127,8 +134,12 @@ function fakeFigma({ fonts = [] } = {}) {
     return t;
   }
 
+  const first = node('PAGE', { async loadAsync() {} });
+  first.name = 'Page 1';
+  pages.push(first);
   const figma = {
     root: { children: pages },
+    currentPage: first,
     variables: {
       async getLocalVariableCollectionsAsync() {
         return [...collections];
@@ -142,6 +153,7 @@ function fakeFigma({ fonts = [] } = {}) {
             this.modes.find((m) => m.modeId === modeId).name = newName;
           },
           addMode(modeName) {
+            if (this.modes.length >= maxModes) throw new Error('Limited to 1 modes only');
             const modeId = id('mode');
             this.modes.push({ modeId, name: modeName });
             return modeId;
@@ -215,6 +227,7 @@ function fakeFigma({ fonts = [] } = {}) {
       return f;
     },
     createPage() {
+      if (pages.length >= maxPages) throw new Error('The Starter plan only comes with 3 pages.');
       const p = node('PAGE', { async loadAsync() {} });
       pages.push(p);
       return p;
@@ -239,14 +252,22 @@ function fakeFigma({ fonts = [] } = {}) {
   return { figma, collections, variables, textStyles, effectStyles, pages, result };
 }
 
+const built = buildFigmaPlugin();
+
 async function run(fake) {
   const done = new Promise((resolve) => (fake.result.done = resolve));
-  new Function('figma', buildFigmaPlugin())(fake.figma);
+  new Function('figma', built)(fake.figma);
   await done;
   return fake.result.message;
 }
 
 const roles = Object.keys(tokens.graphite.light);
+
+/** A frame's [horizontal, vertical] sizing, whichever way its auto-layout runs. */
+const sizes = (c) =>
+  c.layoutMode === 'HORIZONTAL'
+    ? [c.primaryAxisSizingMode, c.counterAxisSizingMode]
+    : [c.counterAxisSizingMode, c.primaryAxisSizingMode];
 
 /** Every solid paint under a node, with where it was found. */
 function paints(root) {
@@ -262,8 +283,20 @@ function paints(root) {
 
 describe('the Figma plugin', () => {
   it('is built from the current tokens and source (run `pnpm figma` after a change)', () => {
-    const built = readFileSync(new URL('../dist/code.js', import.meta.url), 'utf8');
-    expect(built === buildFigmaPlugin()).toBe(true);
+    const committed = readFileSync(new URL('../dist/code.js', import.meta.url), 'utf8');
+    expect(committed === built).toBe(true);
+  });
+
+  it('is compiled to syntax Figma’s sandbox has always parsed', () => {
+    // No optional chaining, nullish coalescing, object spread or globalThis in what ships. Strings are blanked
+    // first: the token JSON and the icon paths have dots and question marks of their own.
+    const code = built
+      .slice(built.indexOf('\n', built.indexOf('var DTHEO_TOKENS')))
+      .replace(/(['"`])(?:\\.|(?!\1).)*\1/g, '""');
+    expect(code).not.toMatch(/\?\.[a-zA-Z_([]/);
+    expect(code).not.toMatch(/\?\?/);
+    expect(code).not.toMatch(/\{\s*\.\.\./);
+    expect(code).not.toMatch(/globalThis/);
   });
 
   it('builds the variables, styles and components it reports', async () => {
@@ -302,7 +335,9 @@ describe('the Figma plugin', () => {
       'Variant=primary, Size=md',
     );
     expect(sets.find((s) => s.name === 'Button').children).toHaveLength(15);
-    expect(message).toContain('6 components');
+    expect(message).toContain('6 components made');
+    // The toast that reports it holds about 100 characters.
+    expect(message.length).toBeLessThanOrEqual(100);
   });
 
   it('binds every color in every component to a variable, except the destructive label’s fixed white', async () => {
@@ -312,6 +347,12 @@ describe('the Figma plugin', () => {
     const raw = paints(page).filter(({ p }) => p.type === 'SOLID' && !p.boundVariables?.color);
     expect(raw.map((r) => r.path).every((path) => path.includes('Variant=destructive'))).toBe(true);
     expect(raw.length).toBe(3);
+    // Hug where the content decides and fixed where the system does, although every frame was resized on the way.
+    const set = (name) => page.children.find((c) => c.name === name);
+    expect(sizes(set('Button').children[0])).toEqual(['AUTO', 'FIXED']);
+    expect(sizes(set('Metric').children[0])).toEqual(['FIXED', 'AUTO']);
+    expect(sizes(set('Input').children[0])).toEqual(['FIXED', 'FIXED']);
+    expect(sizes(set('Button'))).toEqual(['FIXED', 'AUTO']);
     // Radii come from the preset, so a Flight deck frame gets Flight deck corners.
     const button = page.children.find((c) => c.name === 'Button').children[0];
     expect(Object.keys(button.boundVariables)).toEqual(
@@ -330,7 +371,7 @@ describe('the Figma plugin', () => {
     });
   });
 
-  it('updates the same library on a second run instead of adding another', async () => {
+  it('updates tokens in place on a second run and keeps the components, so instances survive', async () => {
     const fake = fakeFigma();
     await run(fake);
     const counts = () => [
@@ -338,14 +379,35 @@ describe('the Figma plugin', () => {
       fake.variables.length,
       fake.textStyles.length,
       fake.effectStyles.length,
+      fake.pages.length,
     ];
     const first = counts();
     const page = fake.pages.find((p) => p.name === 'dtheo/ui · Components');
-    const mine = () => page.children.filter((c) => c.getPluginData('dtheo-ui')).length;
-    const before = mine();
-    await run(fake);
+    const sets = () => page.children.filter((c) => c.getPluginData('dtheo-ui'));
+    const before = sets().map((c) => c.id);
+    const message = await run(fake);
     expect(counts()).toEqual(first);
+    // The same nodes, not new ones with the same names: an instance keeps its main component.
+    expect(sets().map((c) => c.id)).toEqual(before);
+    expect(message).toContain('components kept');
+    // Deleting one set brings back only that one.
+    sets()[0].remove();
+    expect(await run(fake)).toContain('1 components made');
+    expect(sets()).toHaveLength(before.length);
+  });
+
+  it('still builds on a Starter file: one mode, no page to spare', async () => {
+    const fake = fakeFigma({ maxModes: 1, maxPages: 1 });
+    const message = await run(fake);
+    expect(message).not.toMatch(/failed/);
+    expect(message).toContain('this plan allows one mode');
+    expect(message.length).toBeLessThanOrEqual(100);
+    const color = fake.collections.find((c) => c.name === 'Color');
+    expect(color.modes.map((m) => m.name)).toEqual(['Graphite light']);
+    // Every color still has its value in the mode there is, and the library lands on the page there is.
+    for (const v of fake.variables.filter((x) => x.variableCollectionId === color.id))
+      expect(Object.keys(v.valuesByMode)).toHaveLength(1);
     expect(fake.pages).toHaveLength(1);
-    expect(mine()).toBe(before);
+    expect(fake.pages[0].children.filter((c) => c.type === 'COMPONENT_SET')).toHaveLength(6);
   });
 });

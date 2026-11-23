@@ -5,7 +5,7 @@
  * Builds the dtheo/ui Figma library from the same token build that writes the CSS: color variables with a mode per
  * theme, geometry variables per preset, control heights, text and shadow styles, and the core components with
  * variants and auto-layout, every fill and radius bound to a variable. Run it again after a token change: it updates
- * what it made and leaves everything else in the file alone.
+ * its variables and styles in place, which the components follow, and leaves everything else in the file alone.
  *
  * `DTHEO_TOKENS` is packages/tokens/dist/tokens.json, inlined ahead of this file by scripts/gen-figma.mjs.
  */
@@ -14,7 +14,8 @@
 /** @typedef {Record<string, Token>} Scheme */
 
 /** @type {any} */
-const T = /** @type {any} */ (globalThis).DTHEO_TOKENS;
+// @ts-expect-error DTHEO_TOKENS is a var the build writes ahead of this file.
+const T = DTHEO_TOKENS;
 
 const MARK = 'dtheo-ui';
 const px = (/** @type {string} */ v) => Number.parseFloat(v);
@@ -53,14 +54,22 @@ async function collection(name, modeNames) {
   const c = all.find((x) => x.name === name) ?? figma.variables.createVariableCollection(name);
   /** @type {Record<string, string>} */
   const ids = {};
+  /** Modes the file's plan would not take: Starter files allow one per collection. @type {string[]} */
+  const refused = [];
   modeNames.forEach((m, i) => {
     const existing = c.modes.find((x) => x.name === m) ?? (i === 0 ? c.modes[0] : undefined);
     if (existing) {
       if (existing.name !== m) c.renameMode(existing.modeId, m);
       ids[m] = existing.modeId;
-    } else ids[m] = c.addMode(m);
+      return;
+    }
+    try {
+      ids[m] = c.addMode(m);
+    } catch {
+      refused.push(m);
+    }
   });
-  return { collection: c, modes: ids };
+  return { collection: c, modes: ids, refused };
 }
 
 /**
@@ -90,7 +99,8 @@ async function buildVariables() {
     for (const t of themes) {
       /** @type {Token} */
       const token = T[t.preset][t.scheme][role];
-      v.setValueForMode(color.modes[t.mode], rgba(token.$value.hex, token.$value.alpha));
+      const mode = color.modes[t.mode];
+      if (mode) v.setValueForMode(mode, rgba(token.$value.hex, token.$value.alpha));
     }
     // Dev Mode shows the CSS variable a developer types, so the Figma name and the code name are one name.
     v.setVariableCodeSyntax('WEB', `var(--${role})`);
@@ -121,7 +131,8 @@ async function buildVariables() {
   for (const [name, read, cls] of radii) {
     const v = await variable(geometry.collection, name, 'FLOAT');
     for (const p of presets) {
-      v.setValueForMode(geometry.modes[names[/** @type {keyof typeof names} */ (p)]], read(T[p].geometry));
+      const mode = geometry.modes[names[/** @type {keyof typeof names} */ (p)]];
+      if (mode) v.setValueForMode(mode, read(T[p].geometry));
     }
     v.setVariableCodeSyntax('WEB', cls);
     v.scopes = name.startsWith('radius') ? ['CORNER_RADIUS'] : ['EFFECT_FLOAT'];
@@ -136,7 +147,7 @@ async function buildVariables() {
     v.scopes = ['WIDTH_HEIGHT'];
     V[`control/${k}`] = v;
   }
-  return { color, geometry };
+  return { color, geometry, refused: color.refused };
 }
 
 // ---------- Text and shadow styles ----------
@@ -297,6 +308,20 @@ function column(node, { gap = 6, padX = 0, padY = 0 } = {}) {
   node.fills = [];
 }
 
+/**
+ * The frame's size: fixed on the axes given, hugging its content on the others. The resize comes first, because
+ * Figma pins a resized auto-layout axis to fixed; the hug is set after it.
+ * @param {FrameNode | ComponentNode | ComponentSetNode} node @param {{ width?: number; height?: number }} size
+ */
+function fit(node, { width, height }) {
+  node.resize(width ?? Math.max(node.width, 1), height ?? Math.max(node.height, 1));
+  const horizontal = node.layoutMode === 'HORIZONTAL';
+  const w = width === undefined ? 'AUTO' : 'FIXED';
+  const h = height === undefined ? 'AUTO' : 'FIXED';
+  node.primaryAxisSizingMode = horizontal ? w : h;
+  node.counterAxisSizingMode = horizontal ? h : w;
+}
+
 /** Text in a style and a color role. */
 async function text(
   /** @type {string} */ characters,
@@ -328,7 +353,8 @@ function icon(name, size, role) {
   const node = figma.createNodeFromSvg(svg);
   node.name = `icon/${name}`;
   node.fills = [];
-  node.resize(size, size);
+  // Scaled, not resized: a resize keeps 2px strokes on a 12px icon, where the CSS draws them at half that.
+  node.rescale(size / 24);
   for (const child of node.findAll((n) => 'strokes' in n)) {
     const v = /** @type {VectorNode} */ (child);
     v.strokes = [paint(role)];
@@ -362,8 +388,7 @@ async function buildButton() {
       const c = figma.createComponent();
       c.name = `Variant=${variant}, Size=${size}`;
       row(c, { gap: 6, padX: s.pad });
-      c.counterAxisSizingMode = 'FIXED';
-      c.resize(80, 28);
+      fit(c, { height: 28 });
       c.setBoundVariable('height', V[s.h]);
       radius(c, 'radius/control');
       if (v.bg) fill(c, v.bg);
@@ -403,8 +428,7 @@ async function buildBadge() {
     const c = figma.createComponent();
     c.name = `Variant=${variant}`;
     row(c, { gap: 4, padX: 8 });
-    c.counterAxisSizingMode = 'FIXED';
-    c.resize(60, 20);
+    fit(c, { height: 20 });
     c.cornerRadius = 999;
     if (v.bg) fill(c, v.bg, v.opacity);
     if ('border' in v && v.border) stroke(c, v.border);
@@ -432,9 +456,7 @@ async function buildInput() {
     const c = figma.createComponent();
     c.name = `State=${state}`;
     row(c, { padX: 10, align: 'MIN' });
-    c.primaryAxisSizingMode = 'FIXED';
-    c.counterAxisSizingMode = 'FIXED';
-    c.resize(220, 28);
+    fit(c, { width: 220, height: 28 });
     c.setBoundVariable('height', V['control/md']);
     radius(c, 'radius/control');
     fill(c, 'card');
@@ -469,9 +491,7 @@ async function buildCheckbox() {
     const c = figma.createComponent();
     c.name = `State=${state}`;
     row(c, { gap: 0 });
-    c.primaryAxisSizingMode = 'FIXED';
-    c.counterAxisSizingMode = 'FIXED';
-    c.resize(14, 14);
+    fit(c, { width: 14, height: 14 });
     radius(c, 'radius/item');
     if (state === 'unchecked') {
       fill(c, 'card');
@@ -539,9 +559,7 @@ async function buildMetric() {
     const c = figma.createComponent();
     c.name = `Status=${status}`;
     column(c, { gap: 6, padX: 16, padY: 14 });
-    c.primaryAxisSizingMode = 'AUTO';
-    c.counterAxisSizingMode = 'FIXED';
-    c.resize(180, 120);
+    fit(c, { width: 180 });
     fill(c, 'card');
     stroke(c, 'border');
     c.appendChild(await text(s.label, 'label', 'muted-foreground'));
@@ -622,8 +640,7 @@ async function buildTableRow() {
     const c = figma.createComponent();
     c.name = `Type=row, State=${state}`;
     row(c, { gap: 0, align: 'MIN' });
-    c.counterAxisSizingMode = 'FIXED';
-    c.resize(588, 32);
+    fit(c, { height: 32 });
     fill(c, 'card');
     if (s.tint) c.fills = [paint('card'), paint(s.tint, s.opacity)];
     c.strokes = [paint('border')];
@@ -646,14 +663,11 @@ async function buildTableRow() {
       const cell = figma.createFrame();
       cell.name = col.kind;
       row(cell, { gap: 4, padX: col.kind === 'check' ? 16 : 12, align: col.kind === 'num' ? 'MAX' : 'MIN' });
-      cell.primaryAxisSizingMode = 'FIXED';
-      cell.counterAxisSizingMode = 'FIXED';
-      cell.resize(col.w, 32);
+      fit(cell, { width: col.w, height: 32 });
       if (col.kind === 'check') {
         const box = figma.createFrame();
         row(box, { gap: 0 });
-        box.primaryAxisSizingMode = box.counterAxisSizingMode = 'FIXED';
-        box.resize(14, 14);
+        fit(box, { width: 14, height: 14 });
         radius(box, 'radius/item');
         if (state === 'checked') {
           fill(box, 'primary');
@@ -684,8 +698,7 @@ async function buildTableRow() {
   const head = figma.createComponent();
   head.name = 'Type=header, State=default';
   row(head, { gap: 0, align: 'MIN' });
-  head.counterAxisSizingMode = 'FIXED';
-  head.resize(588, 44);
+  fit(head, { height: 44 });
   fill(head, 'card');
   head.strokes = [paint('border')];
   head.strokeAlign = 'INSIDE';
@@ -697,8 +710,7 @@ async function buildTableRow() {
     column(cell, { gap: 1, padX: i === 0 ? 16 : 12 });
     cell.counterAxisAlignItems = cols[i]?.kind === 'num' ? 'MAX' : 'MIN';
     cell.primaryAxisAlignItems = 'CENTER';
-    cell.primaryAxisSizingMode = cell.counterAxisSizingMode = 'FIXED';
-    cell.resize(cols[i]?.w ?? 80, 44);
+    fit(cell, { width: cols[i]?.w ?? 80, height: 44 });
     if (heads[i]) cell.appendChild(await text(heads[i] ?? '', 'label', 'subtle-foreground'));
     if (subs[i]) cell.appendChild(await text(subs[i] ?? '', 'caption', 'subtle-foreground'));
     head.appendChild(cell);
@@ -709,13 +721,21 @@ async function buildTableRow() {
 
 // ---------- Pages ----------
 
-/** A page of this name, emptied of what the last run drew there. @param {string} name */
+/**
+ * The page of this name, made on the first run. A Starter file that has no pages left gets the library on its
+ * current page instead. @param {string} name
+ */
 async function page(name) {
-  const p = figma.root.children.find((x) => x.name === name) ?? figma.createPage();
-  p.name = name;
+  let p = figma.root.children.find((x) => x.name === name);
+  if (!p) {
+    try {
+      p = figma.createPage();
+      p.name = name;
+    } catch {
+      p = figma.currentPage;
+    }
+  }
   await p.loadAsync();
-  // A filtered copy: removing children while walking the live list would skip some.
-  for (const child of p.children.filter((c) => c.getPluginData(MARK))) child.remove();
   return p;
 }
 
@@ -723,13 +743,11 @@ async function page(name) {
 function grid(/** @type {ComponentSetNode} */ set, columns = 3) {
   set.layoutMode = 'HORIZONTAL';
   set.layoutWrap = 'WRAP';
-  set.primaryAxisSizingMode = 'FIXED';
-  set.counterAxisSizingMode = 'AUTO';
   set.itemSpacing = 16;
   set.counterAxisSpacing = 16;
   set.paddingLeft = set.paddingRight = set.paddingTop = set.paddingBottom = 24;
   const widest = Math.max(...set.children.map((c) => /** @type {ComponentNode} */ (c).width));
-  set.resize(48 + columns * widest + (columns - 1) * 16, set.height);
+  fit(set, { width: 48 + columns * widest + (columns - 1) * 16 });
   set.fills = [paint('background')];
   set.cornerRadius = 12;
   stroke(set, 'border');
@@ -737,30 +755,38 @@ function grid(/** @type {ComponentSetNode} */ set, columns = 3) {
 
 async function main() {
   await pickFont();
-  const { color } = await buildVariables();
+  const { color, refused } = await buildVariables();
   await buildTextStyles();
   await buildEffectStyles();
 
   const components = await page('dtheo/ui · Components');
   await figma.setCurrentPageAsync(components);
 
-  /** @type {Array<[string, ComponentNode[], number, string]>} */
-  const sets = [
-    ['Button', await buildButton(), 3, 'One control for actions. Primary once per view.'],
-    ['Badge', await buildBadge(), 3, 'Status carries an icon and a word, never color alone.'],
-    ['Input', await buildInput(), 1, 'Fields draw focus on their own border, with the ring’s halo.'],
-    ['Checkbox', await buildCheckbox(), 3, 'A 14px box with a 24px hit area in code.'],
-    ['Metric', await buildMetric(), 4, 'A measurement against its limit: value, meter, status and limit.'],
+  /** @type {Array<[string, () => Promise<ComponentNode[]>, number, string]>} */
+  const builders = [
+    ['Button', buildButton, 3, 'One control for actions. Primary once per view.'],
+    ['Badge', buildBadge, 3, 'Status carries an icon and a word, never color alone.'],
+    ['Input', buildInput, 1, 'Fields draw focus on their own border, with the ring in the ring color.'],
+    ['Checkbox', buildCheckbox, 3, 'A 14px box with a 24px hit area in code.'],
+    ['Metric', buildMetric, 4, 'A measurement against its limit: value, meter, status and limit.'],
     [
       'Table row',
-      await buildTableRow(),
+      buildTableRow,
       1,
       'The data table’s header and row states. Units and limits sit under the column name.',
     ],
   ];
 
-  let y = 0;
-  for (const [name, parts, columns, description] of sets) {
+  // A component set made by an earlier run stays as it is: its fills, radii and text are bound to the variables and
+  // styles just updated, so it already follows the tokens, and its instances and its key in a published library
+  // survive. Delete a set to have it drawn again.
+  const mine = components.children.filter((n) => n.type === 'COMPONENT_SET' && n.getPluginData(MARK));
+  const have = new Set(mine.map((n) => n.name));
+  let y = mine.reduce((bottom, n) => Math.max(bottom, n.y + n.height + 64), 0);
+  let made = 0;
+  for (const [name, build, columns, description] of builders) {
+    if (have.has(name)) continue;
+    const parts = await build();
     for (const p of parts) components.appendChild(p);
     const set = figma.combineAsVariants(parts, components);
     set.name = name;
@@ -768,17 +794,20 @@ async function main() {
     grid(set, columns);
     set.x = 0;
     set.y = y;
-    // Each set shows itself in Graphite dark; switch the mode on any frame to see the other themes.
-    set.setExplicitVariableModeForCollection(color.collection, color.modes['Graphite dark']);
+    // Each set shows itself in Graphite dark where the file has that mode; switch a frame's mode to see the others.
+    const dark = color.modes['Graphite dark'];
+    if (dark) set.setExplicitVariableModeForCollection(color.collection, dark);
     mark(set);
     y += set.height + 64;
+    made += 1;
   }
 
   figma.viewport.scrollAndZoomIntoView(components.children.filter((n) => n.getPluginData(MARK)));
-  const count = Object.keys(V).length;
-  figma.closePlugin(
-    `dtheo/ui: ${count} variables, ${Object.keys(TS).length} text styles, ${Object.keys(ES).length} shadow styles and ${sets.length} components with variants.`,
-  );
+  // A toast holds about 100 characters.
+  const tokens = `${Object.keys(V).length} variables, ${Object.keys(TS).length + Object.keys(ES).length} styles`;
+  const drawn = made ? `${made} components made` : 'components kept';
+  const limit = refused.length ? ' One theme: this plan allows one mode.' : '';
+  figma.closePlugin(`dtheo/ui: ${tokens} updated, ${drawn}.${limit}`);
 }
 
 main().catch((e) => figma.closePlugin(`dtheo/ui failed: ${e instanceof Error ? e.message : String(e)}`));

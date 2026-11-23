@@ -1,8 +1,12 @@
 # dtheo/ui for Figma
 
 A development plugin that builds the dtheo/ui library in any Figma file, from the same token build that writes the
-CSS. Run it again after a token change: it updates the variables, styles and components it made and leaves the rest of
-the file alone.
+CSS. Run it again after a token change: it updates its variables and styles in place, which the components are bound
+to, and leaves the rest of the file alone. Components made by an earlier run are kept, so their instances and their
+keys in a published library survive; delete a component set to have it drawn again.
+
+Themes are variable modes, and a file on Figma's free Starter plan has one mode per collection. There the plugin
+still builds everything, in Graphite light only, and says so when it finishes.
 
 ## What it makes
 
@@ -25,5 +29,7 @@ the preset.
 2. In Figma desktop: **Plugins → Development → Import plugin from manifest…** and pick `packages/figma/manifest.json`.
 3. Open the file that holds your library and run **Plugins → Development → dtheo/ui library**.
 
-The plugin has no network access. `src/plugin.js` is type-checked against `@figma/plugin-typings`, and
-`test/plugin.test.mjs` runs the built plugin against a fake of the Plugin API that enforces Figma's own rules.
+The plugin has no network access. `src/plugin.js` is type-checked against `@figma/plugin-typings` and compiled to
+ES2017 for Figma's sandbox, and `test/plugin.test.mjs` runs the built plugin against a fake of the Plugin API that
+enforces Figma's own rules: unique variable names, a resize pinning auto-layout sizes, fonts loaded before text
+changes, and the Starter plan's limits.
