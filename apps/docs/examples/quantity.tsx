@@ -35,7 +35,8 @@ export default function QuantityExample() {
       </dl>
       <p className="text-label font-normal text-muted-foreground text-pretty">
         Overshoot is {formatDelta(M.overshoot - OVERSHOOT_LIMIT, '%', { digits: 1 })} over its limit, against{' '}
-        {formatDelta(R.overshoot - OVERSHOOT_LIMIT, '%', { digits: 1 })} on R-0409. Current is at{' '}
+        {formatDelta(R.overshoot - OVERSHOOT_LIMIT, '%', { digits: 1 })} on{' '}
+        <span className="whitespace-nowrap">R-0409</span>. Current is at{' '}
         {formatShareOfLimit(M.peakCurrent, CURRENT_LIMIT)}.
       </p>
     </div>

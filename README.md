@@ -93,7 +93,7 @@ Every change runs through:
 | `pnpm test` | Components, charts, contracts, registry, usage graph, CLI and every design-check rule |
 | `pnpm design:check` | The repo passes its own design check, with every exception explained |
 | `pnpm test:e2e` | On the production build: no errors or sideways scroll on any route, one heading outline per page, no serious axe violations on 19 routes in both themes, real interactions |
-| `pnpm test:visual` | Pixel diffs of the screens that define the look: macOS baselines locally, Linux baselines in CI |
+| `pnpm test:visual` | Pixel diffs in both themes of every component and chart (read from the contracts, so none can skip it), open overlays, the example apps and the run history in each data state: macOS baselines locally, Linux baselines in CI |
 
 ## Develop
 
