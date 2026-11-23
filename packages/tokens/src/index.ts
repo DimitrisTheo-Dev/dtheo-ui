@@ -193,8 +193,9 @@ const carbonDark: ColorScheme = {
   'muted-foreground': 'oklch(0.76 0 0)',
   'subtle-foreground': 'oklch(0.69 0 0)',
   'accent-foreground': 'oklch(0.97 0 0)',
-  // Selection is a neutral lift, not a tint: a checked row is told apart by its checkbox, an active one by its bar.
-  selection: 'oklch(1 0 0 / 0.13)',
+  // Selection is a neutral lift, not a tint. With no hue to help, it is as strong as the contrast checks on a
+  // selected row allow: any stronger and status text on it drops below AA.
+  selection: 'oklch(1 0 0 / 0.16)',
   border: 'oklch(1 0 0 / 0.1)',
   'border-strong': 'oklch(1 0 0 / 0.18)',
   input: 'oklch(1 0 0 / 0.38)',
@@ -223,7 +224,7 @@ const carbonLight: ColorScheme = {
   'muted-foreground': 'oklch(0.42 0 0)',
   'subtle-foreground': 'oklch(0.48 0 0)',
   'accent-foreground': 'oklch(0.18 0 0)',
-  selection: 'oklch(0 0 0 / 0.085)',
+  selection: 'oklch(0 0 0 / 0.1)',
   border: 'oklch(0 0 0 / 0.1)',
   'border-strong': 'oklch(0 0 0 / 0.17)',
   input: 'oklch(0 0 0 / 0.45)',
@@ -253,7 +254,7 @@ export const presets: Preset[] = [
     id: 'carbon',
     name: 'Carbon',
     description:
-      'No hue in the interface: neutral surfaces, an ink primary, square corners, no glass. The only colors are status, links, focus and data.',
+      'No hue in the interface: neutral surfaces, an ink primary, tight corners, no glass. The only colors are status, links, focus and data.',
     modes: { light: carbonLight, dark: carbonDark },
     geometry: {
       'radius-control': '4px',

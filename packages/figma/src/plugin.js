@@ -56,19 +56,25 @@ async function collection(name, modeNames) {
   const ids = {};
   /** Modes the file's plan would not take: Starter files allow one per collection. @type {string[]} */
   const refused = [];
-  modeNames.forEach((m, i) => {
-    const existing = c.modes.find((x) => x.name === m) ?? (i === 0 ? c.modes[0] : undefined);
-    if (existing) {
-      if (existing.name !== m) c.renameMode(existing.modeId, m);
-      ids[m] = existing.modeId;
-      return;
+  for (const m of c.modes) if (modeNames.includes(m.name)) ids[m.name] = m.modeId;
+  // Modes this list no longer has: left by an earlier version of the library, or the "Mode 1" of a new collection.
+  const stale = c.modes.filter((m) => !modeNames.includes(m.name));
+  for (const m of modeNames) {
+    if (ids[m]) continue;
+    // A collection keeps at least one mode, so a stale one is renamed before any is removed.
+    const reuse = stale.shift();
+    if (reuse) {
+      c.renameMode(reuse.modeId, m);
+      ids[m] = reuse.modeId;
+      continue;
     }
     try {
       ids[m] = c.addMode(m);
     } catch {
       refused.push(m);
     }
-  });
+  }
+  for (const m of stale) c.removeMode(m.modeId);
   return { collection: c, modes: ids, refused };
 }
 
@@ -806,7 +812,12 @@ async function main() {
   // A toast holds about 100 characters.
   const tokens = `${Object.keys(V).length} variables, ${Object.keys(TS).length + Object.keys(ES).length} styles`;
   const drawn = made ? `${made} components made` : 'components kept';
-  const limit = refused.length ? ' One theme: this plan allows one mode.' : '';
+  const themesMade = Object.keys(color.modes).length;
+  const limit = !refused.length
+    ? ''
+    : themesMade === 1
+      ? ' One theme: this plan allows one mode.'
+      : ` ${themesMade} themes: the plan allows no more modes.`;
   figma.closePlugin(`dtheo/ui: ${tokens} updated, ${drawn}.${limit}`);
 }
 

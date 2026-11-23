@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://ui.dtheo.dev"><img src=".github/assets/hero.png" alt="dtheo/ui: pixel-perfect UI, even when your agent writes it." width="100%" /></a>
+  <a href="https://ui.dtheo.dev"><img src=".github/assets/hero.png" alt="dtheo/ui: a design system for engineering tools. A step response overshooting its limit." width="100%" /></a>
 </p>
 
 <h1 align="center">dtheo/ui</h1>

@@ -228,7 +228,7 @@ export function Bento() {
         title="Two presets, four themes, one codebase"
         text="Graphite has one accent. Carbon has none: the only colors are status and data. Change one attribute to switch."
       >
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {presets.map((p) => (
             <ThemeScope
               key={`${p.preset}-${p.mode}`}

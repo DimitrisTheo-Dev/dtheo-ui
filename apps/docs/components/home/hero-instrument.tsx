@@ -42,10 +42,43 @@ export function HeroInstrument({ intro }: { intro?: React.ReactNode }) {
   const { trace, metrics: m } = React.useMemo(() => responseAt(kp), [kp]);
 
   const checks = [
-    { label: 'Overshoot', value: m.overshoot, unit: '%', digits: 1, limit: OVERSHOOT_LIMIT, scale: 1.5 },
-    { label: 'Peak current', value: m.peakCurrent, unit: 'A', digits: 1, limit: CURRENT_LIMIT, scale: 1.25 },
-    { label: 'Settling, 2 %', value: m.settle, unit: 'ms', digits: 0, limit: SETTLE_LIMIT, scale: 1.5 },
-    { label: 'Rise, 10–90 %', value: m.rise, unit: 'ms', digits: 0, limit: RISE_LIMIT, scale: 1.5 },
+    // `name` is the check as a sentence says it; `label` is the check as its tile names it.
+    {
+      name: 'Overshoot',
+      label: 'Overshoot',
+      value: m.overshoot,
+      unit: '%',
+      digits: 1,
+      limit: OVERSHOOT_LIMIT,
+      scale: 1.5,
+    },
+    {
+      name: 'Peak current',
+      label: 'Peak current',
+      value: m.peakCurrent,
+      unit: 'A',
+      digits: 1,
+      limit: CURRENT_LIMIT,
+      scale: 1.25,
+    },
+    {
+      name: 'Settling time',
+      label: 'Settling, 2 %',
+      value: m.settle,
+      unit: 'ms',
+      digits: 0,
+      limit: SETTLE_LIMIT,
+      scale: 1.5,
+    },
+    {
+      name: 'Rise time',
+      label: 'Rise, 10–90 %',
+      value: m.rise,
+      unit: 'ms',
+      digits: 0,
+      limit: RISE_LIMIT,
+      scale: 1.5,
+    },
   ].map((c) => ({ ...c, status: checkStatus(c.value, c.limit) }));
   const failed = checks.filter((c) => c.status === 'fail');
   const near = checks.filter((c) => c.status === 'warn');
@@ -61,12 +94,28 @@ export function HeroInstrument({ intro }: { intro?: React.ReactNode }) {
     worst?.unit === '%'
       ? `${fmt.n1.format(over)} points`
       : formatQuantity(over, worst?.unit, { digits: worst?.digits });
+  // A no-break space between a number and its unit, so "10 %" never splits across two lines.
+  const limitText = worst ? formatQuantity(worst.limit, worst.unit) : '';
   const others = failed.length - 1;
+  const more = others > 0 ? `, and ${others} more ${others > 1 ? 'checks fail' : 'check fails'}` : '';
   const sentence = !worst
     ? `All four checks pass at Kp ${fmt.n2.format(kp)}.`
     : worst.status === 'fail'
-      ? `${worst.label} is ${overBy} over its ${worst.limit} ${worst.unit} limit${others > 0 ? `, and ${others} more ${others > 1 ? 'checks fail' : 'check fails'}` : ''}.`
-      : `Nothing fails, but ${worst.label.toLowerCase()} is within 10 % of its ${worst.limit} ${worst.unit} limit.`;
+      ? `${worst.name} is ${overBy} over its ${limitText} limit${more}.`
+      : `Nothing fails, but ${worst.name.toLowerCase()} (${formatQuantity(worst.value, worst.unit, { digits: worst.digits })}) is near its ${limitText} limit.`;
+  // What a screen reader hears: the verdict and its cause, without the numbers, so it speaks when the outcome
+  // changes and stays quiet while a drag moves the value under the same outcome. The slider says its own value.
+  const spoken = !worst
+    ? 'Pass: all four checks pass.'
+    : worst.status === 'fail'
+      ? `Fail: ${worst.name.toLowerCase()} is over its limit${more}.`
+      : `Review: ${worst.name.toLowerCase()} is near its limit.`;
+  const control = React.useRef<HTMLDivElement>(null);
+  const reset = () => {
+    setKp(gains.kp);
+    // The button leaves with the change it made; focus goes back to the control it reset.
+    control.current?.querySelector<HTMLElement>('input[type="range"]')?.focus();
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -74,35 +123,40 @@ export function HeroInstrument({ intro }: { intro?: React.ReactNode }) {
       <div className="grid items-end gap-x-16 gap-y-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
         {intro}
         <div className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between gap-3 text-label">
-            {/* The slider carries this name itself; the visible words are for sighted readers. */}
-            <span aria-hidden="true">Proportional gain, Kp</span>
+          {/* The slider carries this name and value itself; the visible words are for sighted readers. */}
+          <div aria-hidden="true" className="flex items-baseline justify-between gap-3 text-label">
+            <span>Proportional gain, Kp</span>
             <span className="flex items-baseline gap-2">
-              <output className="text-callout font-semibold tabular-nums">{fmt.n2.format(kp)}</output>
+              <span className="text-callout font-semibold tabular-nums">{fmt.n2.format(kp)}</span>
               <span className="font-normal text-subtle-foreground">
                 {measuredRun ? 'as measured in R-0412' : 'what if'}
               </span>
             </span>
           </div>
-          <Slider
-            aria-label="Proportional gain, Kp"
-            min={KP_RANGE[0]}
-            max={KP_RANGE[1]}
-            step={0.05}
-            value={kp}
-            onValueChange={(next) => setKp(Number((Array.isArray(next) ? next[0] : next).toFixed(2)))}
-          />
-          <div className="flex min-h-7 items-center gap-3">
+          <div ref={control}>
+            <Slider
+              aria-label="Proportional gain, Kp"
+              min={KP_RANGE[0]}
+              max={KP_RANGE[1]}
+              step={0.05}
+              // Shift + arrow and Page Up / Down: ten steps, not the default of 10, which is wider than the range.
+              largeStep={0.5}
+              value={kp}
+              onValueChange={(next) => setKp(Number((Array.isArray(next) ? next[0] : next).toFixed(2)))}
+            />
+          </div>
+          {/* Tall enough for the longest sentence at each width, so the chart below never moves during a drag. */}
+          <div className="flex min-h-14 items-center gap-3 lg:min-h-10">
             <Badge variant={v.variant}>
               <v.Icon aria-hidden="true" />
               {v.word}
             </Badge>
-            {/* Announced as it changes, so the result of a drag or an arrow key is read out, not only drawn. */}
-            <p aria-live="polite" className="min-w-0 flex-1 text-body text-muted-foreground text-pretty">
-              {sentence}
+            <p className="min-w-0 flex-1 text-body text-muted-foreground text-pretty">{sentence}</p>
+            <p aria-live="polite" className="sr-only">
+              {spoken}
             </p>
             {measuredRun ? null : (
-              <Button size="sm" variant="ghost" onClick={() => setKp(gains.kp)}>
+              <Button size="sm" variant="ghost" onClick={reset}>
                 <RotateCcwIcon aria-hidden="true" />
                 Reset
               </Button>

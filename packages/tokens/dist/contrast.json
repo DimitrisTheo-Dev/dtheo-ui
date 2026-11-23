@@ -1004,7 +1004,7 @@
     "mode": "light",
     "index": 15,
     "pair": "foreground on selection over card",
-    "ratio": 15.54,
+    "ratio": 15,
     "min": 4.5,
     "ok": true,
     "note": "Selected row text"
@@ -1014,7 +1014,7 @@
     "mode": "light",
     "index": 16,
     "pair": "destructive-foreground on selection over card",
-    "ratio": 5.97,
+    "ratio": 5.76,
     "min": 4.5,
     "ok": true,
     "note": "A value over its limit in a checked table row"
@@ -1024,7 +1024,7 @@
     "mode": "light",
     "index": 17,
     "pair": "warning-foreground on selection over card",
-    "ratio": 5.37,
+    "ratio": 5.18,
     "min": 4.5,
     "ok": true,
     "note": "A value near its limit in a checked table row"
@@ -1034,7 +1034,7 @@
     "mode": "light",
     "index": 18,
     "pair": "muted-foreground on selection over card",
-    "ratio": 6.99,
+    "ratio": 6.75,
     "min": 4.5,
     "ok": true,
     "note": "Secondary text in a checked table row"
@@ -1104,7 +1104,7 @@
     "mode": "light",
     "index": 26,
     "pair": "ring on selection over card",
-    "ratio": 3.61,
+    "ratio": 3.49,
     "min": 3,
     "ok": true,
     "note": "Focus ring on a selected row"
@@ -1164,7 +1164,7 @@
     "mode": "light",
     "index": 32,
     "pair": "ring on ring 12 % over selection over card",
-    "ratio": 3.14,
+    "ratio": 3.04,
     "min": 3,
     "ok": true,
     "note": "Focus ring against its halo on a selected row"
@@ -1234,7 +1234,7 @@
     "mode": "light",
     "index": 39,
     "pair": "destructive-foreground on destructive 15 % over selection over card",
-    "ratio": 4.76,
+    "ratio": 4.6,
     "min": 4.5,
     "ok": true,
     "note": "Error badge on a selected row"
@@ -1244,7 +1244,7 @@
     "mode": "light",
     "index": 40,
     "pair": "success-foreground on success 15 % over selection over card",
-    "ratio": 4.79,
+    "ratio": 4.64,
     "min": 4.5,
     "ok": true,
     "note": "Success badge on a selected row"
@@ -1254,7 +1254,7 @@
     "mode": "light",
     "index": 41,
     "pair": "warning-foreground on warning 15 % over selection over card",
-    "ratio": 4.86,
+    "ratio": 4.71,
     "min": 4.5,
     "ok": true,
     "note": "Warning badge on a selected row"
@@ -1264,7 +1264,7 @@
     "mode": "light",
     "index": 42,
     "pair": "info-foreground on info 15 % over selection over card",
-    "ratio": 4.86,
+    "ratio": 4.71,
     "min": 4.5,
     "ok": true,
     "note": "Info badge on a selected row"
@@ -1424,7 +1424,7 @@
     "mode": "dark",
     "index": 15,
     "pair": "foreground on selection over card",
-    "ratio": 12.3,
+    "ratio": 11.07,
     "min": 4.5,
     "ok": true,
     "note": "Selected row text"
@@ -1434,7 +1434,7 @@
     "mode": "dark",
     "index": 16,
     "pair": "destructive-foreground on selection over card",
-    "ratio": 5.78,
+    "ratio": 5.21,
     "min": 4.5,
     "ok": true,
     "note": "A value over its limit in a checked table row"
@@ -1444,7 +1444,7 @@
     "mode": "dark",
     "index": 17,
     "pair": "warning-foreground on selection over card",
-    "ratio": 7.8,
+    "ratio": 7.02,
     "min": 4.5,
     "ok": true,
     "note": "A value near its limit in a checked table row"
@@ -1454,7 +1454,7 @@
     "mode": "dark",
     "index": 18,
     "pair": "muted-foreground on selection over card",
-    "ratio": 6.25,
+    "ratio": 5.62,
     "min": 4.5,
     "ok": true,
     "note": "Secondary text in a checked table row"
@@ -1534,7 +1534,7 @@
     "mode": "dark",
     "index": 26,
     "pair": "ring on selection over card",
-    "ratio": 5.36,
+    "ratio": 4.83,
     "min": 3,
     "ok": true,
     "note": "Focus ring on a selected row"
@@ -1594,7 +1594,7 @@
     "mode": "dark",
     "index": 32,
     "pair": "ring on ring 12 % over selection over card",
-    "ratio": 4.38,
+    "ratio": 3.98,
     "min": 3,
     "ok": true,
     "note": "Focus ring against its halo on a selected row"
@@ -1664,7 +1664,7 @@
     "mode": "dark",
     "index": 39,
     "pair": "destructive-foreground on destructive 15 % over selection over card",
-    "ratio": 5.22,
+    "ratio": 4.76,
     "min": 4.5,
     "ok": true,
     "note": "Error badge on a selected row"
@@ -1674,7 +1674,7 @@
     "mode": "dark",
     "index": 40,
     "pair": "success-foreground on success 15 % over selection over card",
-    "ratio": 5.79,
+    "ratio": 5.26,
     "min": 4.5,
     "ok": true,
     "note": "Success badge on a selected row"
@@ -1684,7 +1684,7 @@
     "mode": "dark",
     "index": 41,
     "pair": "warning-foreground on warning 15 % over selection over card",
-    "ratio": 5.73,
+    "ratio": 5.21,
     "min": 4.5,
     "ok": true,
     "note": "Warning badge on a selected row"
@@ -1694,7 +1694,7 @@
     "mode": "dark",
     "index": 42,
     "pair": "info-foreground on info 15 % over selection over card",
-    "ratio": 5.31,
+    "ratio": 4.83,
     "min": 4.5,
     "ok": true,
     "note": "Info badge on a selected row"

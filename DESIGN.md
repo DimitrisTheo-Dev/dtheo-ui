@@ -20,7 +20,7 @@ Two presets share every component and change only color, radius and material. Ea
 | Preset | For | Feel |
 | --- | --- | --- |
 | **Graphite** (default) | Day-to-day tools | Neutral graphite, system blue, Mac materials. |
-| **Carbon** | Monitoring, maps, wall displays | No hue in the interface: neutral surfaces, an ink primary, square corners, no glass. The only colors are status, links, the focus ring and the data. |
+| **Carbon** | Monitoring, maps, wall displays | No hue in the interface: neutral surfaces, an ink primary, tight corners, no glass. The only colors are status, links, the focus ring and the data. |
 
 A preset is added only when it is finished to the standard of the first. Two earlier ones (a blue-biased dark and a
 violet "space" look) were removed for that reason: a system is judged by its weakest screen.

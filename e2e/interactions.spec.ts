@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { presets } from '../packages/tokens/src/index.ts';
 import { watchErrors } from './helpers';
 
 test('⌘K search finds a component and opens it', async ({ page }) => {
@@ -378,7 +379,9 @@ test('the landing hero re-runs the checks as the gain moves, and resets to the m
   await page.goto('/');
   await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
   const hero = page.locator('main > section').first();
-  await expect(hero.getByText('Overshoot is 7.6 points over its 10 % limit.')).toBeVisible();
+  // The limit is written with a no-break space before its unit, which \s matches and a typed space does not.
+  const asMeasured = /Overshoot is 7\.6 points over its 10\s% limit\./;
+  await expect(hero.getByText(asMeasured)).toBeVisible();
   const kp = hero.getByRole('slider', { name: 'Proportional gain, Kp' });
   await kp.focus();
   // 4.20 down to 3.60 in steps of 0.05: the gain the run review recommends.
@@ -390,10 +393,77 @@ test('the landing hero re-runs the checks as the gain moves, and resets to the m
   // More gain than measured fails more than one check, and says so.
   for (let i = 0; i < 20; i++) await page.keyboard.press('ArrowRight');
   await expect(
-    hero.getByText(/Overshoot is .* points over its 10 % limit, and 2 more checks fail\./),
+    hero.getByText(/Overshoot is .* points over its 10\s% limit, and 2 more checks fail\./),
   ).toBeVisible();
   await hero.getByRole('button', { name: 'Reset' }).click();
-  await expect(hero.getByText('Overshoot is 7.6 points over its 10 % limit.')).toBeVisible();
+  await expect(hero.getByText(asMeasured)).toBeVisible();
   await expect(hero.getByText('as measured in R-0412')).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+// The generated stylesheet decides which colors a preset scope gets from the mode classes around it. These are the
+// nestings it promises, read back from the browser rather than from the selectors.
+test('a preset scope takes the nearest mode, and a mode scope inside it keeps its corners', async ({
+  page,
+}) => {
+  await page.goto('/docs');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const carbon = presets.find((p) => p.id === 'carbon')!;
+  const graphite = presets.find((p) => p.id === 'graphite')!;
+  const read = (root: 'dark' | 'light', html: string) =>
+    page.evaluate(
+      ([mode, markup]) => {
+        const rootEl = document.documentElement;
+        const before = rootEl.className;
+        rootEl.classList.remove('dark', 'light');
+        if (mode === 'dark') rootEl.classList.add('dark');
+        const host = document.createElement('div');
+        host.innerHTML = markup!;
+        document.body.append(host);
+        const style = getComputedStyle(host.querySelector('[data-probe]')!);
+        const out = {
+          background: style.getPropertyValue('--background').trim(),
+          radius: style.getPropertyValue('--radius-control').trim(),
+          scheme: style.colorScheme,
+        };
+        host.remove();
+        rootEl.className = before;
+        return out;
+      },
+      [root, html] as const,
+    );
+  const radius = carbon.geometry['radius-control'];
+  // The build pipeline rewrites color syntax, so each nesting is compared with a scope that names its own mode.
+  const light = (await read('light', '<div class="light" data-preset="carbon" data-probe></div>')).background;
+  const dark = (await read('light', '<div class="dark" data-preset="carbon" data-probe></div>')).background;
+  const graphiteLight = await read('light', '<div data-probe></div>');
+  expect(new Set([light, dark, graphiteLight.background]).size).toBe(3);
+  expect(graphiteLight.radius).toBe(graphite.geometry['radius-control']);
+
+  // On a dark page a preset with no mode of its own is dark; on a light page, light.
+  expect(await read('dark', '<div data-preset="carbon" data-probe></div>')).toMatchObject({
+    background: dark,
+    radius,
+  });
+  expect(await read('light', '<div data-preset="carbon" data-probe></div>')).toMatchObject({
+    background: light,
+    radius,
+  });
+  // Its own class wins over the page.
+  expect((await read('dark', '<div class="light" data-preset="carbon" data-probe></div>')).background).toBe(
+    light,
+  );
+  // A light scope between a dark page and the preset is the nearer mode, and color-scheme agrees with the colors.
+  expect(
+    await read('dark', '<div class="light"><div data-preset="carbon" data-probe></div></div>'),
+  ).toMatchObject({ background: light, scheme: 'light' });
+  expect(
+    (await read('light', '<div class="dark"><div data-preset="carbon" data-probe></div></div>')).background,
+  ).toBe(dark);
+  // A mode scope inside the preset changes its colors and keeps its corners.
+  expect(
+    await read('dark', '<div data-preset="carbon"><div class="light" data-probe></div></div>'),
+  ).toMatchObject({ background: light, radius });
+  // And a plain light scope on a dark page is still Graphite, corners included.
+  expect(await read('dark', '<div class="light" data-probe></div>')).toEqual(graphiteLight);
 });

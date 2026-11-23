@@ -141,12 +141,12 @@ const colorBlock = (scheme: ColorScheme) => colorRoles.map((r) => decl(r, scheme
 const shadowBlock = (mode: Mode) =>
   Object.entries(foundation.shadow[mode]).map(([k, v]) => decl(`shadow-${k}`, v));
 
+// Everything that is not a color is declared once, on the root. A mode class further down the tree changes colors
+// and shadows only, so a light scope inside a preset keeps that preset's corners, and on a touch screen its sizes.
+lines.push(header, '', ':root {', ...base, '}', '');
 lines.push(
-  header,
-  '',
   ':root,',
   '.light {',
-  ...base,
   ...colorBlock(graphite.modes.light!),
   ...shadowBlock('light'),
   '  color-scheme: light;',
@@ -172,13 +172,24 @@ lines.push(
   '',
 );
 
-// A preset takes its mode from the page unless its own element, or one inside it, sets a mode. Light is the plain
-// attribute selector; the dark selectors are more specific, so a preset with no mode class follows a dark page.
+// A preset takes its mode from the nearest mode above it, or from its own element, or gives it to one inside it.
+// Light is the plain attribute selector. Dark is more specific, so a preset with no mode class follows a dark page;
+// a light scope between that page and the preset is more specific again, so the nearer of the two wins. CSS can only
+// spell out so many levels: three scopes deep, put the mode on the preset's own element, as ThemeScope does.
 for (const preset of presets.slice(1)) {
   const sel = `[data-preset="${preset.id}"]`;
   lines.push(`${sel} {`, ...Object.entries(preset.geometry).map(([k, v]) => decl(k, v)), '}', '');
   const light = preset.modes.light;
-  if (light) lines.push(`${sel},`, `.light${sel},`, `${sel} .light {`, ...colorBlock(light), '}', '');
+  if (light)
+    lines.push(
+      `${sel},`,
+      `.light${sel},`,
+      `${sel} .light,`,
+      `.dark .light ${sel}:not(.dark) {`,
+      ...colorBlock(light),
+      '}',
+      '',
+    );
   const dark = preset.modes.dark;
   if (dark)
     lines.push(`.dark ${sel}:not(.light),`, `.dark${sel},`, `${sel} .dark {`, ...colorBlock(dark), '}', '');

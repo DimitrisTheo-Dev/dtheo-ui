@@ -146,7 +146,7 @@ Overlays opened inside a \`ThemeScope\` (menus, dialogs, tooltips, toasts) mount
 | Preset | Character | Modes |
 | --- | --- | --- |
 | \`graphite\` | Native and neutral, Mac-like materials, system blue | light, dark |
-| \`carbon\` | No hue in the interface: neutral surfaces, an ink primary, square corners, no glass | light, dark |
+| \`carbon\` | No hue in the interface: neutral surfaces, an ink primary, tight corners, no glass | light, dark |
 
 A preset follows the page’s mode unless its own element sets one. Carbon suits monitoring and maps, where the data should be the only color on screen.
 

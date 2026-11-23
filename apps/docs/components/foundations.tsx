@@ -87,7 +87,7 @@ export function ColorFoundation() {
     note: string;
   }>;
   const passed = rows.filter((r) => r.ok).length;
-  // Each declared pair is measured in every theme it applies to: Graphite light and dark, then the dark-only presets.
+  // Each declared pair is measured in every theme it applies to: every preset, in each mode it has.
   const themes = presets.map((p) => `${p.name} ${Object.keys(p.modes).join(' and ')}`).join(', ');
   return (
     <>

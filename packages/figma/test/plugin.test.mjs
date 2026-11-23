@@ -152,6 +152,10 @@ function fakeFigma({ fonts = [], maxModes = Infinity, maxPages = Infinity } = {}
           renameMode(modeId, newName) {
             this.modes.find((m) => m.modeId === modeId).name = newName;
           },
+          removeMode(modeId) {
+            if (this.modes.length === 1) throw new Error('A collection needs a mode');
+            this.modes = this.modes.filter((m) => m.modeId !== modeId);
+          },
           addMode(modeName) {
             if (this.modes.length >= maxModes) throw new Error('Limited to 1 modes only');
             const modeId = id('mode');
@@ -394,6 +398,21 @@ describe('the Figma plugin', () => {
     sets()[0].remove();
     expect(await run(fake)).toContain('1 components made');
     expect(sets()).toHaveLength(before.length);
+  });
+
+  it('replaces the modes of an earlier version instead of adding to them', async () => {
+    const fake = fakeFigma();
+    // A file built before Carbon: four modes, two of which the library no longer has.
+    const old = fake.figma.variables.createVariableCollection('Color');
+    old.renameMode(old.modes[0].modeId, 'Graphite light');
+    for (const m of ['Graphite dark', 'Flight deck', 'Deep space']) old.addMode(m);
+    const message = await run(fake);
+    expect(message).not.toMatch(/failed|plan allows/);
+    const color = fake.collections.find((c) => c.name === 'Color');
+    expect(fake.collections.filter((c) => c.name === 'Color')).toHaveLength(1);
+    expect(color.modes.map((m) => m.name).sort()).toEqual(
+      ['Carbon dark', 'Carbon light', 'Graphite dark', 'Graphite light'].sort(),
+    );
   });
 
   it('still builds on a Starter file: one mode, no page to spare', async () => {
