@@ -61,10 +61,24 @@ export interface DataTableProps<Row> {
   loading?: boolean;
   /** What to show when there are no rows: an Empty that says why, and what to do next. */
   empty?: React.ReactNode;
+  /** The locale numbers are written in. One locale on the server and in the browser, so cells hydrate the same. */
+  locale?: string;
   className?: string;
 }
 
-const numberFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+const formats = new Map<string, Intl.NumberFormat>();
+/** Numbers without a `format`, at most two decimals. */
+function numberFormat(locale: string) {
+  let f = formats.get(locale);
+  if (!f) {
+    f = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+    formats.set(locale, f);
+  }
+  return f;
+}
+/** Null, undefined and NaN are all "nothing was measured": a dash, sorted last, never a status. */
+const missing = (v: unknown): v is null | undefined =>
+  v === null || v === undefined || (typeof v === 'number' && !Number.isFinite(v));
 const HEAD_HEIGHT = 44;
 const CHECK_WIDTH = 40;
 
@@ -74,7 +88,16 @@ function compare(a: unknown, b: unknown) {
 }
 
 /** A value marked against its limit: an icon, a color and, for screen readers, the words. Passing values stay plain. */
-export function LimitValue({ status, children }: { status: LimitStatus; children: React.ReactNode }) {
+export function LimitValue({
+  status,
+  under = false,
+  children,
+}: {
+  status: LimitStatus;
+  /** The value failed a minimum, not a maximum: read out as "under the limit". */
+  under?: boolean;
+  children: React.ReactNode;
+}) {
   if (status === 'pass') return <>{children}</>;
   const Icon = status === 'fail' ? CircleXIcon : TriangleAlertIcon;
   return (
@@ -87,14 +110,15 @@ export function LimitValue({ status, children }: { status: LimitStatus; children
     >
       <Icon className="size-3 shrink-0" aria-hidden="true" />
       {children}
-      <span className="sr-only">{status === 'fail' ? ', over the limit' : ', near the limit'}</span>
+      <span className="sr-only">
+        {status === 'fail' ? (under ? ', under the limit' : ', over the limit') : ', near the limit'}
+      </span>
     </span>
   );
 }
 
-const n = (v: number) => numberFormat.format(v);
-
-function limitText(limit: ColumnLimit) {
+function limitText(limit: ColumnLimit, locale: string) {
+  const n = (v: number) => numberFormat(locale).format(v);
   if (limit.max !== undefined && limit.min !== undefined) return `${n(limit.min)}–${n(limit.max)}`;
   if (limit.max !== undefined) return `≤ ${n(limit.max)}`;
   if (limit.min !== undefined) return `≥ ${n(limit.min)}`;
@@ -120,6 +144,7 @@ export function DataTable<Row>({
   onActiveChange,
   onRowOpen,
   density = 'regular',
+  locale = 'en-US',
   loading = false,
   empty,
   className,
@@ -143,8 +168,8 @@ export function DataTable<Row>({
     return rows
       .map((row) => ({ row, v: col.value(row) }))
       .sort((a, b) => {
-        const an = a.v === null || a.v === undefined;
-        const bn = b.v === null || b.v === undefined;
+        const an = missing(a.v);
+        const bn = missing(b.v);
         if (an || bn) return an === bn ? 0 : an ? 1 : -1;
         return compare(a.v, b.v) * dir;
       })
@@ -177,26 +202,33 @@ export function DataTable<Row>({
   };
   const checkedCount = selectable ? ids.filter((id) => selected.has(id)).length : 0;
 
-  // Focus follows the active row when the keyboard moved it, once the window has drawn it.
-  const focusNext = React.useRef(false);
+  // Focus follows the active row when the keyboard moved it. A row that is drawn takes focus at once. One that is
+  // not (End, Page Down) is scrolled to, which always renders, and takes focus in that render: the wish lasts for
+  // exactly one commit, so it can never fire later and pull focus out of a field the user moved on to.
+  const rowAt = (index: number) => bodyRef.current?.querySelector<HTMLElement>(`[data-index="${index}"]`);
+  const focusNext = React.useRef<number | null>(null);
   const activate = (index: number, focus: boolean) => {
     const row = sorted[index];
     if (!row) return;
     const id = ids[index]!;
     if (activeProp === undefined) setActiveState(id);
     onActiveChange?.(id, row);
+    const drawn = rowAt(index);
     win.scrollToIndex(index);
-    focusNext.current = focus;
+    if (!focus) return;
+    if (drawn) drawn.focus({ preventScroll: true });
+    else focusNext.current = index;
   };
   React.useLayoutEffect(() => {
-    if (!focusNext.current || activeIndex < 0) return;
-    focusNext.current = false;
-    bodyRef.current
-      ?.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`)
-      ?.focus({ preventScroll: true });
+    const index = focusNext.current;
+    if (index === null) return;
+    focusNext.current = null;
+    rowAt(index)?.focus({ preventScroll: true });
   });
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>, index: number) => {
+    // Keys pressed on the row's own checkbox are the checkbox's: handling Space here as well would toggle it twice.
+    if (e.target !== e.currentTarget) return;
     const last = sorted.length - 1;
     const go = (i: number) => {
       e.preventDefault();
@@ -218,8 +250,9 @@ export function DataTable<Row>({
     }
   };
 
-  // One row is the table's tab stop: the active one when it is drawn, else the first row drawn.
-  const tabStop = activeIndex >= win.start && activeIndex < win.end ? activeIndex : win.start;
+  // One row is the table's tab stop: the active one when it is drawn, else the first row in view (not the first
+  // drawn, which is overscan above the viewport: tabbing to it would scroll the list and change the active row).
+  const tabStop = activeIndex >= win.start && activeIndex < win.end ? activeIndex : win.first;
   const span = columns.length + (selectable ? 1 : 0);
   const sticky = columns[0]?.sticky;
   // Columns without a width get at least 140 px before the table scrolls sideways.
@@ -229,7 +262,7 @@ export function DataTable<Row>({
     const sortable = col.sortable !== false;
     const active = sort?.id === col.id;
     const Icon = !active ? ArrowUpDownIcon : sort.dir === 'asc' ? ArrowUpIcon : ArrowDownIcon;
-    const sub = [col.unit, col.limit && limitText(col.limit)].filter(Boolean).join(' ');
+    const sub = [col.unit, col.limit && limitText(col.limit, locale)].filter(Boolean).join(' ');
     const label = (
       <span className={cn('flex flex-col gap-px leading-none', col.numeric && 'items-end')}>
         {/* A number's sort arrow sits on the left, so the name, its unit and the values share one right edge. */}
@@ -285,7 +318,7 @@ export function DataTable<Row>({
   const cell = (col: DataTableColumn<Row>, row: Row, i: number) => {
     const v = col.value(row);
     let content: React.ReactNode;
-    if (v === null || v === undefined) {
+    if (missing(v)) {
       content = (
         <span className="text-subtle-foreground">
           <span aria-hidden="true">—</span>
@@ -293,9 +326,20 @@ export function DataTable<Row>({
         </span>
       );
     } else {
-      content = col.cell ? col.cell(row) : typeof v === 'number' ? (col.format ?? numberFormat.format)(v) : v;
+      content = col.cell
+        ? col.cell(row)
+        : typeof v === 'number'
+          ? (col.format ?? numberFormat(locale).format)(v)
+          : v;
       if (typeof v === 'number' && col.limit)
-        content = <LimitValue status={limitStatus(v, col.limit)}>{content}</LimitValue>;
+        content = (
+          <LimitValue
+            status={limitStatus(v, col.limit)}
+            under={col.limit.min !== undefined && v < col.limit.min}
+          >
+            {content}
+          </LimitValue>
+        );
     }
     return (
       <td
@@ -400,7 +444,18 @@ export function DataTable<Row>({
                     aria-selected={selectable ? isChecked : undefined}
                     tabIndex={index === tabStop ? 0 : -1}
                     onClick={() => activate(index, false)}
-                    onDoubleClick={onRowOpen ? () => onRowOpen(row) : undefined}
+                    // Shift-click extends the checked range; without this it would also select the text between.
+                    onMouseDown={(e) => {
+                      if (e.shiftKey) e.preventDefault();
+                    }}
+                    // A double click on the row opens it; one on its checkbox is two toggles, not an open.
+                    onDoubleClick={
+                      onRowOpen
+                        ? (e) => {
+                            if (!(e.target as HTMLElement).closest('[data-slot="checkbox"]')) onRowOpen(row);
+                          }
+                        : undefined
+                    }
                     onFocus={(e) => {
                       if (e.target === e.currentTarget && index !== activeIndex) activate(index, false);
                     }}

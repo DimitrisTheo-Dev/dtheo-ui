@@ -141,3 +141,10 @@
     inset 0 2px 0 var(--ring),
     inset 0 -2px 0 var(--ring);
 }
+/* Forced colors drop box shadows, and the row has given up its outline: draw the system focus color on the cells. */
+@media (forced-colors: active) {
+  .dtheo-data-table tr[data-index]:focus-visible > td {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}

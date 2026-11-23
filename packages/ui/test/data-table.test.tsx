@@ -94,6 +94,25 @@ describe('limitStatus', () => {
   });
 });
 
+/** A search field beside a table whose active row is controlled, as on the run history. */
+function WithSearch() {
+  const [q, setQ] = React.useState('');
+  const [active, setActive] = React.useState<string | null>('R-0001');
+  return (
+    <>
+      <input aria-label="Search" value={q} onChange={(e) => setQ(e.target.value)} />
+      <DataTable
+        aria-label="Runs"
+        rows={runs.slice(0, 20)}
+        columns={columns}
+        getRowId={(r) => r.id}
+        activeId={active}
+        onActiveChange={setActive}
+      />
+    </>
+  );
+}
+
 describe('DataTable', () => {
   // jsdom lays nothing out: give the scroller the height of 20 rows, as a browser would.
   beforeEach(() => {
@@ -161,6 +180,42 @@ describe('DataTable', () => {
     await user.keyboard('{Shift>} {/Shift}');
     expect(screen.getByTestId('selected')).toHaveTextContent('R-0002,R-0003,R-0004,R-0005');
     expect(bodyRows()[2]).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('never pulls focus back into the table after a key that moved nothing', async () => {
+    const user = userEvent.setup();
+    render(<WithSearch />);
+    bodyRows()[0]!.focus();
+    // Up on the first row changes nothing, so no render follows; the wish to focus must not outlive the key.
+    await user.keyboard('{ArrowUp}');
+    const search = screen.getByRole('textbox', { name: 'Search' });
+    search.focus();
+    await user.keyboard('R-04');
+    expect(search).toHaveFocus();
+    expect(search).toHaveValue('R-04');
+  });
+
+  it('leaves Space and a double click on a row’s checkbox to the checkbox', async () => {
+    const user = userEvent.setup();
+    const onRowOpen = vi.fn();
+    render(<Harness rows={runs.slice(0, 20)} onRowOpen={onRowOpen} />);
+    const box = screen.getByRole('checkbox', { name: 'Select R-0003' });
+    await user.click(box);
+    expect(screen.getByTestId('selected')).toHaveTextContent('R-0003');
+    // Focus is on the checkbox now: one Space is one toggle, not the row's toggle and the checkbox's.
+    await user.keyboard(' ');
+    expect(screen.getByTestId('selected')).toHaveTextContent('');
+    await user.dblClick(box);
+    expect(onRowOpen).not.toHaveBeenCalled();
+  });
+
+  it('writes numbers in one locale on the server and in the browser, and NaN as missing', () => {
+    const odd = [{ id: 'R-9001', overshoot: Number.NaN, current: 1587.5 }];
+    render(<Harness rows={odd} />);
+    const row = bodyRows()[0]!;
+    expect(within(row).getByText('1,587.5')).toBeInTheDocument();
+    expect(within(row).getByText('No data')).toBeInTheDocument();
+    expect(within(row).queryByText('NaN')).toBeNull();
   });
 
   it('shows placeholders while loading and the empty state when there is nothing', () => {

@@ -14,13 +14,34 @@ export interface Limit {
 
 export type LimitStatus = 'fail' | 'warn' | 'pass';
 
-/** One rule for every limit: past it fails, within `near` of it warns. The same rule the Metric states. */
+/**
+ * One rule for every limit: past it fails, within the near band of it warns. The band is a share of the limit's size
+ * (10 % by default), so a maximum of 10 warns above 9 and a maximum of −10 above −11; with both a minimum and a
+ * maximum it is a share of the range between them, so 17 to 20 warns below 17.3 and above 19.7. A value that is not
+ * a number has no status: it passes here and is shown as missing.
+ */
 export function limitStatus(value: number, { max, min, near = 0.9 }: Limit): LimitStatus {
+  if (!Number.isFinite(value)) return 'pass';
   if (max !== undefined && value > max) return 'fail';
   if (min !== undefined && value < min) return 'fail';
-  if (max !== undefined && value > near * max) return 'warn';
-  if (min !== undefined && value < min / near) return 'warn';
+  const share = 1 - near;
+  const band = (limit: number) =>
+    share * (max !== undefined && min !== undefined ? max - min : Math.abs(limit));
+  // A positive maximum on its own is the everyday case, written the way the rule is said: above 90 % of it.
+  const upper =
+    max !== undefined && min === undefined && max > 0
+      ? near * max
+      : max !== undefined
+        ? max - band(max)
+        : Infinity;
+  if (value > upper) return 'warn';
+  if (min !== undefined && value < min + band(min)) return 'warn';
   return 'pass';
+}
+
+/** Which side a failing value is on, for the words: "over the limit" or "under the limit". */
+export function limitSide(value: number, { min }: Limit): 'over' | 'under' {
+  return min !== undefined && value < min ? 'under' : 'over';
 }
 
 /** The words for each status, so no screen says "Warning" where another says "Near limit". */
@@ -30,6 +51,9 @@ const NBSP = ' ';
 const MINUS = '−';
 /** Symbols written against the number, with no space: plane angles. Everything else takes a space, % and °C too. */
 const attached = new Set(['°', '′', '″']);
+
+/** What goes between a number and its unit: nothing for an angle's degree sign, a no-break space for the rest. */
+export const unitGap = (unit: string) => (attached.has(unit) ? '' : NBSP);
 
 const formatters = new Map<string, Intl.NumberFormat>();
 function formatter(locale: string, digits: number) {
@@ -67,7 +91,7 @@ export function formatQuantity(value: number | null | undefined, unit?: string, 
   if (value === null || value === undefined || !Number.isFinite(value)) return '—';
   const n = formatNumber(value, options);
   if (!unit) return n;
-  return attached.has(unit) ? `${n}${unit}` : `${n}${NBSP}${unit}`;
+  return `${n}${unitGap(unit)}${unit}`;
 }
 
 /**
@@ -75,6 +99,7 @@ export function formatQuantity(value: number | null | undefined, unit?: string, 
  * 10 % limit is "+7.6 points", because "+7.6 %" would mean 10.76 %.
  */
 export function formatDelta(delta: number, unit?: string, options: Omit<NumberOptions, 'signed'> = {}) {
+  if (!Number.isFinite(delta)) return '—';
   if (unit === '%') return `${formatNumber(delta, { ...options, signed: true })}${NBSP}points`;
   return formatQuantity(delta, unit, { ...options, signed: true });
 }
@@ -90,8 +115,7 @@ export function formatLimit({ max, min }: Limit, unit?: string, options: NumberO
   const q = (v: number) => formatQuantity(v, unit, options);
   if (max !== undefined && min !== undefined) {
     const range = `${formatNumber(min, options)}–${formatNumber(max, options)}`;
-    if (!unit) return range;
-    return attached.has(unit) ? `${range}${unit}` : `${range}${NBSP}${unit}`;
+    return unit ? `${range}${unitGap(unit)}${unit}` : range;
   }
   if (max !== undefined) return `≤${NBSP}${q(max)}`;
   if (min !== undefined) return `≥${NBSP}${q(min)}`;

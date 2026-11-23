@@ -53,7 +53,13 @@ import {
   MenuTrigger,
 } from '@dtheo/ui/components/menu';
 import { Meter } from '@dtheo/ui/components/progress';
-import { Quantity, formatQuantity, limitStatus, statusWords } from '@dtheo/ui/components/quantity';
+import {
+  Quantity,
+  formatNumber,
+  formatQuantity,
+  limitStatus,
+  statusWords,
+} from '@dtheo/ui/components/quantity';
 import { Separator } from '@dtheo/ui/components/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@dtheo/ui/components/table';
 import { Skeleton } from '@dtheo/ui/components/skeleton';
@@ -355,7 +361,14 @@ export function RunHistory() {
   const columns = React.useMemo(() => allColumns.filter((c) => visible.includes(c.id)), [visible]);
   const rowById = React.useMemo(() => new Map(source.map((r) => [r.id, r])), [source]);
   const active = activeId ? rowById.get(activeId) : undefined;
-  const comparing = [...selected].map((id) => rowById.get(id)).filter((r): r is Row => Boolean(r));
+  // Selection is what is checked among the rows shown: a filter never leaves a hidden run in "2 selected", and
+  // Compare never opens with a run the table is not showing.
+  const shownIds = React.useMemo(() => new Set(rows.map((r) => r.id)), [rows]);
+  const selectedShown = React.useMemo(
+    () => new Set([...selected].filter((id) => shownIds.has(id))),
+    [selected, shownIds],
+  );
+  const comparing = [...selectedShown].map((id) => rowById.get(id)).filter((r): r is Row => Boolean(r));
 
   const setFacet = (id: FacetId, values: string[]) => {
     setFilters({ ...filters, [id]: values });
@@ -365,6 +378,14 @@ export function RunHistory() {
     setFilters(noFilters);
     setQuery('');
     if (noResults) setPreview('live');
+    // The button that was pressed is gone with the filters; focus goes to the search, not to nowhere.
+    searchRef.current?.focus();
+  };
+  const listRef = React.useRef<HTMLElement>(null);
+  const clearSelection = () => {
+    setSelected(new Set());
+    // Likewise: back to the table's own tab stop.
+    listRef.current?.querySelector<HTMLElement>('tr[tabindex="0"]')?.focus();
   };
 
   // "/" jumps to the search, as the hint in the field says.
@@ -386,7 +407,13 @@ export function RunHistory() {
     setTimeout(() => setRetrying(false), 700);
   };
 
+  const canExport = !loading && preview !== 'error' && rows.length > 0;
   const exportRows = () => {
+    // The palette reaches this too, where no disabled button stands in the way.
+    if (!canExport) {
+      toast.add({ title: 'Nothing to export', description: 'No runs are shown right now.' });
+      return;
+    }
     download('ra-14-runs.csv', csv(rows));
     toast.add({
       title: 'Exported ra-14-runs.csv',
@@ -439,7 +466,7 @@ export function RunHistory() {
           eyebrow="RA-14 hip pitch · every run since firmware 4.16"
           title="Runs"
           actions={
-            <Button onClick={exportRows} disabled={loading || preview === 'error' || rows.length === 0}>
+            <Button onClick={exportRows} disabled={!canExport}>
               <DownloadIcon aria-hidden="true" />
               Export CSV
             </Button>
@@ -448,6 +475,7 @@ export function RunHistory() {
 
         <div className="grid min-h-0 flex-1 gap-5 xl:grid-cols-[minmax(0,1fr)_18rem] 2xl:grid-cols-[minmax(0,1fr)_20rem]">
           <section
+            ref={listRef}
             aria-label="Run list"
             className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-card border border-border bg-card"
           >
@@ -460,7 +488,7 @@ export function RunHistory() {
                   ref={searchRef}
                   aria-label="Search runs"
                   placeholder="Run, profile, note, operator"
-                  value={query}
+                  value={noResults ? '' : query}
                   onChange={(e) => {
                     setQuery(e.target.value);
                     if (noResults) {
@@ -522,16 +550,16 @@ export function RunHistory() {
                 custom={preset === null}
               />
               <div className="ml-auto flex items-center gap-2" aria-live="polite">
-                {selected.size ? (
+                {selectedShown.size ? (
                   <>
                     <span className="text-label font-normal text-muted-foreground tabular-nums">
-                      {selected.size} selected
-                      {compareHint(selected.size) ? (
-                        <span className="text-subtle-foreground"> · {compareHint(selected.size)}</span>
+                      {selectedShown.size} selected
+                      {compareHint(selectedShown.size) ? (
+                        <span className="text-subtle-foreground"> · {compareHint(selectedShown.size)}</span>
                       ) : null}
                     </span>
-                    <CompareButton count={selected.size} onClick={() => setCompareOpen(true)} />
-                    <Button variant="ghost" onClick={() => setSelected(new Set())}>
+                    <CompareButton count={selectedShown.size} onClick={() => setCompareOpen(true)} />
+                    <Button variant="ghost" onClick={clearSelection}>
                       Clear
                     </Button>
                   </>
@@ -557,8 +585,13 @@ export function RunHistory() {
                     <Button
                       size="sm"
                       onClick={() => {
+                        // Missing values sort last either way, so this filters instead: Bench 1 only, newest
+                        // first, with the checks in view. The affected runs are the dashes near the top.
                         setFilters({ ...noFilters, bench: [SHUNT.bench] });
-                        setSort({ id: 'current', dir: 'asc' });
+                        setQuery('');
+                        setPreset('checks');
+                        setVisible([...presets.checks.columns]);
+                        setSort({ id: 'id', dir: 'desc' });
                       }}
                     >
                       Show {SHUNT.bench}
@@ -594,7 +627,7 @@ export function RunHistory() {
                 getRowId={getId}
                 sort={sort}
                 onSortChange={setSort}
-                selected={selected}
+                selected={selectedShown}
                 onSelectedChange={setSelected}
                 activeId={activeId}
                 onActiveChange={setActiveId}
@@ -926,7 +959,11 @@ function RunInspector({
                   <Quantity value={v} unit={c.unit} digits={digits} limit={{ max: c.limit }} showLimit />
                 </span>
                 <Meter
-                  aria-label={`${c.label}: ${formatQuantity(v, c.unit, { digits })}, limit ${formatQuantity(c.limit, c.unit)}, ${word}`}
+                  aria-label={c.label}
+                  // The track runs to 1.5 × the limit, so its own "percent of the track" would contradict the value.
+                  getAriaValueText={() =>
+                    `${formatQuantity(v, c.unit, { digits })}, limit ${formatQuantity(c.limit, c.unit)}, ${word}`
+                  }
                   value={v === null ? 0 : Math.min(v, c.limit * 1.5)}
                   max={c.limit * 1.5}
                   limit={c.limit}
@@ -976,15 +1013,17 @@ function CompareDialog({
   runs: Row[];
 }) {
   const ordered = [...runs].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-  const base = ordered[0];
+  // Differences are read against the reference run when it is one of them, otherwise against the newest.
+  const reference = ordered.find((r) => r.id === REFERENCE);
+  const base = reference ?? ordered[0];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Compare {ordered.length} runs</DialogTitle>
           <DialogDescription>
-            Values past a limit are marked. Differences are against {base?.id ?? 'the newest run'}, the
-            newest.
+            Values past a limit are marked. Differences are against {base?.id ?? 'the newest run'}, the{' '}
+            {reference ? 'reference' : 'newest'}.
           </DialogDescription>
         </DialogHeader>
         {base ? (
@@ -1030,8 +1069,7 @@ function CompareDialog({
                           )}
                           {delta !== null ? (
                             <span className="ml-1.5 text-caption text-subtle-foreground">
-                              {delta > 0 ? '+' : delta < 0 ? '−' : '±'}
-                              {digits.format(Math.abs(delta))}
+                              {formatNumber(delta, { digits: c.unit === 'ms' ? 0 : 1, signed: true })}
                             </span>
                           ) : null}
                         </TableCell>

@@ -10,6 +10,7 @@ import {
   formatNumber,
   formatQuantity,
   formatShareOfLimit,
+  limitStatus,
 } from '../src/components/quantity';
 
 const NBSP = ' ';
@@ -47,7 +48,30 @@ describe('format functions', () => {
   });
 });
 
+describe('limitStatus', () => {
+  it('warns near a negative limit, and inside a narrow range only at its edges', () => {
+    // A maximum of −10: −9.5 is past it, −10.5 is within a tenth of it, −12 is clear.
+    expect(limitStatus(-9.5, { max: -10 })).toBe('fail');
+    expect(limitStatus(-10.5, { max: -10 })).toBe('warn');
+    expect(limitStatus(-12, { max: -10 })).toBe('pass');
+    expect(limitStatus(-39, { min: -40 })).toBe('warn');
+    expect(limitStatus(18.5, { min: 17, max: 20 })).toBe('pass');
+    expect(limitStatus(19.8, { min: 17, max: 20 })).toBe('warn');
+    expect(limitStatus(17.2, { min: 17, max: 20 })).toBe('warn');
+  });
+
+  it('gives a value that is not a number no status', () => {
+    expect(limitStatus(Number.NaN, { max: 10 })).toBe('pass');
+    expect(formatDelta(Number.NaN, '%')).toBe('—');
+  });
+});
+
 describe('Quantity', () => {
+  it('says a value that fails a minimum is under the limit', () => {
+    render(<Quantity value={41} unit="°" limit={{ min: 45 }} />);
+    expect(screen.getByText(', under the limit')).toBeInTheDocument();
+  });
+
   it('marks a value past its limit in words, not only color', () => {
     render(<Quantity value={17.6} unit="%" digits={1} limit={{ max: 10 }} />);
     expect(screen.getByText(', over the limit')).toBeInTheDocument();

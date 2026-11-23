@@ -269,7 +269,7 @@ export function EngineeringDataFoundation() {
       >
         <pre className="overflow-x-auto rounded-card border border-border bg-card p-4 font-mono text-label">
           {`run,started_at,overshoot_pct,peak_current_A,settle_ms,result
-R-0412,2026-11-18T14:32,17.6038,30.9145,203,fail`}
+R-0412,2026-11-18T14:32,${M.overshoot.toFixed(4)},${M.peakCurrent.toFixed(4)},${M.settle},fail`}
         </pre>
         <Rules
           items={[

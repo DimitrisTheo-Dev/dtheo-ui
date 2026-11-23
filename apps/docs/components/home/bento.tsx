@@ -128,7 +128,7 @@ export function Bento() {
               'Status is an icon and a word, never color alone',
               'Focus traps, typeahead and roving focus from Base UI',
               'Reduced motion makes every animation instant',
-              'axe checks 16 key pages in both themes on every pull request',
+              'axe checks 19 key pages in both themes on every pull request',
             ].map((f) => (
               <li key={f} className="flex gap-2">
                 <CircleCheckIcon

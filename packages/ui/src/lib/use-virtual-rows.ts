@@ -91,8 +91,15 @@ export function useVirtualRows({
     [scrollRef, rowHeight, offset],
   );
 
+  const drawn = virtualWindow(count, rowHeight, viewport.top, viewport.height, offset, overscan);
+  // The first row wholly in view, kept inside what is drawn: where focus should enter a list that has no active row.
+  const first = Math.min(
+    Math.max(drawn.start, Math.ceil(viewport.top / rowHeight)),
+    Math.max(drawn.start, drawn.end - 1),
+  );
   return {
-    ...virtualWindow(count, rowHeight, viewport.top, viewport.height, offset, overscan),
+    ...drawn,
+    first,
     /** Rows that fit in the viewport: what Page Up and Page Down move by. */
     pageSize: Math.max(1, Math.floor((viewport.height - offset) / rowHeight) - 1),
     scrollToIndex,

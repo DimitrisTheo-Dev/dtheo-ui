@@ -1250,7 +1250,7 @@ export const components: ComponentMeta[] = [
     aliases: ['use-virtual-rows'],
     examples: ['data-table'],
     keyboard: [
-      ['Tab', 'Moves into the rows, onto the active row'],
+      ['Tab', 'Moves into the rows: onto the active row, or the first row in view'],
       ['↑ / ↓', 'Moves to the previous or next row, scrolling it into view'],
       ['Page Up / Page Down', 'Moves by one screen of rows'],
       ['Home / End', 'Moves to the first or last row'],
@@ -1337,6 +1337,18 @@ export const components: ComponentMeta[] = [
         name: 'className',
         type: 'string',
         description: 'On the scroll region. Give it a height: `h-96`, or `flex-1 min-h-0` in a column.',
+      },
+      {
+        name: 'locale',
+        type: 'string',
+        default: "'en-US'",
+        description: 'The locale numbers are written in: one on the server and in the browser, so cells hydrate the same.',
+      },
+      {
+        name: 'under',
+        type: 'boolean',
+        default: 'false',
+        description: 'LimitValue: the value failed a minimum, so it reads "under the limit".',
       },
       {
         name: 'status',

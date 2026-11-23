@@ -118,14 +118,15 @@ function csvNumber(v: number) {
 }
 
 /** Both runs, one row per millisecond, as plain numbers a spreadsheet or a script reads without a locale. */
-function samplesCsv() {
+function samplesCsv(noCurrent = false) {
   const rows = measured.t.map((t, i) =>
     [
       String(t),
       csvNumber(command[i]!),
       csvNumber(measured.torque[i]!),
       csvNumber(reference.torque[i]!),
-      csvNumber(measured.current[i]!),
+      // Not recorded is an empty cell, never a zero a script would average in.
+      noCurrent ? '' : csvNumber(measured.current[i]!),
       csvNumber(reference.current[i]!),
     ].join(','),
   );
@@ -179,12 +180,14 @@ export function RunReview() {
   const checked = Object.entries(status).filter(([k]) => !(noCurrent && k === 'current'));
   const failing = checked.filter(([, s]) => s === 'fail').length;
   const exportSamples = React.useCallback(() => {
-    download(SAMPLES_FILE, samplesCsv());
+    download(SAMPLES_FILE, samplesCsv(noCurrent));
     toast.add({
       title: `Exported ${SAMPLES_FILE}`,
-      description: `${fmt.n0.format(SAMPLES)} rows: command, torque and phase current for ${RUN} and ${REFERENCE}.`,
+      description: noCurrent
+        ? `${fmt.n0.format(SAMPLES)} rows. ${RUN}’s phase current was not recorded; that column is empty.`
+        : `${fmt.n0.format(SAMPLES)} rows: command, torque and phase current for ${RUN} and ${REFERENCE}.`,
     });
-  }, [toast]);
+  }, [toast, noCurrent]);
   // ⌘E / Ctrl+E exports, as the menu and the palette say it does.
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -432,7 +435,7 @@ export function RunReview() {
                   }
                 >
                   {showSamples ? (
-                    <SampleTable span={span} />
+                    <SampleTable span={span} noCurrent={noCurrent} />
                   ) : (
                     <div className="flex flex-col gap-1">
                       <span className="text-label text-muted-foreground">Output torque</span>
@@ -500,7 +503,7 @@ export function RunReview() {
                         extraReadout={(i) => [
                           {
                             label: 'R-0412 current',
-                            value: `${fmt.n1.format(measured.current[i]!)} A`,
+                            value: noCurrent ? 'Not recorded' : `${fmt.n1.format(measured.current[i]!)} A`,
                             tone: 'primary',
                           },
                         ]}
@@ -635,12 +638,19 @@ export function RunReview() {
                             <TableCell numeric className="hidden md:table-cell">
                               {fmt.n0.format(run.settle)} ms
                             </TableCell>
-                            <TableCell
-                              numeric
-                              className={`hidden md:table-cell ${checkStatus(run.current, CURRENT_LIMIT) === 'pass' ? '' : 'font-medium text-warning-foreground'}`}
-                            >
-                              {fmt.n1.format(run.current)} A
-                            </TableCell>
+                            {noCurrent && run.id === RUN ? (
+                              <TableCell numeric className="hidden text-subtle-foreground md:table-cell">
+                                <span aria-hidden="true">—</span>
+                                <span className="sr-only">Not recorded</span>
+                              </TableCell>
+                            ) : (
+                              <TableCell
+                                numeric
+                                className={`hidden md:table-cell ${checkStatus(run.current, CURRENT_LIMIT) === 'pass' ? '' : 'font-medium text-warning-foreground'}`}
+                              >
+                                {fmt.n1.format(run.current)} A
+                              </TableCell>
+                            )}
                             <TableCell>
                               <Badge variant={meta.variant}>
                                 <meta.Icon aria-hidden="true" />
@@ -893,7 +903,7 @@ export function RunReview() {
   );
 }
 
-function SampleTable({ span }: { span: number }) {
+function SampleTable({ span, noCurrent }: { span: number; noCurrent: boolean }) {
   const rows = Array.from({ length: span / 10 + 1 }, (_, k) => k * 10);
   return (
     <div className="max-h-96 overflow-auto rounded-inset border border-border">
@@ -917,7 +927,14 @@ function SampleTable({ span }: { span: number }) {
                 {fmt.n2.format(measured.torque[t]!)} N·m
               </TableCell>
               <TableCell numeric>{fmt.n2.format(reference.torque[t]!)} N·m</TableCell>
-              <TableCell numeric>{fmt.n1.format(measured.current[t]!)} A</TableCell>
+              {noCurrent ? (
+                <TableCell numeric className="text-subtle-foreground">
+                  <span aria-hidden="true">—</span>
+                  <span className="sr-only">Not recorded</span>
+                </TableCell>
+              ) : (
+                <TableCell numeric>{fmt.n1.format(measured.current[t]!)} A</TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

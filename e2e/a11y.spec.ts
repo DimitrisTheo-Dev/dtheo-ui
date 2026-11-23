@@ -50,6 +50,16 @@ for (const theme of ['dark', 'light'] as const) {
       await page.waitForLoadState('networkidle');
       // Audit the page people use: after React has hydrated and Base UI has wired up labels and ids.
       await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+      // Entrances fade in for a second or two. A contrast check taken mid-fade measures the fade, not the design,
+      // so wait for every animation that ends (a spinner never does) before auditing.
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter((a) => a.playState === 'running' && a.effect?.getComputedTiming().iterations !== Infinity)
+            .map((a) => a.finished.catch(() => undefined)),
+        ),
+      );
       const { violations } = await new AxeBuilder({ page })
         .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
         .analyze();

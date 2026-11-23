@@ -58,14 +58,26 @@ export function usePreviewState(): [PreviewState, (state: PreviewState) => void,
     const url = new URL(window.location.href);
     if (next === 'live') url.searchParams.delete('state');
     else url.searchParams.set('state', next);
-    window.history.replaceState(window.history.state, '', url);
+    // A null state is the form Next's router picks up; handing back its own state object makes it skip the URL.
+    window.history.replaceState(null, '', url);
     for (const l of listeners) l();
   }, []);
+  const pending = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const choose = React.useCallback(
+    (next: PreviewState) => {
+      // Choosing a state by hand cancels a retry still on its way back to live data.
+      clearTimeout(pending.current);
+      set(next);
+    },
+    [set],
+  );
   const retry = React.useCallback(() => {
+    clearTimeout(pending.current);
     set('loading');
-    setTimeout(() => set('live'), 700);
+    pending.current = setTimeout(() => set('live'), 700);
   }, [set]);
-  return [state, set, retry];
+  React.useEffect(() => () => clearTimeout(pending.current), []);
+  return [state, choose, retry];
 }
 
 /** The toolbar switch. Each screen lists the states it can be in; the rest are not offered. */

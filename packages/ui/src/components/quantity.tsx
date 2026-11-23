@@ -2,10 +2,12 @@ import * as React from 'react';
 import { CircleXIcon, TriangleAlertIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import {
-  formatNumber,
   formatLimit,
+  formatNumber,
+  limitSide,
   limitStatus,
   statusWords,
+  unitGap,
   type Limit,
   type NumberOptions,
 } from '../lib/quantity';
@@ -48,8 +50,6 @@ export function Quantity({
   const missing = value === null || value === undefined || !Number.isFinite(value);
   const status = !missing && limit ? limitStatus(value, limit) : 'pass';
   const Icon = status === 'fail' ? CircleXIcon : status === 'warn' ? TriangleAlertIcon : null;
-  // Plane angles sit against the number (45°); every other unit takes a space, % and °C included.
-  const tight = unit === '°';
   // Whole-number limits read as written ("≤ 32 A"), others with the value's decimals ("≤ 13.2 N·m").
   const limitDigits =
     limit && [limit.max, limit.min].every((v) => v === undefined || Number.isInteger(v)) ? 0 : digits;
@@ -76,11 +76,13 @@ export function Quantity({
           {formatNumber(value, { digits, signed })}
           {unit ? (
             <span className={status === 'pass' ? 'text-muted-foreground' : undefined}>
-              {tight ? unit : ` ${unit}`}
+              {`${unitGap(unit)}${unit}`}
             </span>
           ) : null}
           {status !== 'pass' ? (
-            <span className="sr-only">{status === 'fail' ? ', over the limit' : ', near the limit'}</span>
+            <span className="sr-only">
+              {status === 'fail' ? `, ${limitSide(value, limit!)} the limit` : ', near the limit'}
+            </span>
           ) : null}
         </span>
       )}
