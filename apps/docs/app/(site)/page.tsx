@@ -8,9 +8,8 @@ import { Bento } from '@/components/home/bento';
 import { CommandTabs, type CommandWay } from '@/components/command-tabs';
 import { ComponentTeaser } from '@/components/component-gallery';
 import { ChartShowcase } from '@/components/home/chart-showcase';
+import { HeroInstrument } from '@/components/home/hero-instrument';
 import { Stats } from '@/components/home/stats';
-import { SpaceBackdrop } from '@/components/space-backdrop';
-import { StarTrails } from '@/components/star-trails';
 import { site } from '@/lib/site';
 import runHistoryShot from '@/assets/screens/run-history.png';
 import runReviewShot from '@/assets/screens/run-review.png';
@@ -108,52 +107,27 @@ function SectionHead({
 export default function Home() {
   return (
     <main id="content" tabIndex={-1} className="flex flex-col">
-      <section className="relative overflow-hidden">
-        {/* The same sky in both themes: a night sky in dark, a long exposure in ink in light. */}
-        <StarTrails className="dark:hidden" />
-        <SpaceBackdrop
-          alive
-          className="hidden opacity-90 [mask-image:linear-gradient(to_bottom,black_30%,transparent_80%)] dark:block"
-          starsClassName="[mask-image:radial-gradient(ellipse_34%_20%_at_50%_24%,transparent_45%,black)] max-md:opacity-60"
+      <section className={`mx-auto flex w-full max-w-6xl flex-col gap-12 pt-12 pb-10 sm:pt-16 ${gutter}`}>
+        <HeroInstrument
+          intro={
+            <div className="flex flex-col gap-5">
+              <h1 className="text-hero text-balance">A design system for engineering tools.</h1>
+              <p className="max-w-[52ch] text-prose text-muted-foreground text-pretty">
+                Components, charts and rules for software that reads test data against limits. This step test
+                fails. Lower the gain until it passes.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="primary" size="lg" render={<Link href="/docs" />}>
+                  Get started
+                </Button>
+                <Button size="lg" render={<Link href="/docs/components" />}>
+                  Browse components
+                </Button>
+              </div>
+            </div>
+          }
         />
-        <div
-          className={`relative mx-auto flex max-w-5xl flex-col items-center gap-6 pt-16 text-center sm:pt-24 ${gutter}`}
-        >
-          {/* Two lines on wider screens, broken where the sentence turns, so the muted half is never split. */}
-          <h1 className="max-w-5xl text-hero text-balance">
-            Pixel-perfect UI, <span className="text-muted-foreground sm:block">even when your agent writes it.</span>
-          </h1>
-          <p className="max-w-xl text-prose text-muted-foreground text-pretty">
-            Components and engineering charts for data-heavy React apps, with an MCP server and a design
-            linter built in.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button variant="primary" size="lg" render={<Link href="/docs" />}>
-              Get started
-              <ArrowRightIcon aria-hidden="true" />
-            </Button>
-            <Button size="lg" render={<Link href="/docs/components" />}>
-              Browse components
-            </Button>
-          </div>
-          <CommandTabs
-            label="Who installs it"
-            ways={start}
-            className="max-w-xl bg-card/80 text-left shadow-raised backdrop-blur-material"
-          />
-        </div>
-        <div className={`relative mx-auto mt-14 max-w-6xl pb-16 sm:mt-16 ${gutter}`}>
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-x-[12%] top-10 h-3/5 rounded-full bg-primary/10 blur-3xl dark:bg-primary/20"
-          />
-          <div className="relative">
-            <AgentDemo />
-          </div>
-        </div>
-        <div className={`relative mx-auto max-w-6xl pb-8 ${gutter}`}>
-          <Stats />
-        </div>
+        <Stats />
       </section>
 
       <section className={`mx-auto flex w-full max-w-6xl flex-col gap-6 py-16 ${gutter}`}>
@@ -162,6 +136,7 @@ export default function Home() {
           title="Built for you and your agent"
           text="Your agent looks the system up, uses it and checks its own work. You review less."
         />
+        <AgentDemo />
         <Bento />
       </section>
 
@@ -246,18 +221,15 @@ export default function Home() {
         </Accordion>
       </section>
 
-      <section className="relative overflow-hidden">
-        <StarTrails variant="closing" className="dark:hidden" />
-        <SpaceBackdrop className="hidden opacity-80 [mask-image:linear-gradient(to_bottom,transparent,black_35%,black_55%,transparent)] dark:block" />
-        <div
-          className={`relative mx-auto flex w-full max-w-2xl flex-col items-center gap-6 pt-36 pb-28 text-center ${gutter}`}
-        >
+      <section className={`mx-auto w-full max-w-6xl py-20 ${gutter}`}>
+        <div className="flex flex-wrap items-end justify-between gap-x-12 gap-y-6 border-t border-border pt-12">
           <h2 className="text-large-title text-balance">Start in one command.</h2>
-          <CommandTabs label="Who installs it" ways={start} className="text-left shadow-raised" />
-          <Button variant="primary" size="lg" render={<Link href="/docs" />}>
-            Read the docs
-            <ArrowRightIcon aria-hidden="true" />
-          </Button>
+          <div className="flex w-full max-w-xl flex-col items-start gap-3">
+            <CommandTabs label="Who installs it" ways={start} className="w-full text-left" />
+            <Button variant="primary" size="lg" render={<Link href="/docs" />}>
+              Read the docs
+            </Button>
+          </div>
         </div>
       </section>
     </main>

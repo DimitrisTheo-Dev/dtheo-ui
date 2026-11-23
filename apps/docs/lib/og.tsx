@@ -46,40 +46,6 @@ const alpha = (hex: string, a: number) =>
 
 export const ogSize = { width: 1200, height: 630 };
 
-/** The same seeded sky as the site's hero, so a shared link looks like the page it opens. */
-function seeded(seed: number) {
-  let s = seed;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
-function Stars({ width, height, count = 170 }: { width: number; height: number; count?: number }) {
-  const rand = seeded(7);
-  const stars = Array.from({ length: count }, () => {
-    const near = rand() < 0.08;
-    return {
-      x: rand() * width,
-      y: rand() * height,
-      r: near ? 1.3 + rand() * 0.9 : 0.4 + rand() * 0.7,
-      a: near ? 0.9 : 0.25 + rand() * 0.5,
-      tint: rand() < 0.3 ? c['chart-4'] : c.foreground,
-      near,
-    };
-  });
-  return (
-    <svg width={width} height={height} style={{ position: 'absolute', top: 0, left: 0 }}>
-      {stars.map((s, i) => (
-        <g key={i}>
-          {s.near ? <circle cx={s.x} cy={s.y} r={s.r * 4} fill={alpha(s.tint, 0.12)} /> : null}
-          <circle cx={s.x} cy={s.y} r={s.r} fill={alpha(s.tint, s.a)} />
-        </g>
-      ))}
-    </svg>
-  );
-}
-
 /** The star alone, for large faint backdrops and the app icon. */
 function Star({ size, opacity }: { size: number; opacity: number }) {
   return (
@@ -110,7 +76,8 @@ function Wordmark({ size }: { size: number }) {
   );
 }
 
-function Sky({ children }: { children: React.ReactNode }) {
+/** The card's surface: the page's own background and nothing else, so a shared link looks like the page it opens. */
+function Surface({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
@@ -119,11 +86,9 @@ function Sky({ children }: { children: React.ReactNode }) {
         width: '100%',
         height: '100%',
         backgroundColor: c.background,
-        backgroundImage: `radial-gradient(900px 520px at 6% -12%, ${alpha(c['chart-4'], 0.42)}, transparent 62%), radial-gradient(760px 520px at 104% 18%, ${alpha(c['chart-3'], 0.24)}, transparent 60%), radial-gradient(1000px 600px at 50% 130%, ${alpha(c['chart-1'], 0.22)}, transparent 62%)`,
         fontFamily: 'Inter',
       }}
     >
-      <Stars width={ogSize.width} height={ogSize.height} />
       {children}
     </div>
   );
@@ -235,7 +200,14 @@ function Trace() {
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        <path d={path} fill="none" stroke={c['chart-1']} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+        <path
+          d={path}
+          fill="none"
+          stroke={c['chart-1']}
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
         {shade ? <path d={shade} fill={alpha(c['destructive-foreground'], 0.28)} /> : null}
         <circle
           cx={x(M.peakAt)}
@@ -255,7 +227,7 @@ function Trace() {
 
 export function HomeCard() {
   return (
-    <Sky>
+    <Surface>
       <div style={{ position: 'relative', display: 'flex', width: '100%', padding: '64px 72px', gap: 48 }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
           <Wordmark size={40} />
@@ -269,18 +241,7 @@ export function HomeCard() {
                 color: c.foreground,
               }}
             >
-              Pixel-perfect UI,
-            </span>
-            <span
-              style={{
-                fontSize: 66,
-                fontWeight: 700,
-                letterSpacing: '-0.035em',
-                lineHeight: 1.04,
-                color: c['muted-foreground'],
-              }}
-            >
-              even when your agent writes it.
+              A design system for engineering tools.
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
@@ -294,7 +255,7 @@ export function HomeCard() {
           <Trace />
         </div>
       </div>
-    </Sky>
+    </Surface>
   );
 }
 
@@ -317,7 +278,7 @@ export function DocCard({
   command?: string;
 }) {
   return (
-    <Sky>
+    <Surface>
       <div style={{ position: 'absolute', right: -40, top: 35, display: 'flex' }}>
         <Star size={560} opacity={0.07} />
       </div>
@@ -359,7 +320,7 @@ export function DocCard({
           </span>
         )}
       </div>
-    </Sky>
+    </Surface>
   );
 }
 
