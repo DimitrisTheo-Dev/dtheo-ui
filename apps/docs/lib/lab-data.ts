@@ -170,27 +170,49 @@ export interface RunRow {
   profile: string;
   note?: string;
   kp: number;
+  ki: number;
   kd: number;
   /** % over the command. */
   overshoot: number;
   /** ms after the step. */
   settle: number;
+  /** 10 to 90 % rise time, ms. */
+  rise: number;
   /** Peak phase current, A. */
   current: number;
   /** Winding temperature, °C. */
   temp: number;
   result: 'fail' | 'review' | 'pass';
+  /** As people read it: "18 Nov, 14:32". */
   started: string;
+  /** Lab local time, for sorting and ranges: "2026-11-18T14:32". */
+  startedAt: string;
+  bench: string;
+  firmware: string;
+  operator: string;
 }
+
+/** RA-14 has run three firmware lines since 4.16; R-0412 ran on 4.18.2. */
+export function firmwareOf(n: number) {
+  if (n <= 140) return n <= 60 ? '4.16.2' : '4.16.3';
+  if (n <= 290) return n <= 215 ? '4.17.0' : '4.17.1';
+  return n <= 360 ? '4.18.0' : n <= 409 ? '4.18.1' : '4.18.2';
+}
+
+/** The acceptance checks every run is held to, in the order the run review shows them. */
+export const runChecks = [
+  { key: 'overshoot', label: 'Overshoot', unit: '%', limit: OVERSHOOT_LIMIT },
+  { key: 'current', label: 'Peak current', unit: 'A', limit: CURRENT_LIMIT },
+  { key: 'settle', label: 'Settling, 2 %', unit: 'ms', limit: SETTLE_LIMIT },
+  { key: 'rise', label: 'Rise, 10–90 %', unit: 'ms', limit: RISE_LIMIT },
+  { key: 'temp', label: 'Winding temp', unit: '°C', limit: TEMP_LIMIT },
+] as const satisfies ReadonlyArray<{ key: keyof RunRow; label: string; unit: string; limit: number }>;
+
+export type RunCheck = (typeof runChecks)[number]['key'];
 
 /** A run fails when any check fails, and needs review when any check is near its limit. */
 function resultOf(run: Omit<RunRow, 'result'>): RunRow['result'] {
-  const checks = [
-    checkStatus(run.overshoot, OVERSHOOT_LIMIT),
-    checkStatus(run.settle, SETTLE_LIMIT),
-    checkStatus(run.current, CURRENT_LIMIT),
-    checkStatus(run.temp, TEMP_LIMIT),
-  ];
+  const checks = runChecks.map((c) => checkStatus(run[c.key], c.limit));
   return checks.includes('fail') ? 'fail' : checks.includes('warn') ? 'review' : 'pass';
 }
 
@@ -203,92 +225,140 @@ export const runHistory: RunRow[] = (
       id: 'R-0412',
       profile: 'High-gain step',
       kp: gains.kp,
+      ki: gains.ki,
       kd: gains.kd,
       overshoot: M.overshoot,
       settle: M.settle,
+      rise: M.rise,
       current: M.peakCurrent,
       temp: WINDING_TEMP,
       started: '18 Nov, 14:32',
+      startedAt: '2026-11-18T14:32',
+      bench: 'Bench 3',
+      firmware: firmwareOf(412),
+      operator: 'Lena Varga',
     },
     {
       id: 'R-0411',
       profile: 'High-gain step',
       note: 'Kd 0.04',
       kp: gains.kp,
+      ki: 0.8,
       kd: 0.04,
       overshoot: 21.3,
       settle: 248,
+      rise: 42,
       current: 31.6,
       temp: 74.0,
       started: '18 Nov, 13:05',
+      startedAt: '2026-11-18T13:05',
+      bench: 'Bench 3',
+      firmware: firmwareOf(411),
+      operator: 'Lena Varga',
     },
     {
       id: 'R-0410',
       profile: 'Mid-gain step',
       kp: 3.4,
+      ki: 0.8,
       kd: 0.06,
       overshoot: 9.1,
       settle: 176,
+      rise: 51,
       current: 29.4,
       temp: 68.5,
       started: '18 Nov, 11:47',
+      startedAt: '2026-11-18T11:47',
+      bench: 'Bench 3',
+      firmware: firmwareOf(410),
+      operator: 'Tomás Ruiz',
     },
     {
       id: 'R-0409',
       profile: 'Nominal step',
       note: 'reference',
       kp: referenceGains.kp,
+      ki: referenceGains.ki,
       kd: referenceGains.kd,
       overshoot: R.overshoot,
       settle: R.settle,
+      rise: R.rise,
       current: R.peakCurrent,
       temp: 62.1,
       started: '17 Nov, 16:20',
+      startedAt: '2026-11-17T16:20',
+      bench: 'Bench 3',
+      firmware: firmwareOf(409),
+      operator: 'Lena Varga',
     },
     {
       id: 'R-0408',
       profile: 'Damped step',
       kp: 2.8,
+      ki: 0.8,
       kd: 0.09,
       overshoot: 1.2,
       settle: 214,
+      rise: 66,
       current: 25.1,
       temp: 60.4,
       started: '17 Nov, 15:02',
+      startedAt: '2026-11-17T15:02',
+      bench: 'Bench 3',
+      firmware: firmwareOf(408),
+      operator: 'Aiko Tanaka',
     },
     {
       id: 'R-0407',
       profile: 'Fast rise',
       kp: 3.9,
+      ki: 0.8,
       kd: 0.06,
       overshoot: 12.4,
       settle: 231,
+      rise: 47,
       current: 30.2,
       temp: 70.3,
       started: '17 Nov, 10:41',
+      startedAt: '2026-11-17T10:41',
+      bench: 'Bench 1',
+      firmware: firmwareOf(407),
+      operator: 'Tomás Ruiz',
     },
     {
       id: 'R-0406',
       profile: 'Thermal soak, 20 min',
       note: 'winding 84 °C',
       kp: 2.8,
+      ki: 0.8,
       kd: 0.06,
       overshoot: 3.9,
       settle: 163,
+      rise: 62,
       current: 26.0,
       temp: 84.0,
       started: '16 Nov, 17:55',
+      startedAt: '2026-11-16T17:55',
+      bench: 'Bench 5',
+      firmware: firmwareOf(406),
+      operator: 'Maria Silva',
     },
     {
       id: 'R-0405',
       profile: 'Nominal step',
       kp: 2.8,
+      ki: 0.8,
       kd: 0.06,
       overshoot: 3.6,
       settle: 160,
+      rise: 63,
       current: 26.3,
       temp: 58.2,
       started: '16 Nov, 09:12',
+      startedAt: '2026-11-16T09:12',
+      bench: 'Bench 3',
+      firmware: firmwareOf(405),
+      operator: 'Aiko Tanaka',
     },
   ] satisfies Array<Omit<RunRow, 'result'>>
 ).map((run) => ({ ...run, result: resultOf(run) }));
@@ -449,6 +519,91 @@ export const runs: LabRun[] = (() => {
       kp: Number((run?.kp ?? kp).toFixed(2)),
       overshoot: Number((run?.overshoot ?? overshoot).toFixed(1)),
     });
+  }
+  return out;
+})();
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const pad2 = (n: number) => String(n).padStart(2, '0');
+/** Lab local times, kept as UTC so the same run reads the same in every time zone. */
+const stamp = (d: Date) => ({
+  startedAt: `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}T${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`,
+  started: `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}, ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}`,
+});
+
+const labUserName = 'Lena Varga';
+const operators = [labUserName, 'Tomás Ruiz', 'Aiko Tanaka', 'Maria Silva'];
+const notes = [
+  'Retest',
+  'After encoder recalibration',
+  'Load cell swapped',
+  'Ambient 28 °C',
+  'Cable reseated',
+];
+
+/**
+ * Every run on RA-14 since firmware 4.16, newest first, with all five checks: what the run history lists. Gain and
+ * overshoot come from the 412-run population above, the history keeps its own runs, and the rest is drawn from a
+ * separate seed so the histogram and its Cpk never move when this changes. Benches run weekdays, 08:00 to 19:00.
+ */
+export const runLog: RunRow[] = (() => {
+  const rand = seeded(1604);
+  const g = () => gaussian(rand);
+  const pick = <T>(list: readonly T[]) => list[Math.floor(rand() * list.length)]!;
+  const known = new Map(runHistory.map((r) => [r.id, r]));
+  const oldest = runHistory.at(-1)!;
+  let t = Date.parse(`${oldest.startedAt}Z`);
+  const out: RunRow[] = [...runHistory];
+  for (let n = Number(oldest.id.slice(2)) - 1; n >= 1; n--) {
+    // Step back to the run before: an hour or four, skipping nights and weekends.
+    t -= (50 + 190 * rand()) * 60_000;
+    let d = new Date(t);
+    if (d.getUTCHours() < 8) {
+      d = new Date(
+        Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 1, 18, Math.floor(50 * rand())),
+      );
+    }
+    while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d = new Date(d.getTime() - 86_400_000);
+    t = d.getTime();
+
+    const { id, kp, overshoot } = runs[n - 1]!;
+    if (known.has(id)) continue;
+    const thermal = rand() < 0.07;
+    const damped = !thermal && kp < 3.3 && rand() < 0.2;
+    const profile = thermal
+      ? 'Thermal soak, 20 min'
+      : damped
+        ? 'Damped step'
+        : kp >= 3.8
+          ? 'High-gain step'
+          : kp >= 3.3
+            ? rand() < 0.5
+              ? 'Mid-gain step'
+              : 'Fast rise'
+            : 'Nominal step';
+    const kd = damped ? pick([0.08, 0.09]) : profile === 'High-gain step' ? pick([0.04, 0.05, 0.06]) : 0.06;
+    const run: Omit<RunRow, 'result'> = {
+      id,
+      profile,
+      note: damped && rand() < 0.4 ? `Kd ${kd}` : rand() < 0.05 ? pick(notes) : undefined,
+      kp,
+      ki: rand() < 0.85 ? 0.8 : pick([0.6, 1.0]),
+      kd,
+      overshoot,
+      settle: Math.round(Math.min(330, Math.max(110, 140 + 5.2 * overshoot + 22 * g()))),
+      rise: Math.round(Math.min(95, Math.max(34, 98 - 13 * kp + 4 * g()))),
+      // A load bump now and then pushes the current up, as on the live bench.
+      current: Number((20 + 2.3 * kp + 0.1 * overshoot + g() + (rand() < 0.03 ? 3.5 : 0)).toFixed(1)),
+      temp: Number(
+        (thermal ? 81 + 5 * rand() + (rand() < 0.25 ? 7 : 0) : 55 + 9 * rand() + 1.5 * kp).toFixed(1),
+      ),
+      ...stamp(d),
+      bench: thermal ? 'Bench 5' : rand() < 0.62 ? 'Bench 3' : rand() < 0.6 ? 'Bench 1' : 'Bench 2',
+      firmware: firmwareOf(n),
+      operator: rand() < 0.4 ? labUserName : pick(operators),
+    };
+    if (run.note === undefined) delete run.note;
+    out.push({ ...run, result: resultOf(run) });
   }
   return out;
 })();

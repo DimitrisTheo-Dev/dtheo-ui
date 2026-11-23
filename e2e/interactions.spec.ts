@@ -191,7 +191,13 @@ test('a link styled as a button is still a link', async ({ page }) => {
 });
 
 // Every Actuator Lab tool shows the same "Search ⌘K" box in its sidebar, so every one of them must answer to it.
-for (const path of ['/examples/run-review', '/examples/tuning', '/examples/motor-map', '/examples/assistant']) {
+for (const path of [
+  '/examples/run-history',
+  '/examples/run-review',
+  '/examples/tuning',
+  '/examples/motor-map',
+  '/examples/assistant',
+]) {
   test(`⌘K and the sidebar search open the palette on ${path}`, async ({ page }) => {
     await page.goto(path);
     await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
@@ -200,7 +206,10 @@ for (const path of ['/examples/run-review', '/examples/tuning', '/examples/motor
     await expect(search).toBeFocused();
     await page.keyboard.press('Escape');
     await expect(search).toBeHidden();
-    await page.locator('[data-slot="sidebar"]').getByRole('button', { name: /^Search/ }).click();
+    await page
+      .locator('[data-slot="sidebar"]')
+      .getByRole('button', { name: /^Search/ })
+      .click();
     await expect(search).toBeFocused();
     // The sidebar never jumps to a "#" that goes nowhere: unbuilt destinations are disabled, not dead links.
     await expect(page.locator('[data-slot="sidebar-item"][href^="#"]')).toHaveCount(0);
@@ -248,8 +257,82 @@ test('⌘E downloads the run review samples, as the menu says', async ({ page })
   await page.keyboard.press('ControlOrMeta+e');
   const file = await download;
   expect(file.suggestedFilename()).toBe('r-0412-samples.csv');
-  const lines = readFileSync(await file.path(), 'utf8').trim().split('\n');
-  expect(lines[0]).toBe('time_ms,command_Nm,torque_Nm,reference_torque_Nm,phase_current_A,reference_phase_current_A');
+  const lines = readFileSync(await file.path(), 'utf8')
+    .trim()
+    .split('\n');
+  expect(lines[0]).toBe(
+    'time_ms,command_Nm,torque_Nm,reference_torque_Nm,phase_current_A,reference_phase_current_A',
+  );
   expect(lines).toHaveLength(1002);
   await expect(page.getByText('Exported r-0412-samples.csv')).toBeVisible();
+});
+
+// ---------- Run history: the data table at full size ----------
+
+test('run history filters with live counts, and says what hides the rest', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.goto('/examples/run-history');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const table = page.getByRole('table', { name: 'Runs on RA-14 hip pitch' });
+  await expect(table).toHaveAttribute('aria-rowcount', '413');
+  // 412 rows, but only the ones in view are in the page.
+  expect(await table.locator('tbody tr[data-index]').count()).toBeLessThan(60);
+
+  await page.getByRole('button', { name: /^Filter by Result/ }).click();
+  await page.getByRole('menuitemcheckbox', { name: /Fail/ }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByText(/^21 of 412 runs, filtered$/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Filter by Result.*Fail/ })).toBeVisible();
+
+  await page.getByRole('textbox', { name: 'Search runs' }).fill('R-9');
+  await expect(page.getByText('No runs match these filters')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(page.getByText(/^412 of 412 runs$/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('run history moves through rows with the keyboard and opens the reviewed run', async ({ page }) => {
+  await page.goto('/examples/run-history');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const rows = page.locator('[data-slot="data-table"] tbody tr[data-index]');
+  await rows.first().focus();
+  await page.keyboard.press('ArrowDown');
+  await expect(rows.nth(1)).toBeFocused();
+  await expect(page.getByRole('heading', { level: 2, name: /R-0411/ })).toBeVisible();
+  // End reaches the oldest run, far outside the first window, and it is drawn and focused.
+  await page.keyboard.press('End');
+  await expect(page.locator('tr[aria-rowindex="413"]')).toBeFocused();
+  await expect(page.getByRole('heading', { level: 2, name: /R-0001/ })).toBeVisible();
+  await page.keyboard.press('Home');
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/examples\/run-review$/);
+});
+
+test('run history compares checked runs side by side', async ({ page }) => {
+  await page.goto('/examples/run-history');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  await page.getByRole('checkbox', { name: 'Select R-0412' }).click();
+  await expect(page.getByText('check one more to compare')).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Select R-0409' }).click({ modifiers: ['Shift'] });
+  await expect(page.getByText(/^4 selected/)).toBeVisible();
+  await page.getByRole('button', { name: 'Compare', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Compare 4 runs' });
+  await expect(dialog.getByRole('table')).toBeVisible();
+  // R-0412 overshoots 17.6 %: marked in words for a screen reader, not only in red.
+  await expect(dialog.getByRole('row', { name: /^Overshoot/ }).getByText(', over the limit').first()).toBeAttached();
+});
+
+test('run history keeps each preview state in the URL', async ({ page }) => {
+  for (const [state, text] of [
+    ['empty', 'No runs on RA-14 yet'],
+    ['no-results', 'No runs match these filters'],
+    ['error', 'Runs could not be loaded'],
+    ['partial', /Peak current is missing for \d+ runs/],
+  ] as const) {
+    await page.goto(`/examples/run-history?state=${state}`);
+    await expect(page.getByText(text)).toBeVisible();
+  }
+  await page.getByRole('button', { name: /State: Partial data/ }).click();
+  await page.getByRole('menuitemradio', { name: /Live data/ }).click();
+  await expect(page).toHaveURL(/\/examples\/run-history$/);
 });

@@ -4,11 +4,13 @@ import { expect, test } from '@playwright/test';
 // Update baselines on purpose with `pnpm test:visual --update-snapshots`, then review the diff.
 const shots: Array<{ name: string; path: string; locator?: string }> = [
   { name: 'home-hero', path: '/', locator: 'main > section:first-child' },
+  { name: 'run-history', path: '/examples/run-history' },
   { name: 'run-review', path: '/examples/run-review' },
   { name: 'motor-map', path: '/examples/motor-map' },
   { name: 'assistant', path: '/examples/assistant' },
   { name: 'button', path: '/docs/components/button', locator: '[data-slot="preview"]' },
   { name: 'table', path: '/docs/components/table', locator: '[data-slot="preview"]' },
+  { name: 'data-table', path: '/docs/components/data-table', locator: '[data-slot="preview"]' },
   { name: 'metric', path: '/docs/components/metric', locator: '[data-slot="preview"]' },
   { name: 'line-chart', path: '/docs/charts/line-chart', locator: '[data-slot="preview"]' },
   { name: 'heatmap', path: '/docs/charts/heatmap', locator: '[data-slot="preview"]' },

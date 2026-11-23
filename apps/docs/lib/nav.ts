@@ -159,6 +159,20 @@ export const patterns: NavItem[] = [
 
 export const examples: NavItem[] = [
   {
+    title: 'Run history',
+    href: '/examples/run-history',
+    description: 'Every run in one table: filters, presets, limits and compare.',
+    keywords: [
+      'data table',
+      'virtualized',
+      'filters',
+      'column presets',
+      'compare runs',
+      'test log',
+      'faceted search',
+    ],
+  },
+  {
     title: 'Run review',
     href: '/examples/run-review',
     description: 'Actuator step response: what failed and what to do next.',

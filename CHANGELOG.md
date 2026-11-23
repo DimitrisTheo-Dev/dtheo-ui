@@ -38,6 +38,11 @@ First release: `init`, `add`, `list`, `check` (17 rules), `rules` and `mcp`.
 
 ## @dtheo/tokens
 
+### Unreleased
+
+- Three more contrast pairs, for a value marked against its limit inside a checked table row: the over-limit and
+  near-limit text colors and secondary text on `selection`. 171 checks, up from 159; all pass AA.
+
 ### 0.1.1 (2026-11-22)
 
 - Graphite dark's `ring` is lighter, `oklch(0.72 0.15 257)` (was `oklch(0.66 0.17 257)`), so the focus line clears

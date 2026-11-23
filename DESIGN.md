@@ -30,9 +30,9 @@ Three presets share every component and change only color, radius and material:
   `warning`, `info` with `-foreground`), `selection`, sidebar roles and chart roles.
 - Defined in OKLCH. Hover and pressed states move lightness, not hue.
 - Borders and fills on dark are white at low alpha, so they adapt to whatever surface they sit on.
-- **Contrast is a build step.** 40 pairs, including layered cases such as a status badge on a selected table row
+- **Contrast is a build step.** 43 pairs, including layered cases such as a status badge on a selected table row
   and the focus ring on its own halo, are composited the way the browser does and measured in every theme they
-  appear in (Graphite light and dark, Flight deck, Deep space). All 159 checks must pass WCAG AA (3:1 for the focus
+  appear in (Graphite light and dark, Flight deck, Deep space). All 171 checks must pass WCAG AA (3:1 for the focus
   ring), or the build fails.
 - Status always ships as icon + word + color. Red is for failure only, amber for near a limit, green for pass.
 

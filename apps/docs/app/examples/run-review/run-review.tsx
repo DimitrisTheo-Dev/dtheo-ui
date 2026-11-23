@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
 import {
   ArchiveIcon,
   ChevronRightIcon,
@@ -187,8 +188,12 @@ export function RunReview() {
     <AppShell sidebar={<LabSidebar current="runs" onSearch={() => setPaletteOpen(true)} />}>
       <AppToolbar>
         <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-body">
-          {/* The runs list isn't part of this demo, so the trail names it without linking to nowhere. */}
-          <span className="text-muted-foreground">Runs</span>
+          <Link
+            href="/examples/run-history"
+            className="rounded-control text-muted-foreground hover:text-foreground"
+          >
+            Runs
+          </Link>
           <ChevronRightIcon className="size-3.5 shrink-0 text-subtle-foreground" aria-hidden="true" />
           <span aria-current="page" className="truncate font-mono text-label text-foreground">
             R-0412
@@ -513,6 +518,12 @@ export function RunReview() {
                   <CardTitle level={2}>Run history</CardTitle>
                   <CardDescription>RA-14 hip pitch, last 8 runs</CardDescription>
                 </div>
+                <CardAction>
+                  <Button variant="ghost" size="sm" render={<Link href="/examples/run-history" />}>
+                    All 412 runs
+                    <ChevronRightIcon aria-hidden="true" />
+                  </Button>
+                </CardAction>
               </CardHeader>
               <CardContent className="px-0 pb-1">
                 <Table>

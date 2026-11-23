@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const out = join(dirname(fileURLToPath(import.meta.url)), '../apps/docs/assets/screens');
 const base = process.env.BASE_URL ?? 'http://localhost:4100';
-const screens = ['run-review', 'motor-map', 'tuning', 'assistant'];
+const screens = ['run-history', 'run-review', 'motor-map', 'tuning', 'assistant'];
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 800 }, colorScheme: 'dark' });

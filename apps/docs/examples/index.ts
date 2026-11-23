@@ -16,6 +16,7 @@ import Card from './card';
 import Checkbox from './checkbox';
 import Combobox from './combobox';
 import Command from './command';
+import DataTable from './data-table';
 import Dialog from './dialog';
 import Empty from './empty';
 import FieldValidation from './field-validation';
@@ -67,6 +68,7 @@ export const examples: Record<string, React.ComponentType> = {
   'checkbox': Checkbox,
   'combobox': Combobox,
   'command': Command,
+  'data-table': DataTable,
   'dialog': Dialog,
   'empty': Empty,
   'field-validation': FieldValidation,

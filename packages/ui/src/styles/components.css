@@ -95,3 +95,49 @@
     background-color: oklch(0.2 0.03 282);
   }
 }
+
+/* Data table rows. Hover, checked and active are painted on the cells as layers over the surface, so the sticky
+   columns, which need an opaque fill to cover what scrolls under them, show the same state as the rest of the row.
+   Set --data-table-surface when the table sits on something other than a card. */
+.dtheo-data-table {
+  --data-table-surface: var(--card);
+}
+.dtheo-data-table tr[data-index] > td {
+  background-image:
+    linear-gradient(var(--row-hover, transparent), var(--row-hover, transparent)),
+    linear-gradient(var(--row-check, transparent), var(--row-check, transparent));
+}
+.dtheo-data-table tr[data-index]:hover {
+  --row-hover: color-mix(in oklch, var(--accent) 60%, transparent);
+}
+.dtheo-data-table tr[data-active] {
+  --row-hover: var(--accent);
+}
+.dtheo-data-table tr[aria-selected='true'] {
+  --row-check: var(--selection);
+}
+.dtheo-data-table [data-sticky] {
+  background-color: var(--data-table-surface);
+}
+/* The active row: a 2px bar on its leading edge, so it reads without a second fill color. */
+.dtheo-data-table tr[data-active] > td:first-child {
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+/* Keyboard focus is drawn on the cells, so the sticky columns, which sit above the row, cannot hide it. */
+.dtheo-data-table tr[data-index]:focus-visible > td {
+  box-shadow:
+    inset 0 2px 0 var(--ring),
+    inset 0 -2px 0 var(--ring);
+}
+.dtheo-data-table tr[data-index]:focus-visible > td:first-child {
+  box-shadow:
+    inset 2px 0 0 var(--ring),
+    inset 0 2px 0 var(--ring),
+    inset 0 -2px 0 var(--ring);
+}
+.dtheo-data-table tr[data-index]:focus-visible > td:last-child {
+  box-shadow:
+    inset -2px 0 0 var(--ring),
+    inset 0 2px 0 var(--ring),
+    inset 0 -2px 0 var(--ring);
+}
