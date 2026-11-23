@@ -23,8 +23,22 @@ const pages = [
   '/examples/assistant',
 ];
 
+// The example apps in the states their toolbar previews: placeholders, errors and gaps must be as accessible as the
+// data they stand in for. Checked in the dark theme, where the warning and error fills are lowest in contrast.
+const states = [
+  '/examples/run-history?state=loading',
+  '/examples/run-history?state=no-results',
+  '/examples/run-history?state=partial',
+  '/examples/run-review?state=loading',
+  '/examples/run-review?state=error',
+  '/examples/run-review?state=partial',
+  '/examples/motor-map?state=error',
+  '/examples/tuning?state=error',
+  '/examples/tuning?state=partial',
+];
+
 for (const theme of ['dark', 'light'] as const) {
-  for (const path of pages) {
+  for (const path of [...pages, ...(theme === 'dark' ? states : [])]) {
     test(`${path} has no serious accessibility violations (${theme})`, async ({ page }) => {
       await page.addInitScript((t) => {
         try {

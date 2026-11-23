@@ -851,7 +851,7 @@ function RunInspector({
 }) {
   if (loading) {
     return (
-      <Card aria-label="Run details" aria-busy="true" className="xl:min-h-0 xl:overflow-y-auto">
+      <Card role="region" aria-label="Run details" aria-busy="true" className="xl:min-h-0 xl:overflow-y-auto">
         <CardHeader className="flex-col items-start gap-2">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-3 w-40" />
@@ -869,7 +869,7 @@ function RunInspector({
   }
   if (!run) {
     return (
-      <Card aria-label="Run details" className="justify-center xl:min-h-0">
+      <Card role="region" aria-label="Run details" className="justify-center xl:min-h-0">
         <Empty className="py-10">
           <EmptyTitle>No run selected</EmptyTitle>
           <EmptyDescription>
@@ -898,7 +898,7 @@ function RunInspector({
     ],
   ];
   return (
-    <Card aria-label={`${run.id} details`} className="xl:min-h-0 xl:overflow-y-auto">
+    <Card role="region" aria-label={`${run.id} details`} className="xl:min-h-0 xl:overflow-y-auto">
       <CardHeader className="items-start">
         <div className="flex min-w-0 flex-col gap-0.5">
           <CardTitle level={2} className="flex items-baseline gap-2">

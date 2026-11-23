@@ -1,8 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronDownIcon } from 'lucide-react';
+import { ChevronDownIcon, RotateCcwIcon } from 'lucide-react';
 import { Button } from '@dtheo/ui/components/button';
+import { Alert, AlertActions, AlertContent, AlertDescription, AlertTitle } from '@dtheo/ui/components/alert';
+import { Skeleton } from '@dtheo/ui/components/skeleton';
 import { StatusDot } from '@dtheo/ui/components/badge';
 import {
   Menu,
@@ -46,8 +48,11 @@ function readState(): PreviewState {
   return isState(v) ? v : 'live';
 }
 
-/** The preview state, read from `?state=` and written back without a navigation. The server renders live data. */
-export function usePreviewState(): [PreviewState, (state: PreviewState) => void] {
+/**
+ * The preview state, read from `?state=` and written back without a navigation. The server renders live data.
+ * The third value retries: a moment of loading, then live data, the way a real retry reads.
+ */
+export function usePreviewState(): [PreviewState, (state: PreviewState) => void, () => void] {
   const state = React.useSyncExternalStore(subscribe, readState, () => 'live' as const);
   const set = React.useCallback((next: PreviewState) => {
     const url = new URL(window.location.href);
@@ -56,7 +61,11 @@ export function usePreviewState(): [PreviewState, (state: PreviewState) => void]
     window.history.replaceState(window.history.state, '', url);
     for (const l of listeners) l();
   }, []);
-  return [state, set];
+  const retry = React.useCallback(() => {
+    set('loading');
+    setTimeout(() => set('live'), 700);
+  }, [set]);
+  return [state, set, retry];
 }
 
 /** The toolbar switch. Each screen lists the states it can be in; the rest are not offered. */
@@ -98,5 +107,102 @@ export function PreviewStateMenu({
         </MenuGroup>
       </MenuContent>
     </Menu>
+  );
+}
+
+// ---------- What each state draws in place of the content ----------
+
+/** Placeholder cells in a MetricGroup: label, value and meter, so nothing moves when the numbers arrive. */
+export function MetricSkeletons({ count }: { count: number }) {
+  return Array.from({ length: count }, (_, i) => (
+    <div
+      key={i}
+      aria-hidden="true"
+      className="flex flex-col gap-2.5 bg-card px-4 py-3.5 shadow-[-1px_0_0_0_var(--border),0_-1px_0_0_var(--border)]"
+    >
+      <Skeleton className="h-3 w-20" />
+      <Skeleton className="h-6 w-16" />
+      <Skeleton className="h-1 w-full" />
+      <Skeleton className="h-3 w-24" />
+    </div>
+  ));
+}
+
+/**
+ * One region of a screen in the preview state: a placeholder its own height while loading, the error or the partial
+ * note when given one, and the content otherwise. Each region fails on its own, so the rest of the screen stays useful.
+ */
+export function DataSlot({
+  state,
+  label,
+  height,
+  error,
+  partial,
+  children,
+}: {
+  state: PreviewState;
+  /** What loads here, for screen readers: "step response". */
+  label: string;
+  height: number;
+  error?: React.ReactNode;
+  partial?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  if (state === 'loading')
+    return (
+      <div role="status" aria-label={`Loading ${label}`} style={{ height }} className="flex">
+        <Skeleton className="flex-1 rounded-inset" />
+      </div>
+    );
+  // An error takes only the room it needs: holding the chart's height would leave a hole under it.
+  if (state === 'error' && error) return <>{error}</>;
+  if (state === 'partial' && partial) return <>{partial}</>;
+  return <>{children}</>;
+}
+
+/** A region that could not load: what failed, what is still right, and a retry. */
+export function SlotError({
+  title,
+  children,
+  onRetry,
+}: {
+  title: string;
+  children: React.ReactNode;
+  onRetry: () => void;
+}) {
+  return (
+    <Alert variant="destructive">
+      <AlertContent>
+        <AlertTitle>{title}</AlertTitle>
+        <AlertDescription>{children}</AlertDescription>
+      </AlertContent>
+      <AlertActions>
+        <Button size="sm" onClick={onRetry}>
+          <RotateCcwIcon aria-hidden="true" />
+          Retry
+        </Button>
+      </AlertActions>
+    </Alert>
+  );
+}
+
+/** Where data is missing for a known reason: the gap keeps its place and says why, in the space it would fill. */
+export function SlotGap({
+  title,
+  children,
+  height,
+}: {
+  title: string;
+  children: React.ReactNode;
+  height: number;
+}) {
+  return (
+    <div
+      style={{ minHeight: height }}
+      className="flex flex-col items-center justify-center gap-1 rounded-inset border border-dashed border-border px-6 py-4 text-center"
+    >
+      <span className="text-body font-medium">{title}</span>
+      <span className="max-w-md text-label font-normal text-muted-foreground text-pretty">{children}</span>
+    </div>
   );
 }

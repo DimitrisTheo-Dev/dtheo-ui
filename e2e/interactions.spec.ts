@@ -319,7 +319,12 @@ test('run history compares checked runs side by side', async ({ page }) => {
   const dialog = page.getByRole('dialog', { name: 'Compare 4 runs' });
   await expect(dialog.getByRole('table')).toBeVisible();
   // R-0412 overshoots 17.6 %: marked in words for a screen reader, not only in red.
-  await expect(dialog.getByRole('row', { name: /^Overshoot/ }).getByText(', over the limit').first()).toBeAttached();
+  await expect(
+    dialog
+      .getByRole('row', { name: /^Overshoot/ })
+      .getByText(', over the limit')
+      .first(),
+  ).toBeAttached();
 });
 
 test('run history keeps each preview state in the URL', async ({ page }) => {
@@ -336,3 +341,31 @@ test('run history keeps each preview state in the URL', async ({ page }) => {
   await page.getByRole('menuitemradio', { name: /Live data/ }).click();
   await expect(page).toHaveURL(/\/examples\/run-history$/);
 });
+
+// Each tool previews the states it can be in, and each state says what failed and what still holds.
+for (const [path, state, text] of [
+  ['/examples/run-review', 'error', 'Traces could not be loaded'],
+  ['/examples/run-review', 'partial', 'Phase current was not recorded'],
+  ['/examples/motor-map', 'error', /Sweep .* could not be loaded/],
+  ['/examples/tuning', 'error', 'Bench 3 is not streaming'],
+  ['/examples/tuning', 'partial', 'No vibration data for R-0412'],
+] as const) {
+  test(`${path} previews its ${state} state, and Retry or the menu returns to live data`, async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    await page.goto(`${path}?state=${state}`);
+    await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+    const message = page.getByText(text, { exact: typeof text === 'string' });
+    await expect(message).toBeVisible();
+    const retry = page.getByRole('button', { name: 'Retry' });
+    if (state === 'error') await retry.click();
+    else {
+      await page.getByRole('button', { name: /^State:/ }).click();
+      await page.getByRole('menuitemradio', { name: /Live data/ }).click();
+    }
+    await expect(message).toBeHidden();
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    expect(errors).toEqual([]);
+  });
+}

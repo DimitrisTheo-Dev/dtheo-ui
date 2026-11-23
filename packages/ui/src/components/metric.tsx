@@ -22,6 +22,8 @@ const statusMeta = {
 export function MetricGroup({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
+      // A named group: an aria-label on a plain div is not allowed, and screen readers would skip it.
+      role="group"
       data-slot="metric-group"
       className={cn(
         // Each cell draws its left and top hairline over the neighbor painted before it; the container clips the outer ones,

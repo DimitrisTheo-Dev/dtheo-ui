@@ -24,6 +24,13 @@ import { ChartLegend, Heatmap, LineChart, Sparkline } from '@dtheo/charts';
 import { checkStatus } from '@/lib/lab-data';
 import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar } from '../_shared/lab-sidebar';
+import {
+  DataSlot,
+  MetricSkeletons,
+  PreviewStateMenu,
+  SlotError,
+  usePreviewState,
+} from '../_shared/preview-state';
 
 // ---- Synthetic permanent-magnet traction motor (PM-220) ----
 const T_MAX = 220; // N·m
@@ -171,6 +178,7 @@ const SWEEP = sweeps[0]!;
 
 export function MotorMap() {
   const toast = useToast();
+  const [preview, setPreview, retry] = usePreviewState();
   const [quantity, setQuantity] = React.useState<Quantity>('efficiency');
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const q = quantities[quantity];
@@ -201,6 +209,11 @@ export function MotorMap() {
               Flight deck preset
             </Badge>
             <Badge variant="outline">Synthetic data</Badge>
+            <PreviewStateMenu
+              value={preview}
+              onValueChange={setPreview}
+              states={['live', 'loading', 'error']}
+            />
           </div>
         </AppToolbar>
 
@@ -238,25 +251,31 @@ export function MotorMap() {
             }
           />
 
-          <MetricGroup aria-label="Map summary">
-            <Metric label="Peak efficiency" value={nf(1).format(peakEff)} unit="%" />
-            <Metric
-              label="At operating point"
-              value={Number.isFinite(pointEff) ? nf(1).format(pointEff) : '–'}
-              unit="%"
-              status={pointEff < 90 ? 'warn' : 'none'}
-            />
-            <Metric label="Shaft power" value={nf(1).format(power)} unit="kW" progress={power / P_PEAK} />
-            <Metric label="Peak torque" value={String(T_MAX)} unit="N·m" />
-            <Metric
-              label="Coolant ΔT"
-              value={nf(1).format(COOLANT_DT)}
-              unit="K"
-              status={checkStatus(COOLANT_DT, COOLANT_DT_LIMIT)}
-              progress={COOLANT_DT / COOLANT_DT_SCALE}
-              limit={COOLANT_DT_LIMIT / COOLANT_DT_SCALE}
-              limitLabel={`Limit ≤ ${COOLANT_DT_LIMIT} K`}
-            />
+          <MetricGroup aria-label="Map summary" aria-busy={preview === 'loading' || undefined}>
+            {preview === 'loading' ? (
+              <MetricSkeletons count={5} />
+            ) : (
+              <>
+                <Metric label="Peak efficiency" value={nf(1).format(peakEff)} unit="%" />
+                <Metric
+                  label="At operating point"
+                  value={Number.isFinite(pointEff) ? nf(1).format(pointEff) : '–'}
+                  unit="%"
+                  status={pointEff < 90 ? 'warn' : 'none'}
+                />
+                <Metric label="Shaft power" value={nf(1).format(power)} unit="kW" progress={power / P_PEAK} />
+                <Metric label="Peak torque" value={String(T_MAX)} unit="N·m" />
+                <Metric
+                  label="Coolant ΔT"
+                  value={nf(1).format(COOLANT_DT)}
+                  unit="K"
+                  status={checkStatus(COOLANT_DT, COOLANT_DT_LIMIT)}
+                  progress={COOLANT_DT / COOLANT_DT_SCALE}
+                  limit={COOLANT_DT_LIMIT / COOLANT_DT_SCALE}
+                  limitLabel={`Limit ≤ ${COOLANT_DT_LIMIT} K`}
+                />
+              </>
+            )}
           </MetricGroup>
 
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
@@ -270,25 +289,37 @@ export function MotorMap() {
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-5">
-                <Heatmap
-                  ariaLabel={`${q.label} map. ${q.summary} Operating point ${nf(0).format(speed)} rpm, ${nf(0).format(clampedTorque)} N·m: ${fmtQ(pointValue)}.`}
-                  xValues={speeds}
-                  yValues={torques}
-                  values={q.grid}
-                  domain={q.domain}
-                  bands={q.bands}
-                  xTicks={[4000, 8000, 12000, 16000]}
-                  yTicks={[50, 100, 150, 200]}
-                  xLabel="Speed"
-                  xUnit="rpm"
-                  yLabel="Torque"
-                  yUnit="N·m"
-                  valueLabel={q.label}
-                  valueUnit={q.unit}
-                  digits={q.digits}
-                  marker={{ x: speed, y: clampedTorque, label: fmtQ(pointValue) }}
+                <DataSlot
+                  state={preview}
+                  label={`${q.label.toLowerCase()} map`}
                   height={320}
-                />
+                  error={
+                    <SlotError title={`Sweep ${SWEEP.id} could not be loaded`} onRetry={retry}>
+                      Dyno 2’s results server did not answer. The summary above is from the sweep report and
+                      is current; the operating point still moves.
+                    </SlotError>
+                  }
+                >
+                  <Heatmap
+                    ariaLabel={`${q.label} map. ${q.summary} Operating point ${nf(0).format(speed)} rpm, ${nf(0).format(clampedTorque)} N·m: ${fmtQ(pointValue)}.`}
+                    xValues={speeds}
+                    yValues={torques}
+                    values={q.grid}
+                    domain={q.domain}
+                    bands={q.bands}
+                    xTicks={[4000, 8000, 12000, 16000]}
+                    yTicks={[50, 100, 150, 200]}
+                    xLabel="Speed"
+                    xUnit="rpm"
+                    yLabel="Torque"
+                    yUnit="N·m"
+                    valueLabel={q.label}
+                    valueUnit={q.unit}
+                    digits={q.digits}
+                    marker={{ x: speed, y: clampedTorque, label: fmtQ(pointValue) }}
+                    height={320}
+                  />
+                </DataSlot>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-2">
                     <div className="flex items-baseline justify-between text-label">
@@ -347,46 +378,48 @@ export function MotorMap() {
                       { label: 'Continuous', tone: 'muted' },
                     ]}
                   />
-                  <LineChart
-                    ariaLabel={`Torque–speed envelope. Peak torque ${T_MAX} N·m up to ${N_BASE} rpm, falling with constant power to ${nf(0).format(peakTorque(N_MAX))} N·m at ${N_MAX} rpm.`}
-                    x={envelopeX}
-                    yDomain={[0, 240]}
-                    yTicks={[0, 60, 120, 180, 240]}
-                    xTicks={[0, 4000, 8000, 12000, 16000]}
-                    xUnit="rpm"
-                    height={220}
-                    formatX={(v) => `${nf(0).format(v)} rpm`}
-                    series={[
-                      {
-                        id: 'cont',
-                        label: 'Continuous',
-                        values: envelopeCont,
-                        tone: 'muted',
-                        width: 1.5,
-                        unit: 'N·m',
-                        digits: 0,
-                      },
-                      {
-                        id: 'peak',
-                        label: 'Peak',
-                        values: envelopePeak,
-                        tone: 'primary',
-                        width: 2,
-                        unit: 'N·m',
-                        digits: 0,
-                      },
-                    ]}
-                    markers={[
-                      {
-                        x: speed,
-                        y: clampedTorque,
-                        label: `${nf(0).format(clampedTorque)} N·m`,
-                        sublabel: `${nf(0).format(speed)} rpm`,
-                        tone: 'primary',
-                        placement: 'below',
-                      },
-                    ]}
-                  />
+                  <DataSlot state={preview} label="torque–speed envelope" height={220}>
+                    <LineChart
+                      ariaLabel={`Torque–speed envelope. Peak torque ${T_MAX} N·m up to ${N_BASE} rpm, falling with constant power to ${nf(0).format(peakTorque(N_MAX))} N·m at ${N_MAX} rpm.`}
+                      x={envelopeX}
+                      yDomain={[0, 240]}
+                      yTicks={[0, 60, 120, 180, 240]}
+                      xTicks={[0, 4000, 8000, 12000, 16000]}
+                      xUnit="rpm"
+                      height={220}
+                      formatX={(v) => `${nf(0).format(v)} rpm`}
+                      series={[
+                        {
+                          id: 'cont',
+                          label: 'Continuous',
+                          values: envelopeCont,
+                          tone: 'muted',
+                          width: 1.5,
+                          unit: 'N·m',
+                          digits: 0,
+                        },
+                        {
+                          id: 'peak',
+                          label: 'Peak',
+                          values: envelopePeak,
+                          tone: 'primary',
+                          width: 2,
+                          unit: 'N·m',
+                          digits: 0,
+                        },
+                      ]}
+                      markers={[
+                        {
+                          x: speed,
+                          y: clampedTorque,
+                          label: `${nf(0).format(clampedTorque)} N·m`,
+                          sublabel: `${nf(0).format(speed)} rpm`,
+                          tone: 'primary',
+                          placement: 'below',
+                        },
+                      ]}
+                    />
+                  </DataSlot>
                 </CardContent>
               </Card>
 
@@ -398,38 +431,44 @@ export function MotorMap() {
                   </CardAction>
                 </CardHeader>
                 <CardContent className="px-0 pb-1">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead>Sweep</TableHead>
-                        <TableHead className="w-28">Efficiency trend</TableHead>
-                        <TableHead numeric>Peak</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sweeps.map((s) => (
-                        <TableRow key={s.id} aria-selected={s.status === 'current' || undefined}>
-                          <TableCell className="max-w-48 whitespace-normal">
-                            <span className="font-mono text-label">{s.id}</span>
-                            <span className="block truncate text-caption text-muted-foreground">
-                              {s.label} · {s.when}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Sparkline
-                              values={s.eff}
-                              tone={
-                                s.status === 'warn' ? 'warning' : s.status === 'current' ? 'primary' : 'muted'
-                              }
-                              ariaLabel={`${s.id} efficiency trend`}
-                              height={22}
-                            />
-                          </TableCell>
-                          <TableCell numeric>{nf(1).format(Math.max(...s.eff))} %</TableCell>
+                  <DataSlot state={preview} label="recent sweeps" height={200}>
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="hover:bg-transparent">
+                          <TableHead>Sweep</TableHead>
+                          <TableHead className="w-28">Efficiency trend</TableHead>
+                          <TableHead numeric>Peak</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {sweeps.map((s) => (
+                          <TableRow key={s.id} aria-selected={s.status === 'current' || undefined}>
+                            <TableCell className="max-w-48 whitespace-normal">
+                              <span className="font-mono text-label">{s.id}</span>
+                              <span className="block truncate text-caption text-muted-foreground">
+                                {s.label} · {s.when}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Sparkline
+                                values={s.eff}
+                                tone={
+                                  s.status === 'warn'
+                                    ? 'warning'
+                                    : s.status === 'current'
+                                      ? 'primary'
+                                      : 'muted'
+                                }
+                                ariaLabel={`${s.id} efficiency trend`}
+                                height={22}
+                              />
+                            </TableCell>
+                            <TableCell numeric>{nf(1).format(Math.max(...s.eff))} %</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </DataSlot>
                 </CardContent>
               </Card>
             </div>
