@@ -15,6 +15,7 @@ The docs app runs Next.js 16; read `apps/docs/AGENTS.md` before writing Next cod
 | Record the Linux baselines CI uses | `pnpm test:visual:linux` (Docker) |
 | Rebuild tokens | `pnpm tokens` |
 | Regenerate example index / usage graph | `pnpm examples` / `pnpm usage` |
+| Rebuild the Figma plugin after a token or plugin change | `pnpm figma` |
 | Recapture the example screenshots on the landing page | `pnpm screens` (dev server running) |
 | Check UI code against the system | `node packages/cli/src/bin.mjs check <paths or globs>` |
 | See what a release would publish | `pnpm release --dry-run` |
@@ -64,9 +65,9 @@ the script refuses to run until they agree.
 
 ## Tokens
 
-Edit `packages/tokens/src/index.ts`, then `pnpm tokens`. The build fails if any pair in `contrastPairs` drops below
-its minimum. When a new surface or text combination appears in the UI, add the pair first (layered surfaces are
-supported: `over: ['selection', 'card']`, `tint: 0.15`).
+Edit `packages/tokens/src/index.ts`, then `pnpm tokens` and `pnpm figma`. The build fails if any pair in
+`contrastPairs` drops below its minimum. When a new surface or text combination appears in the UI, add the pair first
+(layered surfaces are supported: `over: ['selection', 'card']`, `tint: 0.15`).
 
 ## Releasing
 

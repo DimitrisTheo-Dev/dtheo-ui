@@ -127,6 +127,12 @@ importers:
 
   packages/cli: {}
 
+  packages/figma:
+    devDependencies:
+      '@figma/plugin-typings':
+        specifier: 1.142.0
+        version: 1.142.0
+
   packages/tokens:
     devDependencies:
       '@types/culori':
@@ -543,6 +549,9 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@figma/plugin-typings@1.142.0':
+    resolution: {integrity: sha512-Loa9P4bUZi/pQejic8OYQSU4Zz9izJdIiDUkkKddq5Bfc5JPRV6pCeg3C8owovbX9lKshaFym86PlMhKZgLeBw==}
 
   '@floating-ui/core@1.8.0':
     resolution: {integrity: sha512-0CIZ5itps/8x7BG8dEIhs53BvCUH2PCoogtakwRTut+Arm58sJooJ0AuZhLw2HJYIR5cMLNPBSS728sPho2khQ==}
@@ -3409,6 +3418,8 @@ snapshots:
       levn: 0.4.1
 
   '@exodus/bytes@1.16.0': {}
+
+  '@figma/plugin-typings@1.142.0': {}
 
   '@floating-ui/core@1.8.0':
     dependencies:

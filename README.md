@@ -66,6 +66,7 @@ Components are copied into your project, so you own the code. Every item also in
 | **38 components** | On [Base UI](https://base-ui.com) and Tailwind CSS v4: fields, selects, menus, dialogs, sheets, toasts, tables with Shift-click range selection, a virtualized data table and a quantity that mark values past their limits, metrics, an app shell… |
 | **8 charts** | SVG drawn by React, canvas for live and dense data, d3 for the math. No chart library. |
 | **Tokens** | OKLCH roles in shadcn’s vocabulary: CSS through `dtheo init`, and DTCG JSON, OKLCH and hex for React Native and Expo in [`@dtheo/tokens`](packages/tokens) |
+| **Figma library** | A plugin in [`packages/figma`](packages/figma) builds it from the token build: color variables with a mode per theme, radii per preset, text and shadow styles, and the core components with variants, every fill bound to a variable |
 | **5 example apps** | Run history, Run review, Motor map, Loop tuning, Lab assistant: full screens built only from the system, on synthetic data |
 | **CLI** | `dtheo init`, `add`, `list`, `check`, `rules`, `mcp` |
 
@@ -77,6 +78,7 @@ packages/ui       Components on Base UI, and the contracts (src/meta) that drive
                   docs, the registry, the Markdown and the MCP answers
 packages/charts   Charts: SVG via React, canvas for live and dense data, d3 for the math
 packages/cli      `dtheo`: copies components from the registry and runs the design check
+packages/figma    A Figma plugin that builds the library from the token build
 apps/docs         ui.dtheo.dev: docs, examples, registry, MCP server, llms.txt, Markdown
 e2e               Playwright: every route at desktop and phone width, axe on 19 routes
                   in both themes, interactions, pixels
