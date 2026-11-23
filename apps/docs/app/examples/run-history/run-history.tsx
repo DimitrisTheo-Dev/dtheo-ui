@@ -54,6 +54,7 @@ import {
   MenuTrigger,
 } from '@dtheo/ui/components/menu';
 import { Meter } from '@dtheo/ui/components/progress';
+import { Quantity, formatQuantity, statusWords } from '@dtheo/ui/components/quantity';
 import { Separator } from '@dtheo/ui/components/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@dtheo/ui/components/table';
 import { Skeleton } from '@dtheo/ui/components/skeleton';
@@ -917,34 +918,16 @@ function RunInspector({
           {runChecks.map((c) => {
             const v = run[c.key];
             const status = v === null ? null : limitStatus(v, { max: c.limit });
-            const word =
-              status === 'fail'
-                ? 'Fail'
-                : status === 'warn'
-                  ? 'Near limit'
-                  : status === 'pass'
-                    ? 'Pass'
-                    : 'No data';
+            const word = statusWords[status ?? 'missing'];
+            const digits = c.unit === 'ms' ? 0 : 1;
             return (
               <li key={c.key} className="flex flex-col gap-1.5">
                 <span className="flex items-baseline justify-between gap-2 text-label">
                   <span className="text-muted-foreground">{c.label}</span>
-                  <span className="tabular-nums">
-                    {v === null ? (
-                      <span className="text-subtle-foreground">—</span>
-                    ) : (
-                      <LimitValue status={status!}>
-                        {(c.unit === 'ms' ? fmt.n0 : fmt.n1).format(v)} {c.unit}
-                      </LimitValue>
-                    )}
-                    <span className="text-subtle-foreground">
-                      {' '}
-                      / {fmt.n0.format(c.limit)} {c.unit}
-                    </span>
-                  </span>
+                  <Quantity value={v} unit={c.unit} digits={digits} limit={{ max: c.limit }} showLimit />
                 </span>
                 <Meter
-                  aria-label={`${c.label}: ${v === null ? 'no data' : `${v} ${c.unit}`}, limit ${c.limit} ${c.unit}, ${word}`}
+                  aria-label={`${c.label}: ${formatQuantity(v, c.unit, { digits })}, limit ${formatQuantity(c.limit, c.unit)}, ${word}`}
                   value={v === null ? 0 : Math.min(v, c.limit * 1.5)}
                   max={c.limit * 1.5}
                   limit={c.limit}

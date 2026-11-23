@@ -99,6 +99,21 @@ Motion explains a change; it is never decoration.
 - Live and dense data (a 1 kHz feed, thousands of points) draws on a canvas in token colors; axes, labels and
   limits stay vector. Live charts stop drawing off screen and step instead of glide under reduced motion.
 
+## Engineering data
+
+How a number is written is part of the design. `Quantity` and the format functions in `lib/quantity.ts` do it one
+way; the full guide is the Engineering data foundation page.
+
+- Units are SI symbols after a no-break space (`17.6 %`, `71.2 °C`, `12 N·m`); an angle's degree sign sits against
+  the number (`48°`). In a table the unit goes in the column head, once.
+- Decimals follow what the sensor resolves and are the same on every screen. Fixed decimals, tabular figures,
+  right-aligned.
+- Differences are signed with a real minus. The gap between two percentages is in points ("+7.6 points"), a relative
+  change in percent ("+50 %").
+- One limit rule everywhere: past the limit fails, above 90 % of it is near the limit. A missing value is a dash and
+  "No data", never 0 and never a pass.
+- One word per thing across the tools: run, check, limit, near limit, fail (not error), review, reference run.
+
 ## Writing
 
 Plain, specific, active. Say what happened, by how much and what to do next: "Overshoot is 7.6 points over the

@@ -13,6 +13,7 @@ const pages = [
   '/docs/components/data-table',
   '/docs/charts/line-chart',
   '/docs/foundations/color',
+  '/docs/foundations/engineering-data',
   '/docs/patterns/forms',
   '/docs/patterns/data-table',
   '/examples/run-history',

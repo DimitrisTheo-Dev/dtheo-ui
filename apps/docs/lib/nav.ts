@@ -134,6 +134,25 @@ export const foundations: NavItem[] = [
     description: 'Curves, durations and when not to animate.',
     keywords: ['tokens', 'animation', 'easing', 'transitions', 'reduced motion'],
   },
+  {
+    title: 'Engineering data',
+    href: '/docs/foundations/engineering-data',
+    description: 'Units, precision, limits, status and the words for them.',
+    keywords: [
+      'units',
+      'SI',
+      'decimals',
+      'significant figures',
+      'number format',
+      'percentage points',
+      'minus sign',
+      'missing data',
+      'terminology',
+      'glossary',
+      'CSV',
+      'Quantity',
+    ],
+  },
 ];
 
 export const patterns: NavItem[] = [

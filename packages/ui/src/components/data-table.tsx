@@ -6,25 +6,12 @@ import { Checkbox } from './checkbox';
 import { Skeleton } from './skeleton';
 import { cn } from '../lib/utils';
 import { useVirtualRows } from '../lib/use-virtual-rows';
+import { limitStatus, type Limit, type LimitStatus } from '../lib/quantity';
 
-/** An acceptance limit on a column. Over `max` (or under `min`) fails; within `near` of it is near the limit. */
-export interface ColumnLimit {
-  max?: number;
-  min?: number;
-  /** Where "near the limit" starts, as a fraction of it. Default 0.9: above 90 % of a maximum. */
-  near?: number;
-}
-
-export type LimitStatus = 'fail' | 'warn' | 'pass';
-
-/** One rule for every limit: past it fails, within `near` of it warns. The same rule the Metric states. */
-export function limitStatus(value: number, { max, min, near = 0.9 }: ColumnLimit): LimitStatus {
-  if (max !== undefined && value > max) return 'fail';
-  if (min !== undefined && value < min) return 'fail';
-  if (max !== undefined && value > near * max) return 'warn';
-  if (min !== undefined && value < min / near) return 'warn';
-  return 'pass';
-}
+/** An acceptance limit on a column. The rule and its words live in lib/quantity, shared with Quantity and Metric. */
+export type ColumnLimit = Limit;
+export { limitStatus };
+export type { LimitStatus };
 
 export interface DataTableColumn<Row> {
   id: string;

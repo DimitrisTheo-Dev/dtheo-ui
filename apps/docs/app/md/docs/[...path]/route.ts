@@ -16,7 +16,9 @@ export function generateStaticParams() {
     { path: ['index'] },
     { path: ['components'] },
     ...['installation', 'theming', 'agents', 'cli', 'atomic-design'].map((s) => ({ path: [s] })),
-    ...['color', 'typography', 'geometry', 'motion'].map((s) => ({ path: ['foundations', s] })),
+    ...['color', 'typography', 'geometry', 'motion', 'engineering-data'].map((s) => ({
+      path: ['foundations', s],
+    })),
     ...['data-table', 'forms', 'states'].map((s) => ({ path: ['patterns', s] })),
     ...components.map((c) => ({ path: [docsSection(c), c.slug] })),
     { path: ['check-rules'] },
