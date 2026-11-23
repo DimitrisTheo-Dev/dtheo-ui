@@ -70,8 +70,10 @@ export function MenuItem({
       className={cn(
         popupItemClass,
         'pr-3 [&>svg]:text-muted-foreground data-highlighted:[&>svg]:text-primary-foreground',
+        // On the destructive fill everything is white, whatever the preset's primary-foreground is: in Carbon dark
+        // that is near-black, which would put a dark icon on red.
         variant === 'destructive' &&
-          'text-destructive-foreground data-highlighted:bg-destructive data-highlighted:text-white',
+          'text-destructive-foreground data-highlighted:bg-destructive data-highlighted:text-white data-highlighted:[&>svg]:text-white',
         className,
       )}
       {...props}
@@ -153,7 +155,7 @@ export function MenuShortcut({ className, ...props }: React.ComponentProps<'span
   return (
     <span
       className={cn(
-        'ml-auto pl-4 text-caption tracking-wide text-subtle-foreground in-data-highlighted:text-primary-foreground',
+        'ml-auto pl-4 text-caption tracking-wide text-subtle-foreground in-data-highlighted:text-primary-foreground [[data-variant=destructive][data-highlighted]_&]:text-white',
         className,
       )}
       {...props}

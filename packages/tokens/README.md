@@ -22,4 +22,4 @@ Also included: `@dtheo/tokens/tokens.json` (DTCG 2025.10: OKLCH components with 
 
 The package ships no CSS. On the web, `npx dtheo init` adds it to your project.
 
-Presets: `graphite` (light and dark), `flight-deck` and `deep-space` (dark). MIT
+Presets: `graphite` and `carbon`, each in light and dark. MIT

@@ -11,7 +11,7 @@ still builds everything, in Graphite light only, and says so when it finishes.
 ## What it makes
 
 - **Variables.** `Color`: every role (`background`, `primary`, `destructive-foreground`…) with a mode per theme:
-  Graphite light, Graphite dark, Flight deck and Deep space. `Geometry`: radii per preset, nested radii included
+  Graphite and Carbon, each in light and dark. `Geometry`: radii per preset, nested radii included
   (`radius/item`, `radius/inset`). `Size`: control heights. Each variable shows its CSS name in Dev Mode
   (`var(--primary)`, `rounded-control`, `h-control-md`).
 - **Styles.** A text style per type role (`dtheo/body`, `dtheo/title-2`…) in SF Pro where it is installed, Inter

@@ -17,6 +17,7 @@ import { RunReview } from '@/app/examples/run-review/run-review';
 import { Tuning } from '@/app/examples/tuning/tuning';
 import { A11yDemo } from '@/components/home/a11y-demo';
 import { Bento } from '@/components/home/bento';
+import { HeroInstrument } from '@/components/home/hero-instrument';
 import { HeroPreview } from '@/components/home/hero-preview';
 import { DataTableDemo } from '@/components/patterns/data-table-demo';
 import {
@@ -183,7 +184,8 @@ const render = (C: React.ComponentType) =>
 
 const surfaces: Array<[string, React.ComponentType]> = [
   ...Object.entries(examples).map(([id, C]) => [`examples/${id}`, C] as [string, React.ComponentType]),
-  ['landing hero', HeroPreview],
+  ['landing hero', HeroInstrument],
+  ['landing agent demo card', HeroPreview],
   ['landing accessibility demo', A11yDemo],
   ['landing tiles', Bento],
   ['run history', RunHistory],

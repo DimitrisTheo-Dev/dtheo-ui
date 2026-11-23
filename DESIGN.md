@@ -15,13 +15,15 @@ attention impossible to miss.
 sidebars, one accent. Color is information, not decoration. When everything passes, the screen is nearly
 monochrome; a failure is the only red on it.
 
-Three presets share every component and change only color, radius and material:
+Two presets share every component and change only color, radius and material. Each has a light and a dark mode:
 
 | Preset | For | Feel |
 | --- | --- | --- |
-| **Graphite** (default) | Day-to-day tools | Neutral graphite, system blue, Mac materials. Light and dark. |
-| **Flight deck** | Monitoring, maps, dashboards | Blue-biased graphite, ice-blue action, depth from lightness, no glass. Dark. |
-| **Deep space** | Assistants, onboarding, docs heroes | Near-black void, nebula light, frosted glass. Dark. |
+| **Graphite** (default) | Day-to-day tools | Neutral graphite, system blue, Mac materials. |
+| **Carbon** | Monitoring, maps, wall displays | No hue in the interface: neutral surfaces, an ink primary, tight corners, no glass. The only colors are status, links, the focus ring and the data. |
+
+A preset is added only when it is finished to the standard of the first. Two earlier ones (a blue-biased dark and a
+violet "space" look) were removed for that reason: a system is judged by its weakest screen.
 
 ## Color
 
@@ -32,7 +34,7 @@ Three presets share every component and change only color, radius and material:
 - Borders and fills on dark are white at low alpha, so they adapt to whatever surface they sit on.
 - **Contrast is a build step.** 43 pairs, including layered cases such as a status badge on a selected table row
   and the focus ring on its own halo, are composited the way the browser does and measured in every theme they
-  appear in (Graphite light and dark, Flight deck, Deep space). All 171 checks must pass WCAG AA (3:1 for the focus
+  appear in (Graphite and Carbon, each in light and dark). All 170 checks must pass WCAG AA (3:1 for the focus
   ring), or the build fails.
 - Status always ships as icon + word + color. Red is for failure only, amber for near a limit, green for pass.
 

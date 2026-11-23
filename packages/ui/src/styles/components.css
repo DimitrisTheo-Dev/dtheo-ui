@@ -77,25 +77,6 @@
   }
 }
 
-/* Presets can change materials, not just colors: Deep space turns grouped surfaces into frosted glass. */
-[data-preset='deep-space'] :is([data-slot='card'], [data-slot='metric-group']) {
-  -webkit-backdrop-filter: blur(var(--material-blur)) saturate(140%);
-  backdrop-filter: blur(var(--material-blur)) saturate(140%);
-}
-
-[data-preset='deep-space'] [data-slot='metric'] {
-  background-color: transparent;
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  [data-preset='deep-space'] :is([data-slot='card'], [data-slot='metric-group']) {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    /* Opaque deep-space card when transparency is reduced. dtheo-check-ignore-next-line */
-    background-color: oklch(0.2 0.03 282);
-  }
-}
-
 /* Data table rows. Hover, checked and active are painted on the cells as layers over the surface, so the sticky
    columns, which need an opaque fill to cover what scrolls under them, show the same state as the rest of the row.
    Set --data-table-surface when the table sits on something other than a card. */

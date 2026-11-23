@@ -11,7 +11,6 @@ import {
   SparklesIcon,
   SquareArrowOutUpRightIcon,
 } from 'lucide-react';
-import { ThemeScope } from '@dtheo/ui/lib/theme';
 import { AppShell, AppToolbar } from '@dtheo/ui/components/app-shell';
 import { Button } from '@dtheo/ui/components/button';
 import { Badge } from '@dtheo/ui/components/badge';
@@ -23,9 +22,9 @@ import { useToast } from '@dtheo/ui/components/toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@dtheo/ui/components/table';
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@dtheo/ui/components/tabs';
 import { ChartLegend, LineChart } from '@dtheo/charts';
+import { ThemeToggle } from '@/components/theme-controls';
 import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar } from '../_shared/lab-sidebar';
-import { SpaceBackdrop } from '@/components/space-backdrop';
 import {
   CURRENT_LIMIT,
   DELAY,
@@ -174,26 +173,20 @@ export function Assistant() {
   };
 
   return (
-    <ThemeScope mode="dark" preset="deep-space" className="relative">
-      <SpaceBackdrop className="fixed" />
-      <AppShell
-        className="relative bg-transparent"
-        sidebar={<LabSidebar current="assistant" onSearch={() => setPaletteOpen(true)} />}
-      >
-        <AppToolbar className="bg-background/40">
+    <>
+      <AppShell sidebar={<LabSidebar current="assistant" onSearch={() => setPaletteOpen(true)} />}>
+        <AppToolbar>
           <h1 className="flex items-center gap-2 text-body font-medium">
             <SparklesIcon className="size-4 text-primary" aria-hidden="true" />
             Lab assistant
           </h1>
           <div className="ml-auto flex items-center gap-2">
-            <Badge variant="outline" className="hidden sm:inline-flex">
-              Deep space preset
-            </Badge>
             {/* A badge can't shrink, so phones get the short form and a 320 px screen never scrolls sideways. */}
             <Badge variant="outline">
               <span className="sm:hidden">Synthetic data</span>
               <span className="hidden sm:inline">Scripted demo · synthetic data</span>
             </Badge>
+            <ThemeToggle />
           </div>
         </AppToolbar>
 
@@ -224,7 +217,8 @@ export function Assistant() {
           {/* The fade above the composer is decoration: it lets clicks through to the message under it. */}
           <div
             data-slot="app-composer"
-            className="pointer-events-none sticky bottom-0 mt-auto bg-linear-to-t from-background from-70% to-transparent pt-10 pb-[max(1rem,env(safe-area-inset-bottom,0px))]">
+            className="pointer-events-none sticky bottom-0 mt-auto bg-linear-to-t from-background from-70% to-transparent pt-10 pb-[max(1rem,env(safe-area-inset-bottom,0px))]"
+          >
             {messages.length <= initial.length ? (
               <div className="pointer-events-auto mb-2.5 flex flex-wrap gap-2">
                 {suggestions.map((s) => (
@@ -293,7 +287,7 @@ export function Assistant() {
           actions={suggestions.map((q) => ({ value: q, label: q, group: 'Ask', onSelect: () => send(q) }))}
         />
       </AppShell>
-    </ThemeScope>
+    </>
   );
 }
 

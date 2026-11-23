@@ -38,10 +38,13 @@ First release: `init`, `add`, `list`, `check` (17 rules), `rules` and `mcp`.
 
 ## @dtheo/tokens
 
-### Unreleased
+### 0.2.0 (unreleased)
 
+- **Breaking:** the `flight-deck` and `deep-space` presets are removed. `carbon` replaces them, in light and dark:
+  neutral surfaces with no hue, an ink primary, 4 to 10 px radii and no glass, so the only colors left are status,
+  links, the focus ring and chart data. `tokens.json`, `native` and the contrast report have `graphite` and `carbon`.
 - Three more contrast pairs, for a value marked against its limit inside a checked table row: the over-limit and
-  near-limit text colors and secondary text on `selection`. 171 checks, up from 159; all pass AA.
+  near-limit text colors and secondary text on `selection`. 43 pairs in four themes: 170 checks, all pass AA.
 
 ### 0.1.1 (2026-11-22)
 

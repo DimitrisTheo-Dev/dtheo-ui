@@ -26,7 +26,7 @@ ${site.name} is built for the tools engineers use every day: run reviews, dashbo
 
 - ${componentCount} components on Base UI, styled with Tailwind CSS v4 and OKLCH tokens.
 - ${chartCount} engineering charts: line (limits, bands, synced crosshair, keyboard reading), bar, heatmap, sparkline, a live stream chart, frequency (spectrum and Bode with margins), scatter and histogram (spec limits and Cpk).
-- 3 presets: Graphite (default, light and dark), Flight deck and Deep space (dark), each a different character from the same components.
+- 2 presets, each in light and dark: Graphite (default) with one accent, and Carbon with none, where the only colors are status, links, focus and data.
 - Agent surfaces: \`/llms.txt\`, a \`.md\` mirror of every docs page, a shadcn-compatible registry, an MCP server at \`/mcp\` and the \`dtheo\` CLI with a design checker.
 `,
 
@@ -146,10 +146,9 @@ Overlays opened inside a \`ThemeScope\` (menus, dialogs, tooltips, toasts) mount
 | Preset | Character | Modes |
 | --- | --- | --- |
 | \`graphite\` | Native and neutral, Mac-like materials, system blue | light, dark |
-| \`flight-deck\` | Soft graphite with a blue bias, ice-blue action, no glass | dark |
-| \`deep-space\` | Near-black, nebula light, frosted glass | dark |
+| \`carbon\` | No hue in the interface: neutral surfaces, an ink primary, tight corners, no glass | light, dark |
 
-Each tool in a suite can pick its preset and keep its own character while clearly belonging to the same family. Presets without a light mode fall back to Graphite light.
+A preset follows the page’s mode unless its own element sets one. Carbon suits monitoring and maps, where the data should be the only color on screen.
 
 ## Tokens
 

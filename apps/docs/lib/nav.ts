@@ -42,8 +42,8 @@ export const getStarted: NavItem[] = [
       'dark mode',
       'light mode',
       'Graphite',
-      'Flight deck',
-      'Deep space',
+      'Carbon',
+      'monochrome',
       'ThemeScope',
       'tokens',
       'CSS variables',
@@ -201,7 +201,7 @@ export const examples: NavItem[] = [
     title: 'Motor map',
     href: '/examples/motor-map',
     description: 'Efficiency over speed and torque, with an operating point.',
-    keywords: ['efficiency map', 'heatmap', 'envelope', 'traction motor', 'Flight deck'],
+    keywords: ['efficiency map', 'heatmap', 'envelope', 'traction motor', 'Carbon'],
   },
   {
     title: 'Loop tuning',
@@ -222,7 +222,7 @@ export const examples: NavItem[] = [
     title: 'Lab assistant',
     href: '/examples/assistant',
     description: 'A chat that answers with tables and charts.',
-    keywords: ['AI', 'LLM', 'chatbot', 'conversation', 'Deep space'],
+    keywords: ['AI', 'LLM', 'chatbot', 'conversation'],
   },
 ];
 

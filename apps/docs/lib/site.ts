@@ -1,7 +1,7 @@
 /** One place to rename the library. Everything user-facing reads from here. */
 export const site = {
   name: 'dtheo/ui',
-  tagline: 'Pixel-perfect UI, even when your agent writes it.',
+  tagline: 'A design system for engineering tools.',
   /** Also the share and search snippet, so it stays under 155 characters. */
   description:
     'A React design system for data-dense engineering tools: components, charts and OKLCH tokens, plus an MCP server and a linter so agents build it right.',

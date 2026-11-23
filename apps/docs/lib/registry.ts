@@ -131,7 +131,7 @@ function baseItems(withContent = true): RegistryItem[] {
       type: 'registry:file',
       title: 'Styles',
       description:
-        'Tokens for three presets (Graphite in light and dark, Flight deck and Deep space in dark), the Tailwind v4 theme mapping and base styles.',
+        'Tokens for two presets (Graphite and Carbon, each in light and dark), the Tailwind v4 theme mapping and base styles.',
       dependencies: [],
       registryDependencies: [],
       // The shadcn CLI prints this after an install, once however many items needed the stylesheet.

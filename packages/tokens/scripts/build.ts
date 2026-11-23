@@ -141,12 +141,12 @@ const colorBlock = (scheme: ColorScheme) => colorRoles.map((r) => decl(r, scheme
 const shadowBlock = (mode: Mode) =>
   Object.entries(foundation.shadow[mode]).map(([k, v]) => decl(`shadow-${k}`, v));
 
+// Everything that is not a color is declared once, on the root. A mode class further down the tree changes colors
+// and shadows only, so a light scope inside a preset keeps that preset's corners, and on a touch screen its sizes.
+lines.push(header, '', ':root {', ...base, '}', '');
 lines.push(
-  header,
-  '',
   ':root,',
   '.light {',
-  ...base,
   ...colorBlock(graphite.modes.light!),
   ...shadowBlock('light'),
   '  color-scheme: light;',
@@ -172,13 +172,27 @@ lines.push(
   '',
 );
 
+// A preset takes its mode from the nearest mode above it, or from its own element, or gives it to one inside it.
+// Light is the plain attribute selector. Dark is more specific, so a preset with no mode class follows a dark page;
+// a light scope between that page and the preset is more specific again, so the nearer of the two wins. CSS can only
+// spell out so many levels: three scopes deep, put the mode on the preset's own element, as ThemeScope does.
 for (const preset of presets.slice(1)) {
   const sel = `[data-preset="${preset.id}"]`;
   lines.push(`${sel} {`, ...Object.entries(preset.geometry).map(([k, v]) => decl(k, v)), '}', '');
-  const dark = preset.modes.dark;
-  if (dark) lines.push(`.dark${sel},`, `.dark ${sel},`, `${sel} .dark {`, ...colorBlock(dark), '}', '');
   const light = preset.modes.light;
-  if (light) lines.push(`.light${sel},`, `${sel}:not(.dark) {`, ...colorBlock(light), '}', '');
+  if (light)
+    lines.push(
+      `${sel},`,
+      `.light${sel},`,
+      `${sel} .light,`,
+      `.dark .light ${sel}:not(.dark) {`,
+      ...colorBlock(light),
+      '}',
+      '',
+    );
+  const dark = preset.modes.dark;
+  if (dark)
+    lines.push(`.dark ${sel}:not(.light),`, `.dark${sel},`, `${sel} .dark {`, ...colorBlock(dark), '}', '');
 }
 const css = lines.join('\n');
 
@@ -255,10 +269,7 @@ for (const preset of presets) {
   const group: Record<string, unknown> = {};
   for (const [mode, scheme] of Object.entries(preset.modes) as [Mode, ColorScheme][]) {
     group[mode] = Object.fromEntries(
-      colorRoles.map((r) => [
-        r,
-        { $type: 'color', $value: dtcgColor(scheme[r]) },
-      ]),
+      colorRoles.map((r) => [r, { $type: 'color', $value: dtcgColor(scheme[r]) }]),
     );
     native[preset.id]![mode] = Object.fromEntries(colorRoles.map((r) => [r, hex(scheme[r])]));
     nativeOklch[preset.id]![mode] = Object.fromEntries(colorRoles.map((r) => [r, scheme[r]]));
@@ -289,7 +300,8 @@ const nativeRadii = JSON.stringify(
 const nativeDoc = `${header.replace('/*', '/**')}\n/** Color roles for code that cannot read CSS variables: React Native, Expo, canvas, image renderers. */\n`;
 const colorsDoc =
   '/** sRGB hex, gamut-mapped from OKLCH (8 digits when translucent). React Native StyleSheet cannot parse oklch(). */\n';
-const oklchDoc = '/** The authored OKLCH values, for anything that reads CSS Color 4: web, Skia, Expo DOM components. */\n';
+const oklchDoc =
+  '/** The authored OKLCH values, for anything that reads CSS Color 4: web, Skia, Expo DOM components. */\n';
 // The workspace imports the TypeScript; the published package ships plain JS with matching declarations.
 const nativeTs = `${nativeDoc}${colorsDoc}export const colors = ${nativeColors} as const;\n\n${oklchDoc}export const oklch = ${nativeOklchColors} as const;\n\nexport const radii = ${nativeRadii} as const;\n`;
 const nativeJs = `${nativeDoc}${colorsDoc}export const colors = ${nativeColors};\n\n${oklchDoc}export const oklch = ${nativeOklchColors};\n\nexport const radii = ${nativeRadii};\n`;

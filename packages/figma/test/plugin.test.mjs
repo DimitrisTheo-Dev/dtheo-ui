@@ -152,6 +152,10 @@ function fakeFigma({ fonts = [], maxModes = Infinity, maxPages = Infinity } = {}
           renameMode(modeId, newName) {
             this.modes.find((m) => m.modeId === modeId).name = newName;
           },
+          removeMode(modeId) {
+            if (this.modes.length === 1) throw new Error('A collection needs a mode');
+            this.modes = this.modes.filter((m) => m.modeId !== modeId);
+          },
           addMode(modeName) {
             if (this.modes.length >= maxModes) throw new Error('Limited to 1 modes only');
             const modeId = id('mode');
@@ -308,8 +312,8 @@ describe('the Figma plugin', () => {
     expect(color.modes.map((m) => m.name)).toEqual([
       'Graphite light',
       'Graphite dark',
-      'Flight deck',
-      'Deep space',
+      'Carbon light',
+      'Carbon dark',
     ]);
     const colors = fake.variables.filter((v) => v.variableCollectionId === color.id);
     expect(colors.map((v) => v.name).sort()).toEqual([...roles].sort());
@@ -323,7 +327,7 @@ describe('the Figma plugin', () => {
     expect(selection.a).toBeCloseTo(tokens.graphite.dark.selection.$value.alpha, 5);
 
     const geometry = fake.collections.find((c) => c.name === 'Geometry');
-    expect(geometry.modes.map((m) => m.name)).toEqual(['Graphite', 'Flight deck', 'Deep space']);
+    expect(geometry.modes.map((m) => m.name)).toEqual(['Graphite', 'Carbon']);
     expect(fake.textStyles.map((s) => s.name)).toContain('dtheo/body');
     expect(fake.textStyles).toHaveLength(Object.keys(tokens.foundation.text).length + 2);
     expect(fake.effectStyles.map((s) => s.name)).toContain('dtheo/shadow-popover/dark');
@@ -353,7 +357,7 @@ describe('the Figma plugin', () => {
     expect(sizes(set('Metric').children[0])).toEqual(['FIXED', 'AUTO']);
     expect(sizes(set('Input').children[0])).toEqual(['FIXED', 'FIXED']);
     expect(sizes(set('Button'))).toEqual(['FIXED', 'AUTO']);
-    // Radii come from the preset, so a Flight deck frame gets Flight deck corners.
+    // Radii come from the preset, so a Carbon frame gets Carbon corners.
     const button = page.children.find((c) => c.name === 'Button').children[0];
     expect(Object.keys(button.boundVariables)).toEqual(
       expect.arrayContaining(['height', 'topLeftRadius', 'bottomRightRadius']),
@@ -394,6 +398,21 @@ describe('the Figma plugin', () => {
     sets()[0].remove();
     expect(await run(fake)).toContain('1 components made');
     expect(sets()).toHaveLength(before.length);
+  });
+
+  it('replaces the modes of an earlier version instead of adding to them', async () => {
+    const fake = fakeFigma();
+    // A file built before Carbon: four modes, two of which the library no longer has.
+    const old = fake.figma.variables.createVariableCollection('Color');
+    old.renameMode(old.modes[0].modeId, 'Graphite light');
+    for (const m of ['Graphite dark', 'Flight deck', 'Deep space']) old.addMode(m);
+    const message = await run(fake);
+    expect(message).not.toMatch(/failed|plan allows/);
+    const color = fake.collections.find((c) => c.name === 'Color');
+    expect(fake.collections.filter((c) => c.name === 'Color')).toHaveLength(1);
+    expect(color.modes.map((m) => m.name).sort()).toEqual(
+      ['Carbon dark', 'Carbon light', 'Graphite dark', 'Graphite light'].sort(),
+    );
   });
 
   it('still builds on a Starter file: one mode, no page to spare', async () => {

@@ -1,3 +1,4 @@
+import { presets } from '@dtheo/tokens';
 import { globSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -110,7 +111,7 @@ describe('MCP server', () => {
         ['get_component_source', { slug }],
       ]),
       ['search_docs', { query: 'limit line' }],
-      ...(['graphite', 'flight-deck', 'deep-space'] as const).flatMap((preset) =>
+      ...(['graphite', 'carbon'] as const).flatMap((preset) =>
         (['light', 'dark'] as const).map((mode): [string, Record<string, unknown>] => [
           'get_tokens',
           { preset, mode },
@@ -192,11 +193,16 @@ describe('MCP tools', () => {
     expect(unrelated.text).toContain('list_components');
   });
 
-  it('says when a preset has no light mode instead of showing another preset', async () => {
+  it('answers each preset in the mode asked for, with its own values', async () => {
     const call = await route();
-    const tokens = await call('get_tokens', { preset: 'flight-deck', mode: 'light' });
-    expect(tokens.text).toMatch(/^# Flight deck \(dark\)/);
-    expect(tokens.text).toContain('Flight deck has no light mode; only Graphite does.');
+    const carbon = await call('get_tokens', { preset: 'carbon', mode: 'light' });
+    expect(carbon.text).toMatch(/^# Carbon \(light\)/);
+    expect(carbon.text).not.toContain('no light mode');
+    // Carbon's own values, not Graphite's: no hue in its surfaces (zero chroma), and tighter corners.
+    const preset = presets.find((p) => p.id === 'carbon')!;
+    expect(carbon.text).toContain(`--background: ${preset.modes.light!.background}`);
+    expect(preset.modes.light!.background).toMatch(/ 0 0\)$/);
+    expect(carbon.text).toContain('--radius-control: 4px');
     const graphite = await call('get_tokens', { preset: 'graphite', mode: 'light' });
     expect(graphite.text).toMatch(/^# Graphite \(light\)/);
     expect(graphite.text).not.toContain('no light mode');

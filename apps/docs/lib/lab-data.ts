@@ -192,6 +192,42 @@ export interface RunRow {
   operator: string;
 }
 
+// ---------- What if: the same step at another proportional gain ----------
+
+/** The gains the what-if covers: slow enough at one end to bring rise time near its limit, lively enough at the other to fail three checks. */
+export const KP_RANGE = [1.6, 4.6] as const;
+
+/**
+ * Damping and natural frequency at a proportional gain: a curve through the two measured tunes (R-0409 at Kp 2.80
+ * and R-0412 at 4.20) and the damping the 412-run population shows at 3.60. More gain makes a faster loop and,
+ * above the gain where the curve peaks (about Kp 2.1), a less damped one; below it damping holds level, so overshoot
+ * never rises again as the gain comes down.
+ */
+function tuneAt(kp: number) {
+  const [x0, x1, x2] = [referenceGains.kp, 3.6, gains.kp];
+  const [y0, y1, y2] = [nominal.zeta, 0.615, highGain.zeta];
+  const [d0, d1, d2] = [(x0 - x1) * (x0 - x2), (x1 - x0) * (x1 - x2), (x2 - x0) * (x2 - x1)];
+  const curve = (k: number) =>
+    (y0 * (k - x1) * (k - x2)) / d0 + (y1 * (k - x0) * (k - x2)) / d1 + (y2 * (k - x0) * (k - x1)) / d2;
+  // The parabola's vertex: a k² + b k + c, with a and b from the same three terms.
+  const a = y0 / d0 + y1 / d1 + y2 / d2;
+  const b = -((y0 * (x1 + x2)) / d0 + (y1 * (x0 + x2)) / d1 + (y2 * (x0 + x1)) / d2);
+  const zeta = curve(Math.max(kp, -b / (2 * a)));
+  const wn = nominal.wn + ((kp - x0) / (x2 - x0)) * (highGain.wn - nominal.wn);
+  return { zeta, wn };
+}
+
+/**
+ * The step response and its checks at a gain, with R-0412's sensor noise, so a trace changes shape, not grain, as
+ * the gain moves. At R-0412's own gain this is the measured run, number for number.
+ */
+export function responseAt(kp: number): { trace: Trace; metrics: RunMetrics } {
+  if (kp === gains.kp) return { trace: measured, metrics: measuredMetrics };
+  const { zeta, wn } = tuneAt(kp);
+  const trace = simulate(zeta, wn, 11);
+  return { trace, metrics: metrics(trace) };
+}
+
 /** RA-14 has run three firmware lines since 4.16; R-0412 ran on 4.18.2. */
 export function firmwareOf(n: number) {
   if (n <= 140) return n <= 60 ? '4.16.2' : '4.16.3';
