@@ -4,7 +4,8 @@ import * as React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { DataTable, limitStatus, type DataTableColumn } from '../src/components/data-table';
+import { DataTable, type DataTableColumn } from '../src/components/data-table';
+import { limitStatus } from '../src/lib/quantity';
 import { virtualWindow } from '../src/lib/use-virtual-rows';
 
 interface Run {

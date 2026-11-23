@@ -8,10 +8,8 @@ import { cn } from '../lib/utils';
 import { useVirtualRows } from '../lib/use-virtual-rows';
 import { limitStatus, type Limit, type LimitStatus } from '../lib/quantity';
 
-/** An acceptance limit on a column. The rule and its words live in lib/quantity, shared with Quantity and Metric. */
+/** An acceptance limit on a column. The rule lives in lib/quantity (import `limitStatus` from Quantity). */
 export type ColumnLimit = Limit;
-export { limitStatus };
-export type { LimitStatus };
 
 export interface DataTableColumn<Row> {
   id: string;

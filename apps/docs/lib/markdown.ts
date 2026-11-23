@@ -8,7 +8,7 @@ import { exampleSource } from './source';
 import { installCommand, shadcnCommand, site } from './site';
 import { countLabel } from './counts';
 import { foundations, getStarted, patterns, examples as exampleNav } from './nav';
-import { engineeringDataMarkdown } from '@/components/engineering-data';
+import { engineeringDataMarkdown } from './engineering-data';
 import { usedIn } from './usage';
 import { pagesMarkdown } from './pages-md';
 import { docsPath } from './paths';

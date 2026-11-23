@@ -24,7 +24,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@dtheo/ui/
 import {
   DataTable,
   LimitValue,
-  limitStatus,
   type DataTableColumn,
   type DataTableSort,
 } from '@dtheo/ui/components/data-table';
@@ -54,7 +53,7 @@ import {
   MenuTrigger,
 } from '@dtheo/ui/components/menu';
 import { Meter } from '@dtheo/ui/components/progress';
-import { Quantity, formatQuantity, statusWords } from '@dtheo/ui/components/quantity';
+import { Quantity, formatQuantity, limitStatus, statusWords } from '@dtheo/ui/components/quantity';
 import { Separator } from '@dtheo/ui/components/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@dtheo/ui/components/table';
 import { Skeleton } from '@dtheo/ui/components/skeleton';

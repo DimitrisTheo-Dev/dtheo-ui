@@ -22,6 +22,7 @@ import {
   referenceGains,
   referenceMetrics as R,
 } from '@/lib/lab-data';
+import { precision, words } from '@/lib/engineering-data';
 import { DocSection } from './doc-page';
 
 /** A written-out pair: how the system writes a value, and the way it is not written. */
@@ -64,39 +65,23 @@ function DoDont({ items }: { items: Array<[good: React.ReactNode, bad: string, w
   );
 }
 
-function Rules({ items }: { items: React.ReactNode[] }) {
+function Rules({ items }: { items: string[] }) {
   return (
     <ul className="docs-prose flex list-disc flex-col gap-1 pl-5 marker:text-subtle-foreground">
-      {items.map((item, i) => (
-        <li key={i}>{item}</li>
+      {items.map((item) => (
+        <li key={item}>{item}</li>
       ))}
     </ul>
   );
 }
 
-/** Decimals per quantity: set by what the sensor resolves, the same on every screen that shows it. */
-const precision: Array<[quantity: string, unit: string, digits: string, why: string]> = [
-  ['Torque', 'N·m', '2 in samples, 1 in summaries', 'The load cell resolves 0.01 N·m'],
-  ['Phase current', 'A', '1', 'The shunt resolves 0.1 A'],
-  ['Time after a step', 'ms', '0', 'Sampled at 1 kHz: 1 ms is the resolution'],
-  ['Overshoot, efficiency', '%', '1', 'A tenth of a point changes a decision; a hundredth never does'],
-  ['Winding temperature', '°C', '1', 'Thermocouple class 1'],
-  ['Controller gains', '', '2', 'As the firmware stores them'],
-  ['Phase margin', '°', '0', 'Read from a 260-point sweep'],
-  ['Gain margin', 'dB', '1', 'Read from the same sweep'],
-];
-
-/** The words the tools use, so the same thing has the same name on every screen and in every export. */
-const words: Array<[say: string, not: string, because: string]> = [
-  ['Run', 'Test, job, execution', 'One profile, executed once on one bench'],
-  ['Check', 'Criterion, test', 'One measured value held to one limit'],
-  ['Limit', 'Threshold, spec, max', 'The number a check holds a value to, written next to it'],
-  ['Near limit', 'Warning', 'A warning is the software’s word; this is a measurement'],
-  ['Fail', 'Error', 'An error is the software failing; a run fails a check'],
-  ['Review', 'Flagged, yellow', 'A run that passed with a check near its limit'],
-  ['Reference run', 'Baseline, golden run', 'The run others are compared against'],
-  ['No data', 'N/A, 0, null', 'Says nothing was measured, without implying a value'],
-];
+/** The four statuses and what each means, in the words every screen uses. */
+const statusRows = [
+  ['destructive', statusWords.fail, 'Past the limit'],
+  ['warning', statusWords.warn, 'Above 90 % of it'],
+  ['success', statusWords.pass, 'Inside it'],
+  ['outline', statusWords.missing, 'Not measured: not passed'],
+] as const;
 
 /**
  * The guide to engineering data: units, precision, differences, limits, status, missing data, time, files and
@@ -232,22 +217,12 @@ export function EngineeringDataFoundation() {
             ))}
           </div>
           <div className="flex flex-col gap-2.5 rounded-card border border-border bg-card p-4 text-body">
-            <span className="flex items-center justify-between gap-4">
-              <Badge variant="destructive">{statusWords.fail}</Badge>
-              <span className="text-muted-foreground">Past the limit</span>
-            </span>
-            <span className="flex items-center justify-between gap-4">
-              <Badge variant="warning">{statusWords.warn}</Badge>
-              <span className="text-muted-foreground">Above 90 % of it</span>
-            </span>
-            <span className="flex items-center justify-between gap-4">
-              <Badge variant="success">{statusWords.pass}</Badge>
-              <span className="text-muted-foreground">Inside it</span>
-            </span>
-            <span className="flex items-center justify-between gap-4">
-              <Badge variant="outline">{statusWords.missing}</Badge>
-              <span className="text-muted-foreground">Not measured: not passed</span>
-            </span>
+            {statusRows.map(([variant, word, meaning]) => (
+              <span key={word} className="flex items-center justify-between gap-4">
+                <Badge variant={variant}>{word}</Badge>
+                <span className="text-muted-foreground">{meaning}</span>
+              </span>
+            ))}
           </div>
         </div>
         <Rules
@@ -334,58 +309,3 @@ R-0412,2026-11-18T14:32,17.6038,30.9145,203,fail`}
     </>
   );
 }
-
-/** The same guide as Markdown, for agents and the .md mirror. */
-export const engineeringDataMarkdown = [
-  '# Engineering data',
-  '',
-  '> How the tools write a number: its unit, its precision, its limit and its status, one way on every screen. Use the `Quantity` component and the format functions in `@dtheo/ui/components/quantity` instead of writing these by hand.',
-  '',
-  '## Units',
-  '',
-  '- The SI symbol after a no-break space: `17.6 %`, `30.9 A`, `71.2 °C`, `12 N·m`. An angle’s degree sign sits against the number: `45°`.',
-  '- In a table the unit goes in the column head, once; cells hold numbers. The unit is quieter than the value.',
-  '',
-  '## Precision',
-  '',
-  '| Quantity | Unit | Decimals | Why |',
-  '| --- | --- | --- | --- |',
-  ...precision.map(([q, u, d, w]) => `| ${q} | ${u || '—'} | ${d} | ${w} |`),
-  '',
-  'Fixed decimals, tabular figures, right-aligned. One value has one spelling on every screen.',
-  '',
-  '## Differences and change',
-  '',
-  '- Every difference is signed and uses a real minus (−).',
-  `- The gap between two percentages is in points: ${formatDelta(M.overshoot - OVERSHOOT_LIMIT, '%', { digits: 1 })}, not +7.6 %.`,
-  `- A relative change is in percent: Kp 2.80 → 4.20 is ${formatChange(referenceGains.kp, gains.kp)}.`,
-  `- Near a limit, state the share of it: ${formatShareOfLimit(M.peakCurrent, CURRENT_LIMIT)}.`,
-  '',
-  '## Limits and status',
-  '',
-  '- One rule (`limitStatus`): past the limit fails; above 90 % of it is near the limit.',
-  `- Words: ${statusWords.fail}, ${statusWords.warn}, ${statusWords.pass}, ${statusWords.missing}. A run with a near-limit check goes to Review.`,
-  '- Status is an icon and a word, never color alone. Red is for failure only.',
-  '- Write the limit next to the value (“≤ 32 A”). On charts, a dashed labeled line; the part past it is shaded.',
-  '',
-  '## Missing data',
-  '',
-  '- A dash for the eye and “No data” for screen readers. Never 0, never a pass: the check is open.',
-  '- Say why where the data would be, and what still holds.',
-  '',
-  '## Time',
-  '',
-  '- Lab local time, 24-hour: `18 Nov, 14:32` in lists, `18 Nov 2026, 14:32` on a run’s page, ISO 8601 (`2026-11-18T14:32`) in files and URLs.',
-  '- Milliseconds below a second, seconds above.',
-  '',
-  '## In files',
-  '',
-  '- Plain numbers with a dot, no separators, no units in cells; the unit goes in the column name (`peak_current_A`). Full precision; rounding is for the screen.',
-  '',
-  '## Words',
-  '',
-  '| Say | Not | Because |',
-  '| --- | --- | --- |',
-  ...words.map(([s, n, b]) => `| ${s} | ${n} | ${b} |`),
-  '',
-].join('\n');
