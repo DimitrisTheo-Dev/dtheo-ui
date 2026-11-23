@@ -216,7 +216,7 @@ const handler = createMcpHandler(
       {
         ...readOnly('Get design tokens'),
         description:
-          'Color roles (OKLCH), radii, control heights and text roles for a preset and mode. Only Graphite has a light mode. Use role class names in code (bg-card, text-muted-foreground, h-control-md), never the raw values.',
+          'Color roles (OKLCH), radii, control heights and text roles for a preset (graphite or carbon) and mode. Use role class names in code (bg-card, text-muted-foreground, h-control-md), never the raw values.',
         inputSchema: z.object({
           preset: z.enum(presetIds).default('graphite'),
           mode: z.enum(['light', 'dark']).default('dark'),

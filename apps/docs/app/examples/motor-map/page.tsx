@@ -5,7 +5,7 @@ import { MotorMap } from './motor-map';
 export const metadata: Metadata = pageMetadata({
   title: 'Motor map',
   description:
-    'A traction-motor efficiency map with its torque–speed envelope, built with dtheo/ui in the Flight deck preset. Synthetic data.',
+    'A traction-motor efficiency map with its torque–speed envelope, built with dtheo/ui in the Carbon preset. Synthetic data.',
   path: '/examples/motor-map',
   ownCard: true,
 });

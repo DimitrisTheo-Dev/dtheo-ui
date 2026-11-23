@@ -54,10 +54,11 @@ Components are copied into your project, so you own the code. Every item also in
   status text on its own fill, `transition-all`, icon buttons without a name, off-system radii…), each with the fix.
   It exits 1 in CI.
 - **Contrast is proven, not promised.** 43 text, UI and focus-ring color pairs are measured in every theme they
-  appear in (Graphite light and dark, Flight deck, Deep space) on every token build: 171 checks, layered surfaces
+  appear in (Graphite and Carbon, each in light and dark) on every token build: 170 checks, layered surfaces
   included. The build fails below WCAG AA.
-- **Feels native.** System type, Mac materials, one accent, a focus ring you can always see. Three presets,
-  scoped to any element: Graphite in light and dark, Flight deck and Deep space in dark.
+- **Feels native.** System type, Mac materials, one accent, a focus ring you can always see. Two presets, each in
+  light and dark and scoped to any element: Graphite, and Carbon, which has no accent at all, so the only colors
+  on screen are status and data.
 
 ## What is inside
 

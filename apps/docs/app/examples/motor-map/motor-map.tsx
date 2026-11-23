@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@dtheo/ui/components/toast';
 import { ChartLegend, Heatmap, LineChart, Sparkline } from '@dtheo/charts';
 import { checkStatus } from '@/lib/lab-data';
+import { ThemeToggle } from '@/components/theme-controls';
 import { LabPalette } from '../_shared/lab-palette';
 import { LabSidebar } from '../_shared/lab-sidebar';
 import {
@@ -193,7 +194,7 @@ export function MotorMap() {
   const power = (clampedTorque * speed * Math.PI) / 30 / 1000;
 
   return (
-    <ThemeScope mode="dark" preset="flight-deck">
+    <ThemeScope preset="carbon">
       <AppShell sidebar={<LabSidebar current="motors" onSearch={() => setPaletteOpen(true)} />}>
         <AppToolbar>
           <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 text-body">
@@ -206,7 +207,7 @@ export function MotorMap() {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <Badge variant="outline" className="hidden sm:inline-flex">
-              Flight deck preset
+              Carbon preset
             </Badge>
             <Badge variant="outline">Synthetic data</Badge>
             <PreviewStateMenu
@@ -214,6 +215,7 @@ export function MotorMap() {
               onValueChange={setPreview}
               states={['live', 'loading', 'error']}
             />
+            <ThemeToggle />
           </div>
         </AppToolbar>
 

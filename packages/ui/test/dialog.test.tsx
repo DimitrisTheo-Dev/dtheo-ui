@@ -121,7 +121,7 @@ describe('Dialog', () => {
 
   it('opens inside the ThemeScope it was opened from', async () => {
     render(
-      <ThemeScope mode="dark" preset="flight-deck" data-testid="scope">
+      <ThemeScope mode="dark" preset="carbon" data-testid="scope">
         <RenameDialog />
       </ThemeScope>,
     );

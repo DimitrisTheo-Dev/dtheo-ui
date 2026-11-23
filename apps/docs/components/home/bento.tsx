@@ -68,10 +68,11 @@ const tools = [
   ['check_ui_code', 'findings with the fix'],
 ] as const;
 
-const presets: Array<{ preset: ThemePreset; name: string; dark: boolean }> = [
-  { preset: 'graphite', name: 'Graphite', dark: false },
-  { preset: 'flight-deck', name: 'Flight deck', dark: true },
-  { preset: 'deep-space', name: 'Deep space', dark: true },
+const presets: Array<{ preset: ThemePreset; name: string; mode: 'light' | 'dark' }> = [
+  { preset: 'graphite', name: 'Graphite', mode: 'light' },
+  { preset: 'graphite', name: 'Graphite', mode: 'dark' },
+  { preset: 'carbon', name: 'Carbon', mode: 'light' },
+  { preset: 'carbon', name: 'Carbon', mode: 'dark' },
 ];
 
 /** Seven reasons, each one a picture and a sentence. */
@@ -224,19 +225,24 @@ export function Bento() {
 
       <Tile
         className="lg:col-span-2"
-        title="Three looks, one codebase"
-        text="Change one attribute: colors, corner radius and material change. Components and spacing stay the same."
+        title="Two presets, four themes, one codebase"
+        text="Graphite has one accent. Carbon has none: the only colors are status and data. Change one attribute to switch."
       >
-        <div className="grid gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
           {presets.map((p) => (
             <ThemeScope
-              key={p.preset}
+              key={`${p.preset}-${p.mode}`}
               preset={p.preset}
-              mode={p.dark ? 'dark' : undefined}
+              mode={p.mode}
               className="flex flex-col gap-3 rounded-popover border border-border p-3"
             >
               <span className="flex items-center justify-between gap-2">
-                <span className="text-label">{p.name}</span>
+                <span className="flex flex-col">
+                  <span className="text-label">{p.name}</span>
+                  <span className="text-caption text-subtle-foreground">
+                    {p.mode === 'dark' ? 'Dark' : 'Light'}
+                  </span>
+                </span>
                 <CheckBadge status={checkStatus(M.settle, SETTLE_LIMIT)} />
               </span>
               <span className="flex items-baseline gap-1">

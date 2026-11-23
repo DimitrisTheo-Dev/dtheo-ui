@@ -97,7 +97,7 @@ export function foundationMarkdown(slug: string) {
     return [
       '# Color',
       '',
-      `> OKLCH roles in the shadcn vocabulary and three presets: Graphite in light and dark, Flight deck and Deep space in dark. ${contrastPairs.length} text, UI and focus-ring pairs are contrast-checked in every theme they apply to when tokens build; the build fails below WCAG AA.`,
+      `> OKLCH roles in the shadcn vocabulary and two presets, Graphite and Carbon, each in light and dark. ${contrastPairs.length} text, UI and focus-ring pairs are contrast-checked in every theme they apply to when tokens build; the build fails below WCAG AA.`,
       '',
       'Rules: color marks attention, not decoration. Neutral surfaces; one accent for the primary action and selection; success, warning and critical only when something needs a person, always with a word or icon. Status text uses the `*-foreground` roles, fills use the base role.',
       '',
@@ -144,11 +144,11 @@ export function foundationMarkdown(slug: string) {
       '',
       `Coarse pointers (touch screens) raise \`h-control-md\` to ${foundation.control.touch} and \`h-control-lg\` to ${Number.parseInt(foundation.control.touch) + 4}px; xs and sm stay the same.`,
       '',
-      '| Radius | Graphite | Flight deck | Deep space |',
-      '| --- | --- | --- | --- |',
+      '| Radius | Graphite | Carbon |',
+      '| --- | --- | --- |',
       ...(['radius-control', 'radius-popover', 'radius-card', 'radius-dialog'] as const).map(
         (k) =>
-          `| \`rounded-${k.replace('radius-', '')}\` | ${presets[0]!.geometry[k]} | ${presets[1]!.geometry[k]} | ${presets[2]!.geometry[k]} |`,
+          `| \`rounded-${k.replace('radius-', '')}\` | ${presets[0]!.geometry[k]} | ${presets[1]!.geometry[k]} |`,
       ),
       '',
       'Nested surfaces use concentric radii: `rounded-item` = popover radius − 4px (a menu item inset 4px), `rounded-inset` = card radius − 4px.',

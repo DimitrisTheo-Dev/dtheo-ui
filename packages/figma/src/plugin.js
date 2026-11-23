@@ -35,12 +35,12 @@ function shadowColor(/** @type {string} */ css) {
   return { r: l, g: l, b: l, a: m && m[2] ? Number(m[2]) : 1 };
 }
 
-/** The themes a frame can switch between: Graphite has both modes, the other presets are dark. */
+/** The themes a frame can switch between: each preset in light and dark. */
 const themes = [
   { mode: 'Graphite light', preset: 'graphite', scheme: 'light' },
   { mode: 'Graphite dark', preset: 'graphite', scheme: 'dark' },
-  { mode: 'Flight deck', preset: 'flight-deck', scheme: 'dark' },
-  { mode: 'Deep space', preset: 'deep-space', scheme: 'dark' },
+  { mode: 'Carbon light', preset: 'carbon', scheme: 'light' },
+  { mode: 'Carbon dark', preset: 'carbon', scheme: 'dark' },
 ];
 
 // ---------- Variables ----------
@@ -111,8 +111,8 @@ async function buildVariables() {
     V[role] = v;
   }
 
-  const presets = ['graphite', 'flight-deck', 'deep-space'];
-  const names = { graphite: 'Graphite', 'flight-deck': 'Flight deck', 'deep-space': 'Deep space' };
+  const presets = ['graphite', 'carbon'];
+  const names = { graphite: 'Graphite', carbon: 'Carbon' };
   const geometry = await collection(
     'Geometry',
     presets.map((p) => names[/** @type {keyof typeof names} */ (p)]),

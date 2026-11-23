@@ -4,7 +4,7 @@ import * as React from 'react';
 import { cn } from './utils';
 
 export type ThemeMode = 'light' | 'dark';
-export type ThemePreset = 'graphite' | 'flight-deck' | 'deep-space';
+export type ThemePreset = 'graphite' | 'carbon';
 
 const PortalContainerContext = React.createContext<HTMLElement | null>(null);
 

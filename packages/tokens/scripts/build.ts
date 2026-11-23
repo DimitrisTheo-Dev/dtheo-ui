@@ -172,13 +172,16 @@ lines.push(
   '',
 );
 
+// A preset takes its mode from the page unless its own element, or one inside it, sets a mode. Light is the plain
+// attribute selector; the dark selectors are more specific, so a preset with no mode class follows a dark page.
 for (const preset of presets.slice(1)) {
   const sel = `[data-preset="${preset.id}"]`;
   lines.push(`${sel} {`, ...Object.entries(preset.geometry).map(([k, v]) => decl(k, v)), '}', '');
-  const dark = preset.modes.dark;
-  if (dark) lines.push(`.dark${sel},`, `.dark ${sel},`, `${sel} .dark {`, ...colorBlock(dark), '}', '');
   const light = preset.modes.light;
-  if (light) lines.push(`.light${sel},`, `${sel}:not(.dark) {`, ...colorBlock(light), '}', '');
+  if (light) lines.push(`${sel},`, `.light${sel},`, `${sel} .light {`, ...colorBlock(light), '}', '');
+  const dark = preset.modes.dark;
+  if (dark)
+    lines.push(`.dark ${sel}:not(.light),`, `.dark${sel},`, `${sel} .dark {`, ...colorBlock(dark), '}', '');
 }
 const css = lines.join('\n');
 
@@ -255,10 +258,7 @@ for (const preset of presets) {
   const group: Record<string, unknown> = {};
   for (const [mode, scheme] of Object.entries(preset.modes) as [Mode, ColorScheme][]) {
     group[mode] = Object.fromEntries(
-      colorRoles.map((r) => [
-        r,
-        { $type: 'color', $value: dtcgColor(scheme[r]) },
-      ]),
+      colorRoles.map((r) => [r, { $type: 'color', $value: dtcgColor(scheme[r]) }]),
     );
     native[preset.id]![mode] = Object.fromEntries(colorRoles.map((r) => [r, hex(scheme[r])]));
     nativeOklch[preset.id]![mode] = Object.fromEntries(colorRoles.map((r) => [r, scheme[r]]));
@@ -289,7 +289,8 @@ const nativeRadii = JSON.stringify(
 const nativeDoc = `${header.replace('/*', '/**')}\n/** Color roles for code that cannot read CSS variables: React Native, Expo, canvas, image renderers. */\n`;
 const colorsDoc =
   '/** sRGB hex, gamut-mapped from OKLCH (8 digits when translucent). React Native StyleSheet cannot parse oklch(). */\n';
-const oklchDoc = '/** The authored OKLCH values, for anything that reads CSS Color 4: web, Skia, Expo DOM components. */\n';
+const oklchDoc =
+  '/** The authored OKLCH values, for anything that reads CSS Color 4: web, Skia, Expo DOM components. */\n';
 // The workspace imports the TypeScript; the published package ships plain JS with matching declarations.
 const nativeTs = `${nativeDoc}${colorsDoc}export const colors = ${nativeColors} as const;\n\n${oklchDoc}export const oklch = ${nativeOklchColors} as const;\n\nexport const radii = ${nativeRadii} as const;\n`;
 const nativeJs = `${nativeDoc}${colorsDoc}export const colors = ${nativeColors};\n\n${oklchDoc}export const oklch = ${nativeOklchColors};\n\nexport const radii = ${nativeRadii};\n`;
