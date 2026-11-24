@@ -46,7 +46,7 @@ First release: `init`, `add`, `list`, `check` (17 rules), `rules` and `mcp`.
 - Three more contrast pairs, for a value marked against its limit inside a checked table row: the over-limit and
   near-limit text colors and secondary text on `selection`. 43 pairs in four themes: 170 checks, all pass AA.
 
-### 0.1.1 (2026-11-22)
+### 0.1.1 (not published; its changes ship in 0.2.0)
 
 - Graphite dark's `ring` is lighter, `oklch(0.72 0.15 257)` (was `oklch(0.66 0.17 257)`), so the focus line clears
   3:1 on the lit segment of a segmented control.

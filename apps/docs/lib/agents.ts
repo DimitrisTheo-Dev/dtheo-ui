@@ -99,7 +99,7 @@ export function agentsMarkdown() {
     '## 3. Check',
     '',
     '```bash',
-    `npx ${name} check src`,
+    `npx ${name} check`,
     '```',
     '',
     'It exits with 1 on errors and prints the fix for each finding. Add it to CI.',
