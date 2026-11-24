@@ -5,8 +5,10 @@ and have no versions; their history is the merged pull requests.
 
 ## dtheo (the CLI)
 
-### 0.1.2 (2026-11-22)
+### 0.1.2 (unreleased)
 
+- `dtheo check` with no path skips build output and test reports (`out`, `coverage`, `.vercel`, `.turbo`,
+  `playwright-report`, `test-results`, `storybook-static`) as well as `node_modules`, `.next`, `dist` and `build`.
 - `dtheo check` has 22 rules, up from 17:
   - `text-size-token`: Tailwind sizes such as `text-sm` instead of a type role.
   - `motion-duration`: transitions slower than the 120–240 ms motion scale.

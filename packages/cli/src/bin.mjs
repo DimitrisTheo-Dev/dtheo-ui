@@ -298,7 +298,22 @@ async function list(query) {
 
 // ---------- check (offline) ----------
 const exts = /\.(tsx|jsx|ts|js|mdx|css)$/;
-const skipDir = (path) => ['node_modules', '.next', 'dist', '.git', 'build'].includes(basename(String(path)));
+// Dependencies, build output and test reports: generated files, not UI code someone wrote.
+const skipped = new Set([
+  'node_modules',
+  '.next',
+  'dist',
+  '.git',
+  'build',
+  'out',
+  'coverage',
+  '.vercel',
+  '.turbo',
+  'playwright-report',
+  'test-results',
+  'storybook-static',
+]);
+const skipDir = (path) => skipped.has(basename(String(path)));
 
 function collect(paths) {
   const files = [];
@@ -306,8 +321,7 @@ function collect(paths) {
     if (!existsSync(p)) return;
     const st = statSync(p);
     if (st.isDirectory()) {
-      for (const name of readdirSync(p))
-        if (!['node_modules', '.next', 'dist', '.git', 'build'].includes(name)) walk(join(p, name));
+      for (const name of readdirSync(p)) if (!skipped.has(name)) walk(join(p, name));
     } else if (exts.test(p)) files.push(p);
   };
   for (const p of paths) {

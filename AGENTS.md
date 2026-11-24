@@ -7,7 +7,7 @@ The docs app runs Next.js 16; read `apps/docs/AGENTS.md` before writing Next cod
 
 | Task | Command |
 | --- | --- |
-| Install | `corepack enable && pnpm install` (on Node 25+, `npm install -g corepack` first) |
+| Install | `corepack enable && pnpm install` |
 | Docs dev server | `pnpm dev` (http://localhost:4100) |
 | Everything that must pass | `pnpm check` |
 | Browser tests | `pnpm test:e2e` (needs the dev server or starts one) |

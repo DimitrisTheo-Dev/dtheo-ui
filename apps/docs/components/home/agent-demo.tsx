@@ -19,10 +19,10 @@ const steps: Array<{ id: string; kind: Kind; text: string; detail?: string }> = 
   { id: 'ask', kind: 'prompt', text: 'Build a card for the failed step test' },
   { id: 'lookup', kind: 'tool', text: 'get_component', detail: 'metric, line-chart' },
   { id: 'add', kind: 'cmd', text: 'npx dtheo add metric line-chart', detail: '+3 files' },
-  { id: 'check-1', kind: 'cmd', text: 'npx dtheo check src' },
+  { id: 'check-1', kind: 'cmd', text: 'npx dtheo check' },
   { id: 'finding', kind: 'fail', text: 'icon-button-label', detail: 'run-card.tsx:14' },
   { id: 'fix', kind: 'fix', text: 'Added aria-label="Rerun step test"' },
-  { id: 'check-2', kind: 'cmd', text: 'npx dtheo check src' },
+  { id: 'check-2', kind: 'cmd', text: 'npx dtheo check' },
   { id: 'pass', kind: 'pass', text: '0 errors in 12 files' },
 ];
 

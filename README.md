@@ -67,7 +67,7 @@ project, so you own the code. Every item also installs with the shadcn CLI
 - **Contrast is measured on every build.** 43 text, UI and focus-ring color pairs are measured in every theme they
   appear in (Graphite and Carbon, each in light and dark) on every token build: 170 checks, layered surfaces
   included. The build fails below WCAG AA.
-- **Native defaults.** System type, a focus ring you can always see, motion that never makes you wait. Two presets,
+- **Native defaults.** System type, a focus ring you can always see, motion under 240 ms (400 for toasts and sheets). Two presets,
   each in light and dark and scoped to any element: Graphite, with Mac materials and one blue accent, and Carbon,
   with no accent and no glass, so the only colors on screen are status, links, focus and data.
 

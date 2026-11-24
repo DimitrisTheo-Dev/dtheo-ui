@@ -117,10 +117,10 @@ Finish with steps 3 and 5: the mode and preset on \`<html>\`, and the providers 
 ## Check your UI code
 
 \`\`\`bash
-npx ${site.cli}@latest check app components
+npx ${site.cli}@latest check
 \`\`\`
 
-Name the folders that hold your UI code (\`src\` in a Vite app). It flags raw colors, palette classes, \`transition-all\`, unlabeled icon buttons and other mistakes, with the fix for each. Add it to CI; it exits with 1 on errors.
+With no path it checks the whole project and skips dependencies, build output and test reports; name folders to narrow it (\`app components\`, or \`src\` in a Vite app). It flags raw colors, palette classes, \`transition-all\`, unlabeled icon buttons and other mistakes, with the fix for each. Add it to CI; it exits with 1 on errors.
 `,
 
   theming: `# Theming
