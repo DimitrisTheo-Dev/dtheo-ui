@@ -48,7 +48,11 @@ export function ScrollArea({
           '[--fade:24px] mask-[linear-gradient(to_bottom,transparent,black_min(var(--scroll-area-overflow-y-start,0px),var(--fade)),black_calc(100%-min(var(--scroll-area-overflow-y-end,0px),var(--fade))),transparent)]',
         )}
       >
-        <ScrollAreaPrimitive.Content>{children}</ScrollAreaPrimitive.Content>
+        {/* Base UI sizes content to fit its widest row. A vertical-only area must stay its container's width, or a
+            long row (a sidebar item) pushes past the edge instead of truncating. */}
+        <ScrollAreaPrimitive.Content style={orientation === 'vertical' ? { minWidth: 0 } : undefined}>
+          {children}
+        </ScrollAreaPrimitive.Content>
       </ScrollAreaPrimitive.Viewport>
       {orientation !== 'horizontal' ? <ScrollBar orientation="vertical" /> : null}
       {orientation !== 'vertical' ? <ScrollBar orientation="horizontal" /> : null}
