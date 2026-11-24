@@ -1,0 +1,16 @@
+# Managed by product-engineering-quality-gate; review and commit locally.
+name: Product quality
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: ['main']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: product-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_name != github.event.repository.default_branch }}
+jobs:
+  quality:
+    uses: DimitrisTheo-Dev/product-engineering-quality-gate/.github/workflows/quality-gate.yml@23dc90398223e96652fdc0da3c3d246dba77f49a # v2.0.0
