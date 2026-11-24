@@ -106,8 +106,9 @@ export function AgentDemo() {
           >
             <SparkleIcon className="mt-0.5 size-3.5 shrink-0 text-link" aria-hidden="true" />
             <span>
-              Done. <code className="font-mono text-label">run-card.tsx</code> shows the three acceptance checks and
-              the torque trace against its 10 % limit. Overshoot fails, so the card asks for a retune.
+              Done. <code className="font-mono text-label">run-card.tsx</code> shows the three acceptance
+              checks and the torque trace against its 10 % limit. Overshoot fails, so the card asks for a
+              retune.
             </span>
           </p>
           <dl

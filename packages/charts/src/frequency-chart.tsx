@@ -589,7 +589,13 @@ export function FrequencyChart({
         </>
       ) : null}
       {cursor != null && w ? (
-        <ReadoutTooltip title={withHz(frequency[cursor]!)} rows={readout(cursor)} x={cx} width={w} className="top-6" />
+        <ReadoutTooltip
+          title={withHz(frequency[cursor]!)}
+          rows={readout(cursor)}
+          x={cx}
+          width={w}
+          className="top-6"
+        />
       ) : null}
       {hasData ? null : <ChartEmpty />}
     </div>

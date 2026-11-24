@@ -24,7 +24,8 @@ function chartModule(name: string) {
     chartModules = map;
   }
   const file = chartModules.get(name);
-  if (!file) throw new Error(`@dtheo/charts does not export "${name}"; add it to packages/charts/src/index.ts.`);
+  if (!file)
+    throw new Error(`@dtheo/charts does not export "${name}"; add it to packages/charts/src/index.ts.`);
   return file;
 }
 
@@ -46,12 +47,17 @@ function toInstalledImports(source: string) {
     )
     .replace(/import (type )?\{([^}]+)\} from '@dtheo\/charts';/g, (_, typeOnly = '', names: string) => {
       const byFile = new Map<string, string[]>();
-      for (const spec of names.split(',').map((n) => n.trim()).filter(Boolean)) {
+      for (const spec of names
+        .split(',')
+        .map((n) => n.trim())
+        .filter(Boolean)) {
         const file = chartModule(spec.replace(/^type /, ''));
         byFile.set(file, [...(byFile.get(file) ?? []), spec]);
       }
       return [...byFile]
-        .map(([file, specs]) => `import ${typeOnly}{ ${specs.join(', ')} } from '@/components/charts/${file}';`)
+        .map(
+          ([file, specs]) => `import ${typeOnly}{ ${specs.join(', ')} } from '@/components/charts/${file}';`,
+        )
         .join('\n');
     })
     .replace(

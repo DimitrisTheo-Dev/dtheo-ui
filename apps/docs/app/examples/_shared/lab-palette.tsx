@@ -36,7 +36,12 @@ export function LabPalette({
         ...actions,
         ...destinations
           .filter((d) => d.value !== current)
-          .map((d) => ({ value: `go-${d.value}`, label: d.label, group: 'Go to', onSelect: () => router.push(d.href) })),
+          .map((d) => ({
+            value: `go-${d.value}`,
+            label: d.label,
+            group: 'Go to',
+            onSelect: () => router.push(d.href),
+          })),
         { value: 'go-docs', label: 'dtheo/ui docs', group: 'Go to', onSelect: () => router.push('/docs') },
       ]}
     />

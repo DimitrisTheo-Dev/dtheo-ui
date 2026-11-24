@@ -26,7 +26,10 @@ test('every docs page links to the repo and credits its author', async ({ page }
       'https://github.com/DimitrisTheo-Dev/dtheo-ui',
     );
     const footer = page.getByRole('contentinfo');
-    await expect(footer.getByRole('link', { name: 'dtheo.dev' }), path).toHaveAttribute('href', 'https://dtheo.dev');
+    await expect(footer.getByRole('link', { name: 'dtheo.dev' }), path).toHaveAttribute(
+      'href',
+      'https://dtheo.dev',
+    );
     await expect(footer.getByRole('link', { name: 'GitHub' }), path).toBeVisible();
   }
 });

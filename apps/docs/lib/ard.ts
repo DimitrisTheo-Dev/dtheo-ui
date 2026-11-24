@@ -38,7 +38,8 @@ export function ardManifest() {
         identifier: `urn:air:${host}:registry:components`,
         displayName: `${site.name} component registry`,
         type: 'application/vnd.shadcn.registry+json',
-        description: 'Every component, chart and helper as a shadcn registry item, installable with the shadcn CLI.',
+        description:
+          'Every component, chart and helper as a shadcn registry item, installable with the shadcn CLI.',
         version: site.version,
         tags: ['shadcn', 'registry', 'react', 'components', 'charts'],
         representativeQueries: [

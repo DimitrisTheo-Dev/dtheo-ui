@@ -363,7 +363,10 @@ export function StreamChart({
   );
   // Each reading keeps the width of the widest value it can show, so the row never rewraps as digits change.
   const valueChars = series.map((s) =>
-    Math.max(...yDomain.map((v) => formatNumber(v, s.digits ?? 1).length), formatNumber(0, s.digits ?? 1).length),
+    Math.max(
+      ...yDomain.map((v) => formatNumber(v, s.digits ?? 1).length),
+      formatNumber(0, s.digits ?? 1).length,
+    ),
   );
   const seconds = span / 1000;
   const xTicks = React.useMemo(() => {
@@ -379,7 +382,8 @@ export function StreamChart({
     const next = { series, limits, span, sy, left, top, plotW, plotH };
     const prev = props.current;
     props.current = next;
-    if ((Object.keys(next) as Array<keyof typeof next>).some((k) => next[k] !== prev[k])) drawing.current?.redraw();
+    if ((Object.keys(next) as Array<keyof typeof next>).some((k) => next[k] !== prev[k]))
+      drawing.current?.redraw();
   });
 
   // While paused, the chart draws from a copy taken the moment it paused, so redraws (a theme change, a resize,

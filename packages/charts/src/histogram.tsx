@@ -432,7 +432,11 @@ export function Histogram({
   );
   const hasData = finite.length > 0;
   const [r0, r1] = validDomain(domain) ? domain : (extent ?? [0, 1]);
-  const { bins, step, domain: [d0, d1] } = React.useMemo(
+  const {
+    bins,
+    step,
+    domain: [d0, d1],
+  } = React.useMemo(
     () => computeBins(finite, [r0, r1], { binWidth, lower, upper }),
     [finite, r0, r1, binWidth, lower, upper],
   );
@@ -493,7 +497,9 @@ export function Histogram({
         ...(upper !== undefined ? [{ value: upper, label: `USL ${fmt(upper)}`, dash: '3 3' }] : []),
         ...(target !== undefined ? [{ value: target, label: `Target ${fmt(target)}`, dash: '1 3' }] : []),
       ].sort((a, b) => a.value - b.value),
-      ...(marker ? [{ value: marker.value, label: `${marker.label} ${fmt(marker.value)}`, strong: true }] : []),
+      ...(marker
+        ? [{ value: marker.value, label: `${marker.label} ${fmt(marker.value)}`, strong: true }]
+        : []),
     ],
     f,
   );

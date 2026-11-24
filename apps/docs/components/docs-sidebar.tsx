@@ -32,8 +32,7 @@ interface Group {
   folders?: Array<{ title: string; items: NavItem[] }>;
 }
 
-const href = (c: (typeof components)[number]) =>
-  docsPath(c);
+const href = (c: (typeof components)[number]) => docsPath(c);
 const itemsOf = (category: string): NavItem[] =>
   components.filter((c) => c.category === category).map((c) => ({ title: c.title, href: href(c) }));
 

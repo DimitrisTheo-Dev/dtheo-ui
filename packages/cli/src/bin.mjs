@@ -162,7 +162,11 @@ async function copyItems(names) {
     ...skipped.map((f) => `  ${c.yellow('=')} ${f} ${c.dim('(exists; --overwrite to replace)')}`),
   ];
   if (install || installDev)
-    lines.push('', 'Install dependencies:', ...[install, installDev].filter(Boolean).map((cmd) => `  ${cmd}`));
+    lines.push(
+      '',
+      'Install dependencies:',
+      ...[install, installDev].filter(Boolean).map((cmd) => `  ${cmd}`),
+    );
   return { items, result, lines };
 }
 
@@ -233,7 +237,10 @@ async function init() {
       '  @import "../styles/dtheo.css";',
     );
   else if (css.imported)
-    lines.push('', `${c.green('✓')} ${dry ? 'Would import' : 'Imported'} ${css.specifier} in ${c.bold(css.file)}`);
+    lines.push(
+      '',
+      `${c.green('✓')} ${dry ? 'Would import' : 'Imported'} ${css.specifier} in ${c.bold(css.file)}`,
+    );
   else lines.push('', `${c.dim('=')} ${css.file} already imports dtheo.css`);
   if (css.overrides.length) {
     const width = String(Math.max(...css.overrides.map((o) => o.line))).length;

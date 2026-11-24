@@ -213,7 +213,9 @@ describe('Heatmap with bands', () => {
         ariaLabel="Map"
       />,
     );
-    const shades = [...container.querySelectorAll('rect.fill-chart-1')].map((r) => Number(r.getAttribute('fill-opacity')));
+    const shades = [...container.querySelectorAll('rect.fill-chart-1')].map((r) =>
+      Number(r.getAttribute('fill-opacity')),
+    );
     // Cells first, then one legend swatch per band: below 90, 90–95, 95–96, from 96.
     expect(shades.slice(0, 4).map((o) => o.toFixed(3))).toEqual(['0.150', '0.433', '0.717', '1.000']);
     expect(shades.slice(4).map((o) => o.toFixed(3))).toEqual(['0.150', '0.433', '0.717', '1.000']);
@@ -222,7 +224,6 @@ describe('Heatmap with bands', () => {
 });
 
 describe('FrequencyChart on a narrow range', () => {
-
   it('labels the 2 and 5 steps when fewer than two decades are in view', () => {
     expect(decadeLabels(flatSpectrum([20, 40, 60, 80]))).toEqual(['20', '50 Hz']);
     expect(decadeLabels(flatSpectrum([1, 3, 9]))).toEqual(['1', '2', '5 Hz']);

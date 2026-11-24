@@ -621,7 +621,9 @@ function useReadout(
           return {
             label: s.label,
             // A gap reads as a dash, without a unit.
-            value: Number.isFinite(v) ? `${formatNumber(v, s.digits ?? 2)}${s.unit ? ` ${s.unit}` : ''}` : '–',
+            value: Number.isFinite(v)
+              ? `${formatNumber(v, s.digits ?? 2)}${s.unit ? ` ${s.unit}` : ''}`
+              : '–',
             tone: s.tone ?? 'primary',
             status: past ? (past.direction === 'below' ? 'under limit' : 'over limit') : undefined,
           };
@@ -846,7 +848,13 @@ export function LineChart({
       ) : null}
 
       {tooltipRows && cursorIndex != null ? (
-        <ReadoutTooltip title={formatX(x[cursorIndex]!)} rows={tooltipRows} x={cx} width={w} className="top-2" />
+        <ReadoutTooltip
+          title={formatX(x[cursorIndex]!)}
+          rows={tooltipRows}
+          x={cx}
+          width={w}
+          className="top-2"
+        />
       ) : null}
       {hasData ? null : <ChartEmpty />}
     </div>

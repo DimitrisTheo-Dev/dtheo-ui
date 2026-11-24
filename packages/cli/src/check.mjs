@@ -551,7 +551,8 @@ const TEXT_COMPONENT =
 const stripJsxComments = (s) => s.replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
 
 /** Props an icon takes. A component with any other prop (<RunName id={id} />) may render text. */
-const ICON_PROPS = /^(?:className|size|strokeWidth|absoluteStrokeWidth|color|width|height|fill|stroke|aria-hidden|focusable|data-[\w-]+)$/;
+const ICON_PROPS =
+  /^(?:className|size|strokeWidth|absoluteStrokeWidth|color|width|height|fill|stroke|aria-hidden|focusable|data-[\w-]+)$/;
 
 /**
  * Whether a self-closing component is an icon: named *Icon, imported from an icon library (Trash2, Icons.Trash2), or,
@@ -802,7 +803,8 @@ function colorInString(m, ctx) {
   if (/stop-color\s*[=:]\s*["']?$/.test(ctx.source.slice(Math.max(0, at - 24), at))) return false;
   const opensString = /["'`]/.test(ctx.source[at - 1] ?? '') && ctx.kind[at - 1] === ctx.kind[at];
   const lead = ctx.source.slice(Math.max(0, at - 41), at - 1);
-  if (opensString && /(?:querySelector(?:All)?|getElementById|closest|matches)\s*\(\s*$/.test(lead)) return false;
+  if (opensString && /(?:querySelector(?:All)?|getElementById|closest|matches)\s*\(\s*$/.test(lead))
+    return false;
   if (!/^#\d+$/.test(m[0]) || !/[A-Za-z] $/.test(ctx.source.slice(Math.max(0, at - 2), at))) return true;
   return CSS_NEARBY.test(runAround(ctx, at));
 }
@@ -854,7 +856,8 @@ function bareDirectives(ctx) {
       if (ctx.kind[ctx.lineStarts[li] + m.index] !== COMMENT) continue;
       const file = m[1] === 'disable-file';
       if (file && li >= 12) continue;
-      const unknown = file && disabledRuleIds(line.slice(m.index + m[0].length)).some((id) => !ruleIds.has(id));
+      const unknown =
+        file && disabledRuleIds(line.slice(m.index + m[0].length)).some((id) => !ruleIds.has(id));
       if (unknown || !directiveHasReason(line, m.index, m[0].length, file))
         found.push({ index: ctx.lineStarts[li] + m.index, text: line.trim().slice(0, 120) });
     }
@@ -1107,7 +1110,8 @@ const rules = [
     id: 'ignore-reason',
     severity: 'error',
     find: bareDirectives,
-    message: 'Check directive without a reason, or naming a rule that does not exist: an exception nobody can review.',
+    message:
+      'Check directive without a reason, or naming a rule that does not exist: an exception nobody can review.',
     fix: 'Say why, and name rules that `dtheo rules` lists: // dtheo-check-ignore-next-line (the knob is white in both modes), or // dtheo-check-disable-file raw-color -- why.',
   },
 ];
@@ -1141,7 +1145,8 @@ export function checkSource(source, options = {}) {
   // A line's excerpt is made once, however many findings it has: a 60,000-character line can hold thousands.
   const excerpts = new Map();
   const lineExcerpt = (li) => {
-    if (!excerpts.has(li)) excerpts.set(li, lines[li].trim().slice(0, 480).replace(/\s+/g, ' ').slice(0, 120));
+    if (!excerpts.has(li))
+      excerpts.set(li, lines[li].trim().slice(0, 480).replace(/\s+/g, ' ').slice(0, 120));
     return excerpts.get(li);
   };
   const lineOf = (index) => {

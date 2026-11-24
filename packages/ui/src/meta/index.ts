@@ -1342,7 +1342,8 @@ export const components: ComponentMeta[] = [
         name: 'locale',
         type: 'string',
         default: "'en-US'",
-        description: 'The locale numbers are written in: one on the server and in the browser, so cells hydrate the same.',
+        description:
+          'The locale numbers are written in: one on the server and in the browser, so cells hydrate the same.',
       },
       {
         name: 'under',
@@ -1986,7 +1987,8 @@ export const components: ComponentMeta[] = [
         name: 'values',
         type: 'number[]',
         required: true,
-        description: 'Raw measurements, one per run or part, in run order: Cpk depends on it. NaN is left out.',
+        description:
+          'Raw measurements, one per run or part, in run order: Cpk depends on it. NaN is left out.',
       },
       {
         name: 'xLabel',

@@ -14,7 +14,10 @@ function useScrollRegion(ref: React.RefObject<HTMLDivElement | null>) {
     if (!el) return;
     const update = () => {
       const scrolls = el.scrollWidth > el.clientWidth + 1;
-      const caption = el.querySelector('caption')?.textContent?.trim().replace(/[\s.]+$/, '');
+      const caption = el
+        .querySelector('caption')
+        ?.textContent?.trim()
+        .replace(/[\s.]+$/, '');
       setLabel(scrolls ? `${caption || 'Table'}, scrolls sideways` : null);
     };
     const ro = new ResizeObserver(update);
