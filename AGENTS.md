@@ -20,7 +20,12 @@ The docs app runs Next.js 16; read `apps/docs/AGENTS.md` before writing Next cod
 | Check UI code against the system | `node packages/cli/src/bin.mjs check <paths or globs>` |
 | See what a release would publish | `pnpm release --dry-run` |
 
-Use pnpm 11 through corepack. New dependencies must be at least two weeks old (`minimumReleaseAge`).
+Use pnpm 11 through corepack. Node 24 ships corepack; on Node 25 or later run `npm i -g corepack` first. New
+dependencies must be at least two weeks old (`minimumReleaseAge`).
+
+Pull requests run [`quality-gate.config.json`](quality-gate.config.json) through
+[product-engineering-quality-gate](https://github.com/DimitrisTheo-Dev/product-engineering-quality-gate): the same
+scripts as `pnpm check`, plus the build and the MCP trace check. Keep the two lists in step.
 
 ## Rules for UI code
 

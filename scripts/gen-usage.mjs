@@ -9,7 +9,10 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(root, path), 'utf8');
 
 // Every Actuator Lab tool renders the shared sidebar and the shared ⌘K palette.
-const lab = ['apps/docs/app/examples/_shared/lab-sidebar.tsx', 'apps/docs/app/examples/_shared/lab-palette.tsx'];
+const lab = [
+  'apps/docs/app/examples/_shared/lab-sidebar.tsx',
+  'apps/docs/app/examples/_shared/lab-palette.tsx',
+];
 
 const pages = [
   {

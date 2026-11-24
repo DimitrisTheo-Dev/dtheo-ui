@@ -124,20 +124,25 @@ describe('LineChart with a gap', () => {
 });
 
 const vertices = (d: string | null) => (d ?? '').match(/[ML]/g)?.length ?? 0;
-const trace = (container: HTMLElement) => container.querySelector('path.stroke-chart-1')?.getAttribute('d') ?? null;
+const trace = (container: HTMLElement) =>
+  container.querySelector('path.stroke-chart-1')?.getAttribute('d') ?? null;
 
 describe('LineChart zoomed in', () => {
   const x = Array.from({ length: 10 }, (_, i) => i);
   const series = [{ id: 'v', label: 'Torque', values: x.map((t) => t * 2), unit: 'N·m' }];
 
   it('runs the trace to both edges, through the samples just outside the range', () => {
-    const { container } = render(<LineChart x={x} series={series} xDomain={[1.5, 3.5]} yDomain={[0, 20]} ariaLabel="Torque" />);
+    const { container } = render(
+      <LineChart x={x} series={series} xDomain={[1.5, 3.5]} yDomain={[0, 20]} ariaLabel="Torque" />,
+    );
     // Samples 1 to 4: the two inside and one past each edge, clipped at the plot's edges.
     expect(vertices(trace(container))).toBe(4);
   });
 
   it('draws the segment when the range falls between two samples', () => {
-    const { container } = render(<LineChart x={x} series={series} xDomain={[1.2, 1.8]} yDomain={[0, 20]} ariaLabel="Torque" />);
+    const { container } = render(
+      <LineChart x={x} series={series} xDomain={[1.2, 1.8]} yDomain={[0, 20]} ariaLabel="Torque" />,
+    );
     expect(container.textContent).not.toContain('No data');
     expect(vertices(trace(container))).toBe(2);
   });
@@ -168,7 +173,13 @@ describe('LineChart vertical marker labels', () => {
 
   it('sit right of a line with room after it', () => {
     const { container } = render(
-      <LineChart x={x} series={series} yDomain={[0, 2]} verticals={[{ x: 40, label: 'Step' }]} ariaLabel="Torque" />,
+      <LineChart
+        x={x}
+        series={series}
+        yDomain={[0, 2]}
+        verticals={[{ x: 40, label: 'Step' }]}
+        ariaLabel="Torque"
+      />,
     );
     expect(svgText(container, 'Step').getAttribute('text-anchor')).toBe('start');
   });
@@ -306,7 +317,15 @@ describe('Histogram against a limit', () => {
   it('counts a value on the limit as in spec, so the red bars hold exactly the values past it', () => {
     const values = [9.5, 10, 10, 10.5, 11.2];
     const { container, getByRole } = render(
-      <Histogram values={values} domain={[8, 12]} binWidth={1} upper={10} xLabel="Overshoot" unit="%" ariaLabel="x" />,
+      <Histogram
+        values={values}
+        domain={[8, 12]}
+        binWidth={1}
+        upper={10}
+        xLabel="Overshoot"
+        unit="%"
+        ariaLabel="x"
+      />,
     );
     // Bins hold [x0, x1). The two 10.0s sit in [10, 11) as its in-spec part, under 10.5 in red; [11, 12] is all red.
     expect(critical(container)).toBe(2);
@@ -324,7 +343,14 @@ describe('Histogram against a limit', () => {
 
   it('splits a bin the limit cuts through and says how many are out', () => {
     const { container, getByRole } = render(
-      <Histogram values={[10.2, 10.8]} domain={[10, 11]} binWidth={1} upper={10.5} xLabel="x" ariaLabel="x" />,
+      <Histogram
+        values={[10.2, 10.8]}
+        domain={[10, 11]}
+        binWidth={1}
+        upper={10.5}
+        xLabel="x"
+        ariaLabel="x"
+      />,
     );
     expect(critical(container)).toBe(1);
     expect(container.querySelectorAll('path.fill-chart-1')).toHaveLength(1);
@@ -351,14 +377,14 @@ describe('Histogram against a limit', () => {
     const fading = () => container.querySelectorAll('path.transition-opacity').length;
     fireEvent.keyDown(getByRole('group'), { key: 'Home' });
     expect(fading()).toBe(0);
-    fireEvent.pointerEnter(container.querySelectorAll('[data-slot="histogram"] svg g > rect')[1]!.parentElement!);
+    fireEvent.pointerEnter(
+      container.querySelectorAll('[data-slot="histogram"] svg g > rect')[1]!.parentElement!,
+    );
     expect(fading()).toBeGreaterThan(0);
   });
 
   it('states Cpk with its word and Ppk beside it', () => {
-    const { container } = render(
-      <Histogram values={[1, 2, 3, 4, 5]} upper={7} xLabel="x" ariaLabel="x" />,
-    );
+    const { container } = render(<Histogram values={[1, 2, 3, 4, 5]} upper={7} xLabel="x" ariaLabel="x" />);
     expect(container.textContent).toContain(`Cpk${formatNumber(4 / (3 / 1.128), 2)} · capable`);
     expect(container.textContent).toContain(`Ppk${formatNumber(4 / (3 * Math.sqrt(2.5)), 2)}`);
   });

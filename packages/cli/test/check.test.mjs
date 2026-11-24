@@ -18,8 +18,19 @@ const registryFile = (target) => ({ path: `registry/dtheo/${target}`, target, co
 const registryItems = {
   registry: {
     items: [
-      { name: 'lab-data', type: 'registry:lib', title: 'Lab data', description: 'Synthetic data for the chart examples.' },
-      { name: 'button', type: 'registry:ui', title: 'Button', description: 'Actions.', meta: { category: 'Actions' } },
+      {
+        name: 'lab-data',
+        type: 'registry:lib',
+        title: 'Lab data',
+        description: 'Synthetic data for the chart examples.',
+      },
+      {
+        name: 'button',
+        type: 'registry:ui',
+        title: 'Button',
+        description: 'Actions.',
+        meta: { category: 'Actions' },
+      },
       {
         name: 'line-chart',
         type: 'registry:component',
@@ -37,7 +48,10 @@ const registryItems = {
     ],
   },
   // Both ship input.tsx, like the real field and select.
-  field: { name: 'field', files: [registryFile('components/ui/field.tsx'), registryFile('components/ui/input.tsx')] },
+  field: {
+    name: 'field',
+    files: [registryFile('components/ui/field.tsx'), registryFile('components/ui/input.tsx')],
+  },
   select: {
     name: 'select',
     files: [registryFile('components/ui/select.tsx'), registryFile('components/ui/input.tsx')],
@@ -192,7 +206,10 @@ describe('design check rules', () => {
     expect(count('// dtheo-check-disable-file raw-color -- tokens\nconst a = "#fff";', 'raw-color')).toBe(0);
     // A file directive for one rule leaves the others on.
     expect(
-      count('// dtheo-check-disable-file raw-color -- tokens\n<div className="transition-all" />', 'transition-all'),
+      count(
+        '// dtheo-check-disable-file raw-color -- tokens\n<div className="transition-all" />',
+        'transition-all',
+      ),
     ).toBe(1);
   });
 
@@ -229,7 +246,13 @@ describe('design check rules', () => {
       expect(count(src, 'raw-color'), id).toBe(1);
     }
     // Markdown's HTML comments still carry a directive.
-    expect(count('<!-- dtheo-check-ignore-next-line (brand swatch) -->\n<div style={{ color: "#fff" }} />', 'raw-color', 'x.md')).toBe(0);
+    expect(
+      count(
+        '<!-- dtheo-check-ignore-next-line (brand swatch) -->\n<div style={{ color: "#fff" }} />',
+        'raw-color',
+        'x.md',
+      ),
+    ).toBe(0);
   });
 
   it('catches an icon-only raw <button>, even with an arrow function in its props', () => {
@@ -262,26 +285,36 @@ describe('design check rules', () => {
   it('leaves the look-alikes alone', () => {
     const fine = [
       ['<p className="text-body text-sm-foo" />', 'text-size-token'],
-      ['<span className="bg-primary text-primary-foreground hover:text-primary-foreground/80" />', 'primary-text'],
+      [
+        '<span className="bg-primary text-primary-foreground hover:text-primary-foreground/80" />',
+        'primary-text',
+      ],
       ['<div className="[&_svg]:text-primary" />', 'primary-text'],
       ['<FlaskConicalIcon className="size-4 text-primary" aria-hidden="true" />', 'primary-text'],
-      ['<div className="duration-120 duration-240 duration-400 duration-0 duration-[180ms]" />', 'motion-duration'],
+      [
+        '<div className="duration-120 duration-240 duration-400 duration-0 duration-[180ms]" />',
+        'motion-duration',
+      ],
       ['<button aria-label="Delete run"><Trash2 /></button>', 'icon-button-label'],
       ['<Button variant="ghost"><Trash2 /> Delete</Button>', 'icon-button-label'],
       ['<button {...props}><XIcon /></button>', 'icon-button-label'],
       ['<SelectTrigger><SelectValue /></SelectTrigger>', 'icon-button-label'],
       ["const s = { color: red, fill: 'currentColor', background: 'transparent' };", 'raw-color'],
       ["<div style={{ transition: 'opacity 150ms ease-out' }} />", 'transition-all'],
-      ["<motion.div initial={{ scale: 0.96 }} style={{ scaleX: 0 }} className=\"scale-x-0\" />", 'scale-zero'],
+      ['<motion.div initial={{ scale: 0.96 }} style={{ scaleX: 0 }} className="scale-x-0" />', 'scale-zero'],
     ];
     for (const [src, rule] of fine) expect(count(src, rule), src).toBe(0);
   });
 
   it('flags slow transitions in classes, style objects and CSS', () => {
-    expect(count('<div className="duration-300 duration-[600ms] duration-[1s]" />', 'motion-duration')).toBe(3);
+    expect(count('<div className="duration-300 duration-[600ms] duration-[1s]" />', 'motion-duration')).toBe(
+      3,
+    );
     expect(count("<div style={{ transitionDuration: '700ms' }} />", 'motion-duration')).toBe(1);
     expect(count('.a { transition: transform 150ms, opacity 1s; }', 'motion-duration', 'a.css')).toBe(1);
-    expect(count('.a { transition: opacity var(--duration-toast) ease; }', 'motion-duration', 'a.css')).toBe(0);
+    expect(count('.a { transition: opacity var(--duration-toast) ease; }', 'motion-duration', 'a.css')).toBe(
+      0,
+    );
   });
 
   it('finds raw colors inside arbitrary values and named colors in styles', () => {
@@ -301,7 +334,10 @@ describe('design check rules', () => {
 
   it('judges outline-none per element, not per file', () => {
     expect(
-      count('<input className="outline-none" />\n<button className="focus-visible:ring-3" />', 'outline-none'),
+      count(
+        '<input className="outline-none" />\n<button className="focus-visible:ring-3" />',
+        'outline-none',
+      ),
     ).toBe(1);
     const covered = [
       "const item = cva('outline-none', { variants: { v: { a: 'focus-visible:ring-3' } } });",
@@ -335,7 +371,10 @@ describe('design check rules', () => {
       ["const button = cva('rounded-lg', { variants: { size: { sm: 'text-sm' } } });", 'text-size-token'],
       ["<div className={`p-2 ${open ? 'bg-blue-500' : ''}`} />", 'palette-color'],
       ["const sizes = { sm: 'h-7 text-sm', lg: 'h-9 text-lg' };", 'text-size-token'],
-      ['---\ntitle: x\n---\n\n<div className="rounded-lg" />\n\n```tsx\n<div className="rounded-lg" />\n```', 'radius-token'],
+      [
+        '---\ntitle: x\n---\n\n<div className="rounded-lg" />\n\n```tsx\n<div className="rounded-lg" />\n```',
+        'radius-token',
+      ],
     ];
     for (const [src, rule] of classes)
       expect(count(src, rule, src.startsWith('---') ? 'page.mdx' : 'x.tsx'), src).toBeGreaterThan(0);
@@ -463,7 +502,7 @@ describe('design check rules', () => {
       ['const ring = `0 0 0 ${w}px #3b82f6`;', 1],
       ['const glow = `drop-shadow(0 0 ${r}px #fff)`;', 1],
       ["const line = 'underline wavy #f00';", 1],
-      ["const w = `${n}px #333`;", 1],
+      ['const w = `${n}px #333`;', 1],
       // React's stopColor and a gradient's `to` are colors; only stop-color in markup and CSS keeps its old pass.
       ['<stop stopColor="#0070f3" />', 1],
       ['<Gradient to="#7928ca" />', 1],

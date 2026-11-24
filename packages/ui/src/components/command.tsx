@@ -20,10 +20,12 @@ export interface CommandItemData {
   onSelect?: () => void;
 }
 
-interface CommandGroup {
+// A type alias, not an interface: Base UI's Group<T> needs an index signature, which only aliases get implicitly
+// (TypeScript 7 rejects the interface here).
+type CommandGroup = {
   value: string;
   items: CommandItemData[];
-}
+};
 
 type Contains = (text: string, query: string) => boolean;
 
@@ -49,7 +51,10 @@ const applePlatform = () =>
  * Whether a keydown is the app shortcut ⌘ + `letter`, or Ctrl + `letter` off Apple keyboards. On a Mac, Ctrl stays
  * with the text field, where Ctrl+K deletes to the end of the line and Ctrl+E moves to it.
  */
-export function isShortcut(event: Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'ctrlKey'>, letter: string) {
+export function isShortcut(
+  event: Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'ctrlKey'>,
+  letter: string,
+) {
   return (event.metaKey || (event.ctrlKey && !applePlatform())) && isLetter(event, letter);
 }
 

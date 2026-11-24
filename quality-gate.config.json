@@ -1,0 +1,15 @@
+{
+  "tools": ["typescript", "oxlint", "oxfmt"],
+  "setup": [],
+  "checks": [
+    { "name": "Tokens", "kind": "tokens", "script": "tokens:check" },
+    { "name": "Format", "kind": "format", "script": "format:check" },
+    { "name": "Lint", "kind": "lint", "script": "lint" },
+    { "name": "Typecheck", "kind": "typecheck", "script": "typecheck" },
+    { "name": "Tests", "kind": "test", "script": "test" },
+    { "name": "Design rules", "kind": "design", "script": "design:check" },
+    { "name": "Build", "kind": "build", "script": "build" },
+    { "name": "MCP trace", "kind": "trace", "script": "check:trace" }
+  ],
+  "policy": { "waive": [] }
+}

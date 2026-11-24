@@ -1,0 +1,10 @@
+{
+  "extraKnownMarketplaces": {
+    "dtheo": {
+      "source": { "source": "github", "repo": "DimitrisTheo-Dev/agent-skills" }
+    }
+  },
+  "enabledPlugins": {
+    "dtheo@dtheo": true
+  }
+}

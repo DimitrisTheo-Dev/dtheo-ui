@@ -19,10 +19,10 @@ const steps: Array<{ id: string; kind: Kind; text: string; detail?: string }> = 
   { id: 'ask', kind: 'prompt', text: 'Build a card for the failed step test' },
   { id: 'lookup', kind: 'tool', text: 'get_component', detail: 'metric, line-chart' },
   { id: 'add', kind: 'cmd', text: 'npx dtheo add metric line-chart', detail: '+3 files' },
-  { id: 'check-1', kind: 'cmd', text: 'npx dtheo check src' },
+  { id: 'check-1', kind: 'cmd', text: 'npx dtheo check' },
   { id: 'finding', kind: 'fail', text: 'icon-button-label', detail: 'run-card.tsx:14' },
   { id: 'fix', kind: 'fix', text: 'Added aria-label="Rerun step test"' },
-  { id: 'check-2', kind: 'cmd', text: 'npx dtheo check src' },
+  { id: 'check-2', kind: 'cmd', text: 'npx dtheo check' },
   { id: 'pass', kind: 'pass', text: '0 errors in 12 files' },
 ];
 
@@ -106,8 +106,9 @@ export function AgentDemo() {
           >
             <SparkleIcon className="mt-0.5 size-3.5 shrink-0 text-link" aria-hidden="true" />
             <span>
-              Done. <code className="font-mono text-label">run-card.tsx</code> shows the three acceptance checks and
-              the torque trace against its 10 % limit. Overshoot fails, so the card asks for a retune.
+              Done. <code className="font-mono text-label">run-card.tsx</code> shows the three acceptance
+              checks and the torque trace against its 10 % limit. Overshoot fails, so the card asks for a
+              retune.
             </span>
           </p>
           <dl

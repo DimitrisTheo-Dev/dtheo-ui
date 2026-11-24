@@ -293,7 +293,8 @@ describe('brand', () => {
     expect(icon).toContain(`d="${starPath}"`);
     expect(icon).toContain(`d="${tilePath}"`);
     expect(icon).toContain(`transform="${starIn(16)}"`);
-    for (const color of [brand.top, brand.middle, brand.ink, brand.star]) expect(icon).toContain(`"${color}"`);
+    for (const color of [brand.top, brand.middle, brand.ink, brand.star])
+      expect(icon).toContain(`"${color}"`);
   });
 });
 
@@ -307,7 +308,7 @@ describe('agent surfaces', () => {
       expect(e.identifier).toMatch(/^urn:air:ui\.dtheo\.dev(:[a-zA-Z0-9._-]+)+$/);
       expect(e.displayName).toBeTruthy();
       expect(e.type).toMatch(/^application\/[\w.+-]+$/);
-      expect(('url' in e) !== ('data' in e), `${e.identifier} has exactly one of url and data`).toBe(true);
+      expect('url' in e !== 'data' in e, `${e.identifier} has exactly one of url and data`).toBe(true);
       expect(e.representativeQueries.length).toBeGreaterThanOrEqual(2);
       expect(e.representativeQueries.length).toBeLessThanOrEqual(5);
     }

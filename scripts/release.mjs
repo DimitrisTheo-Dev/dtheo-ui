@@ -20,11 +20,14 @@ const dryRun = args.includes('--dry-run');
 const otp = args.find((a) => a.startsWith('--otp='));
 const ci = process.env.GITHUB_ACTIONS === 'true';
 
-function run(cmd, cmdArgs, { hint, ...opts } = {}) {
+function run(cmd, cmdArgs, { hint, fatal = true, ...opts } = {}) {
   const result = spawnSync(cmd, cmdArgs, { encoding: 'utf8', stdio: 'inherit', ...opts });
   if (result.status !== 0) {
-    console.error(`\n${cmd} ${cmdArgs.join(' ')} failed: ${result.error?.message ?? `exit code ${result.status}`}.`);
+    console.error(
+      `\n${cmd} ${cmdArgs.join(' ')} failed: ${result.error?.message ?? `exit code ${result.status}`}.`,
+    );
     if (hint) console.error(hint);
+    if (!fatal) return null;
     process.exit(result.status ?? 1);
   }
   return result;
@@ -54,6 +57,8 @@ if (ci && !dryRun) {
 
 const out = mkdtempSync(join(tmpdir(), 'dtheo-release-'));
 let published = 0;
+// One package that npm refuses (a missing trusted publisher) must not hold back the others.
+const failed = [];
 try {
   for (const dir of packages) {
     const { name, version, private: isPrivate } = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
@@ -67,25 +72,31 @@ try {
     pnpm(['pack', '--pack-destination', dest], { cwd: dir, stdio: ['ignore', 'ignore', 'inherit'] });
     const tarball = readdirSync(dest).find((f) => f.endsWith('.tgz'));
     if (!tarball) throw new Error(`pnpm pack wrote no tarball for ${name}`);
-    run('npm', [
-      'publish',
-      join(dest, tarball),
-      '--access',
-      'public',
-      // A prerelease such as 0.2.0-beta.1 must not become what `npm install` picks by default.
-      ...(version.includes('-') ? ['--tag', 'next'] : []),
-      ...(ci ? ['--provenance'] : []),
-      ...(otp ? [otp] : []),
-      ...(dryRun ? ['--dry-run'] : []),
-    ], {
-      // npm answers a publish it cannot authenticate with E404, which reads like a missing package.
-      hint: ci
-        ? `If npm answered E404 right after signing the provenance, npm does not trust this workflow for ${name}. ` +
-          `On npmjs.com, open its Settings, Trusted publishing, and add GitHub Actions with repository ` +
-          `${process.env.GITHUB_REPOSITORY}, workflow release.yml and environment npm.`
-        : undefined,
-    });
-    published += 1;
+    const result = run(
+      'npm',
+      [
+        'publish',
+        join(dest, tarball),
+        '--access',
+        'public',
+        // A prerelease such as 0.2.0-beta.1 must not become what `npm install` picks by default.
+        ...(version.includes('-') ? ['--tag', 'next'] : []),
+        ...(ci ? ['--provenance'] : []),
+        ...(otp ? [otp] : []),
+        ...(dryRun ? ['--dry-run'] : []),
+      ],
+      {
+        // npm answers a publish it cannot authenticate with E404, which reads like a missing package.
+        hint: ci
+          ? `If npm answered E404 right after signing the provenance, npm does not trust this workflow for ${name}. ` +
+            `On npmjs.com, open its Settings, Trusted publishing, and add GitHub Actions with repository ` +
+            `${process.env.GITHUB_REPOSITORY}, workflow release.yml and environment npm.`
+          : undefined,
+        fatal: false,
+      },
+    );
+    if (result) published += 1;
+    else failed.push(`${name}@${version}`);
   }
 } finally {
   rmSync(out, { recursive: true, force: true });
@@ -93,3 +104,7 @@ try {
 console.log(
   `\n${published ? `${dryRun ? 'Would publish' : 'Published'} ${published} package(s).` : 'Nothing new to publish.'}`,
 );
+if (failed.length) {
+  console.error(`Not published: ${failed.join(', ')}. See the errors above.`);
+  process.exitCode = 1;
+}

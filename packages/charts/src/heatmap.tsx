@@ -2,7 +2,16 @@
 
 import * as React from 'react';
 import { scaleLinear } from 'd3-scale';
-import { ChartEmpty, crisp, formatNumber, haloText, imageLabel, tickFormat, tooltipSurface, useWidth } from './core';
+import {
+  ChartEmpty,
+  crisp,
+  formatNumber,
+  haloText,
+  imageLabel,
+  tickFormat,
+  tooltipSurface,
+  useWidth,
+} from './core';
 
 export interface HeatmapProps {
   xValues: number[];
@@ -177,7 +186,14 @@ export function Heatmap({
   const [vmin, vmax] = domain ?? [dataMin, dataMax];
   const bandKey = bands?.join(',') ?? '';
   const edges = React.useMemo(
-    () => (bandKey ? bandKey.split(',').map(Number).filter(Number.isFinite).sort((a, b) => a - b) : []),
+    () =>
+      bandKey
+        ? bandKey
+            .split(',')
+            .map(Number)
+            .filter(Number.isFinite)
+            .sort((a, b) => a - b)
+        : [],
     [bandKey],
   );
   const shade = React.useMemo(() => shadeScale(vmin, vmax, edges), [vmin, vmax, edges]);
@@ -326,7 +342,9 @@ export function Heatmap({
         {hasData ? null : <ChartEmpty />}
         {hover && hv !== undefined && Number.isFinite(hv) ? (
           <div className={`${tooltipSurface} top-1 right-1 px-2.5 py-1.5 whitespace-nowrap`}>
-            <span className="font-semibold tabular-nums">{withUnit(formatNumber(hv, digits), valueUnit)}</span>{' '}
+            <span className="font-semibold tabular-nums">
+              {withUnit(formatNumber(hv, digits), valueUnit)}
+            </span>{' '}
             <span className="text-muted-foreground tabular-nums">
               at {withUnit(readX(xValues[hover.c]!), xUnit)}, {withUnit(readY(yValues[hover.r]!), yUnit)}
             </span>

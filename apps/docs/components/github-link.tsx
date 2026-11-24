@@ -21,7 +21,9 @@ export function GithubLink() {
           <Button
             variant="ghost"
             size="icon"
-            render={<a href={site.repo} target="_blank" rel="noreferrer" aria-label={`${site.name} on GitHub`} />}
+            render={
+              <a href={site.repo} target="_blank" rel="noreferrer" aria-label={`${site.name} on GitHub`} />
+            }
           />
         }
       >

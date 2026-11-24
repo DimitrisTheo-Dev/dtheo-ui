@@ -162,7 +162,11 @@ async function copyItems(names) {
     ...skipped.map((f) => `  ${c.yellow('=')} ${f} ${c.dim('(exists; --overwrite to replace)')}`),
   ];
   if (install || installDev)
-    lines.push('', 'Install dependencies:', ...[install, installDev].filter(Boolean).map((cmd) => `  ${cmd}`));
+    lines.push(
+      '',
+      'Install dependencies:',
+      ...[install, installDev].filter(Boolean).map((cmd) => `  ${cmd}`),
+    );
   return { items, result, lines };
 }
 
@@ -233,7 +237,10 @@ async function init() {
       '  @import "../styles/dtheo.css";',
     );
   else if (css.imported)
-    lines.push('', `${c.green('✓')} ${dry ? 'Would import' : 'Imported'} ${css.specifier} in ${c.bold(css.file)}`);
+    lines.push(
+      '',
+      `${c.green('✓')} ${dry ? 'Would import' : 'Imported'} ${css.specifier} in ${c.bold(css.file)}`,
+    );
   else lines.push('', `${c.dim('=')} ${css.file} already imports dtheo.css`);
   if (css.overrides.length) {
     const width = String(Math.max(...css.overrides.map((o) => o.line))).length;
@@ -291,7 +298,22 @@ async function list(query) {
 
 // ---------- check (offline) ----------
 const exts = /\.(tsx|jsx|ts|js|mdx|css)$/;
-const skipDir = (path) => ['node_modules', '.next', 'dist', '.git', 'build'].includes(basename(String(path)));
+// Dependencies, build output and test reports: generated files, not UI code someone wrote.
+const skipped = new Set([
+  'node_modules',
+  '.next',
+  'dist',
+  '.git',
+  'build',
+  'out',
+  'coverage',
+  '.vercel',
+  '.turbo',
+  'playwright-report',
+  'test-results',
+  'storybook-static',
+]);
+const skipDir = (path) => skipped.has(basename(String(path)));
 
 function collect(paths) {
   const files = [];
@@ -299,8 +321,7 @@ function collect(paths) {
     if (!existsSync(p)) return;
     const st = statSync(p);
     if (st.isDirectory()) {
-      for (const name of readdirSync(p))
-        if (!['node_modules', '.next', 'dist', '.git', 'build'].includes(name)) walk(join(p, name));
+      for (const name of readdirSync(p)) if (!skipped.has(name)) walk(join(p, name));
     } else if (exts.test(p)) files.push(p);
   };
   for (const p of paths) {

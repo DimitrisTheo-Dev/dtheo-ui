@@ -103,7 +103,7 @@ export default function AgentsPage() {
         </Step>
 
         <Step n={3} title="Check" text="It runs the design check and fixes what it finds. Add it to CI too.">
-          <CommandLine command={`npx ${site.cli} check src`} />
+          <CommandLine command={`npx ${site.cli} check`} />
           <CodeBlock
             title="output"
             lang="bash"

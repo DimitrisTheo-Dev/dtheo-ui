@@ -25,3 +25,6 @@ test-results/
 .vercel/
 .turbo/
 .DS_Store
+
+# Quality gate reports (written by every local or CI run)
+.quality-gate/

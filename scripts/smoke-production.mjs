@@ -36,7 +36,12 @@ async function mcp(method, params) {
   });
   expect(res.ok, `/mcp ${method} answered ${res.status}`);
   const body = await res.text();
-  const json = body.startsWith('{') ? body : body.split('\n').find((l) => l.startsWith('data: '))?.slice(6);
+  const json = body.startsWith('{')
+    ? body
+    : body
+        .split('\n')
+        .find((l) => l.startsWith('data: '))
+        ?.slice(6);
   expect(json, `/mcp ${method} sent no message`);
   const message = JSON.parse(json);
   expect(!message.error, `/mcp ${method}: ${message.error?.message}`);
@@ -54,27 +59,42 @@ await check('the home page', async () => {
   expect((await (await get('/')).text()).includes('dtheo/ui'), 'the page does not name dtheo/ui');
 });
 await check('llms.txt', async () => {
-  expect((await (await get('/llms.txt')).text()).startsWith('# dtheo/ui'), 'it does not start with its title');
+  expect(
+    (await (await get('/llms.txt')).text()).startsWith('# dtheo/ui'),
+    'it does not start with its title',
+  );
 });
 await check('a Markdown mirror', async () => {
   expect((await (await get('/docs/components/button.md')).text()).includes('# Button'), 'no Button heading');
 });
 await check('a registry item', async () => {
   const item = await (await get('/r/button.json')).json();
-  expect(item.files?.some((f) => f.content?.includes('export function Button')), 'no Button source in its files');
+  expect(
+    item.files?.some((f) => f.content?.includes('export function Button')),
+    'no Button source in its files',
+  );
 });
 await check('MCP: the seven tools', async () => {
   const { tools } = await mcp('tools/list', {});
   expect(tools.length === 7, `${tools.length} tools listed`);
 });
 await check('MCP: a chart source read from disk', async () => {
-  expect((await tool('get_component_source', { slug: 'histogram' })).includes('export function Histogram'), 'no source');
+  expect(
+    (await tool('get_component_source', { slug: 'histogram' })).includes('export function Histogram'),
+    'no source',
+  );
 });
 await check('MCP: a chart contract', async () => {
-  expect((await tool('get_component', { slug: 'line-chart' })).includes('LineChart'), 'no LineChart in the answer');
+  expect(
+    (await tool('get_component', { slug: 'line-chart' })).includes('LineChart'),
+    'no LineChart in the answer',
+  );
 });
 await check('MCP: the design check', async () => {
-  const text = await tool('check_ui_code', { code: '<div className="bg-[#0070f3]" />', filename: 'card.tsx' });
+  const text = await tool('check_ui_code', {
+    code: '<div className="bg-[#0070f3]" />',
+    filename: 'card.tsx',
+  });
   expect(text.includes('raw-color'), 'a raw hex color was not reported');
 });
 

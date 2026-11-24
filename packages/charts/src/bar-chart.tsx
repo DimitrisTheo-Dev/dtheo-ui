@@ -155,7 +155,13 @@ export function BarChart({
                 }}
                 className="cursor-default"
               >
-                <rect x={sx(b.id)} y={top} width={sx.bandwidth()} height={height - 28 - top} fill="transparent" />
+                <rect
+                  x={sx(b.id)}
+                  y={top}
+                  width={sx.bandwidth()}
+                  height={height - 28 - top}
+                  fill="transparent"
+                />
                 {h > 0 ? (
                   <path
                     d={barPath(x, bw, zero, y, Math.min(r, h))}

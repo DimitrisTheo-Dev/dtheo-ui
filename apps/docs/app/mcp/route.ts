@@ -18,8 +18,7 @@ import { docsSection } from '@/lib/paths';
  * writes, fetches other hosts or runs anything. Inputs are validated; each client gets a best-effort rate limit.
  */
 const text = (t: string) => ({ content: [{ type: 'text' as const, text: t }] });
-const docsPage = (slug: string) =>
-  `${site.url}/docs/${docsSection(getComponent(slug))}/${slug}`;
+const docsPage = (slug: string) => `${site.url}/docs/${docsSection(getComponent(slug))}/${slug}`;
 
 /** Every tool only reads: it describes the system or checks code it is given, and never changes anything. */
 const readOnly = (title: string) => ({
