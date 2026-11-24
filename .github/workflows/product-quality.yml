@@ -13,4 +13,4 @@ concurrency:
   cancel-in-progress: ${{ github.ref_name != github.event.repository.default_branch }}
 jobs:
   quality:
-    uses: DimitrisTheo-Dev/product-engineering-quality-gate/.github/workflows/quality-gate.yml@23dc90398223e96652fdc0da3c3d246dba77f49a # v2.0.0
+    uses: DimitrisTheo-Dev/product-engineering-quality-gate/.github/workflows/quality-gate.yml@2649943106e7ff2ac4d6b358c2c1a13074b9656d # v2.0.0
