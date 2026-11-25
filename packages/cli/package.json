@@ -1,6 +1,6 @@
 {
   "name": "dtheo",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Add dtheo/ui components to any React project, and check UI code against the system. Built for people and agents.",
   "keywords": [
     "accessibility",
