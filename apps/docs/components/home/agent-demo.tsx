@@ -16,12 +16,12 @@ type Kind = 'prompt' | 'tool' | 'cmd' | 'fail' | 'fix' | 'pass';
 
 /** What an agent does with the system, in the order it does it. Every command and rule here is real. */
 const steps: Array<{ id: string; kind: Kind; text: string; detail?: string }> = [
-  { id: 'ask', kind: 'prompt', text: 'Build a card for the failed step test' },
-  { id: 'lookup', kind: 'tool', text: 'get_component', detail: 'metric, line-chart' },
-  { id: 'add', kind: 'cmd', text: 'npx dtheo add metric line-chart', detail: '+3 files' },
+  { id: 'ask', kind: 'prompt', text: 'Build a notifications settings card' },
+  { id: 'lookup', kind: 'tool', text: 'get_component', detail: 'card, switch, select' },
+  { id: 'add', kind: 'cmd', text: 'npx dtheo add card switch select field', detail: '+9 files' },
   { id: 'check-1', kind: 'cmd', text: 'npx dtheo check' },
-  { id: 'finding', kind: 'fail', text: 'icon-button-label', detail: 'run-card.tsx:14' },
-  { id: 'fix', kind: 'fix', text: 'Added aria-label="Rerun step test"' },
+  { id: 'finding', kind: 'fail', text: 'icon-button-label', detail: 'notifications.tsx:21' },
+  { id: 'fix', kind: 'fix', text: 'Added aria-label="Send a test message"' },
   { id: 'check-2', kind: 'cmd', text: 'npx dtheo check' },
   { id: 'pass', kind: 'pass', text: '0 errors in 12 files' },
 ];
@@ -46,7 +46,7 @@ const tone: Record<Kind, string> = {
 
 /**
  * The landing page's proof: a prompt goes in, the agent looks the components up over MCP, adds them, fails the
- * design check once, fixes it, and the result is the card on the right. Plays once; Replay runs it again.
+ * design check once, fixes it, and the result is the working card on the right. Plays once; Replay runs it again.
  */
 export function AgentDemo() {
   const [run, setRun] = React.useState(0);
@@ -106,9 +106,8 @@ export function AgentDemo() {
           >
             <SparkleIcon className="mt-0.5 size-3.5 shrink-0 text-link" aria-hidden="true" />
             <span>
-              Done. <code className="font-mono text-label">run-card.tsx</code> shows the three acceptance
-              checks and the torque trace against its 10 % limit. Overshoot fails, so the card asks for a
-              retune.
+              Done. <code className="font-mono text-label">notifications.tsx</code> has three switches, a
+              channel picker and one Save button. Every control has a name a screen reader can say.
             </span>
           </p>
           <dl

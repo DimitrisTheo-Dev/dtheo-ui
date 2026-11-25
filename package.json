@@ -24,7 +24,6 @@
     "usage": "node scripts/gen-usage.mjs",
     "examples": "node scripts/gen-examples.mjs",
     "figma": "node scripts/gen-figma.mjs",
-    "screens": "node scripts/screens.mjs",
     "release": "node scripts/release.mjs",
     "doctor": "react-doctor"
   },

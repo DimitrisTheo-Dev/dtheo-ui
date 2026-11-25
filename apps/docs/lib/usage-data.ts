@@ -37,7 +37,7 @@ export const pageUsage: Record<string, PageUsage> = {
     title: 'Home page',
     href: '/',
     level: 'page',
-    uses: ['button', 'badge', 'card', 'metric', 'accordion', 'line-chart'],
+    uses: ['button', 'field', 'select', 'switch', 'card', 'accordion'],
   },
   'data-table': {
     title: 'Data table pattern',

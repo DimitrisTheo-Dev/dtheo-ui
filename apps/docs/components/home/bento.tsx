@@ -1,39 +1,23 @@
 import * as React from 'react';
-import { CircleCheckIcon, CircleXIcon, PlayIcon, TriangleAlertIcon } from 'lucide-react';
-import { Badge } from '@dtheo/ui/components/badge';
+import { CircleCheckIcon, CircleXIcon } from 'lucide-react';
 import { Button } from '@dtheo/ui/components/button';
+import { Switch } from '@dtheo/ui/components/switch';
 import { ThemeScope, type ThemePreset } from '@dtheo/ui/lib/theme';
 import contrast from '@dtheo/tokens/contrast.json';
 import { ruleList } from 'dtheo/check';
-import {
-  OVERSHOOT_LIMIT,
-  SETTLE_LIMIT,
-  checkStatus,
-  fmt,
-  measuredMetrics as M,
-  type CheckStatus,
-} from '@/lib/lab-data';
-import { A11yDemo } from './a11y-demo';
 
 const passing = contrast.filter((r) => r.ok).length;
 // The report has one row per pair per theme (preset and mode): checks, not pairs.
 const pairs = new Set(contrast.map((r) => r.index)).size;
 const themes = new Set(contrast.map((r) => `${r.preset}/${r.mode}`)).size;
 
-const statusBadge = {
-  fail: { variant: 'destructive', Icon: CircleXIcon, word: 'Fail' },
-  warn: { variant: 'warning', Icon: TriangleAlertIcon, word: 'Near limit' },
-  pass: { variant: 'success', Icon: CircleCheckIcon, word: 'Pass' },
-} as const;
-
-/** R-0412's checks, worded the way the run review words them. */
-function CheckBadge({ status }: { status: CheckStatus }) {
-  const { variant, Icon, word } = statusBadge[status];
+/** A setting as the mock screens show it: a label and a switch, drawn by the real components. */
+function SettingRow({ label, on }: { label: string; on?: boolean }) {
   return (
-    <Badge variant={variant}>
-      <Icon aria-hidden="true" />
-      {word}
-    </Badge>
+    <span className="flex items-center justify-between gap-3 text-label">
+      {label}
+      <Switch defaultChecked={on} aria-label={label} />
+    </span>
   );
 }
 
@@ -118,13 +102,12 @@ export function Bento() {
       <Tile
         className="lg:col-span-3"
         title="Accessible by default"
-        text="Controls work from the keyboard and read aloud. Every chart has a text alternative."
+        text="Controls work from the keyboard and read aloud."
       >
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:items-center lg:gap-8">
-          <A11yDemo />
-          <ul className="flex flex-col gap-2 text-body">
+        <div>
+          <ul className="grid gap-x-8 gap-y-2 text-body sm:grid-cols-2">
             {[
-              'Line, frequency, scatter and histogram charts read with the arrow keys',
+              'Charts read with the arrow keys and describe themselves in text',
               'A focus ring you can see, in every theme',
               'Status is an icon and a word, never color alone',
               'Focus traps, typeahead and roving focus from Base UI',
@@ -172,7 +155,7 @@ export function Bento() {
           </span>
           <span className="flex items-center gap-2 text-success-foreground">
             <CircleCheckIcon className="size-3 shrink-0" aria-hidden="true" />
-            <span className="truncate">aria-label=&quot;Delete run&quot;</span>
+            <span className="truncate">aria-label=&quot;Send a test message&quot;</span>
           </span>
         </div>
       </Tile>
@@ -186,21 +169,14 @@ export function Bento() {
           {/* dtheo-check-ignore-next-line (a phone's own corner radius, drawn to scale) */}
           <div className="w-40 shrink-0 rounded-[1.75rem] border-4 border-foreground/10 bg-background p-2.5 shadow-raised sm:w-44">
             <div aria-hidden="true" className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-foreground/15" />
-            <div className="flex flex-col gap-2.5 px-1 pb-1">
-              <span className="flex items-center justify-between">
-                <span className="font-mono text-caption text-muted-foreground">R-0412</span>
-                <CheckBadge status={checkStatus(M.overshoot, OVERSHOOT_LIMIT)} />
-              </span>
-              <span className="flex items-baseline gap-1">
-                <span className="text-title-1 tabular-nums">{fmt.n1.format(M.overshoot)}</span>
-                <span className="text-label font-normal text-muted-foreground">% overshoot</span>
-              </span>
-              <span className="text-caption text-muted-foreground">
-                Limit {OVERSHOOT_LIMIT} %. Lower Kp, then rerun.
-              </span>
-              <Button variant="primary" size="lg" className="w-full" tabIndex={-1} aria-hidden="true">
-                <PlayIcon aria-hidden="true" />
-                Queue retune
+            {/* A picture of a phone screen: real components, kept out of the tab order and the reading order. */}
+            <div inert className="flex flex-col gap-3 px-1 pb-1">
+              <span className="text-headline">Notifications</span>
+              <SettingRow label="Deploy fails" on />
+              <SettingRow label="Review requested" on />
+              <SettingRow label="Weekly summary" />
+              <Button variant="primary" size="lg" className="w-full">
+                Save changes
               </Button>
             </div>
           </div>
@@ -226,7 +202,7 @@ export function Bento() {
       <Tile
         className="lg:col-span-2"
         title="Two presets, four themes, one codebase"
-        text="Graphite has one accent. Carbon has none: the only colors are status and data. Change one attribute to switch."
+        text="Graphite has one accent. Carbon has none: the only colors are status, links and data. Change one attribute to switch."
       >
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {presets.map((p) => (
@@ -236,23 +212,18 @@ export function Bento() {
               mode={p.mode}
               className="flex flex-col gap-3 rounded-popover border border-border p-3"
             >
-              <span className="flex items-center justify-between gap-2">
-                <span className="flex flex-col">
-                  <span className="text-label">{p.name}</span>
-                  <span className="text-caption text-subtle-foreground">
-                    {p.mode === 'dark' ? 'Dark' : 'Light'}
-                  </span>
+              <span className="flex flex-col">
+                <span className="text-label">{p.name}</span>
+                <span className="text-caption text-subtle-foreground">
+                  {p.mode === 'dark' ? 'Dark' : 'Light'}
                 </span>
-                <CheckBadge status={checkStatus(M.settle, SETTLE_LIMIT)} />
               </span>
-              <span className="flex items-baseline gap-1">
-                <span className="text-title-2 tabular-nums">{fmt.n0.format(M.settle)}</span>
-                <span className="text-label font-normal text-muted-foreground">ms settling</span>
+              <span inert className="flex flex-col gap-3">
+                <SettingRow label="Deploy alerts" on />
+                <Button variant="primary" size="sm" className="w-fit">
+                  Save
+                </Button>
               </span>
-              <Button variant="primary" size="sm" className="w-fit" tabIndex={-1} aria-hidden="true">
-                <PlayIcon aria-hidden="true" />
-                Rerun
-              </Button>
             </ThemeScope>
           ))}
         </div>

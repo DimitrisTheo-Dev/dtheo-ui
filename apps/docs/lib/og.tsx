@@ -5,15 +5,6 @@ import { ImageResponse } from 'next/og';
 import { colors } from '@dtheo/tokens/native';
 import { getComponent } from '@dtheo/ui/meta';
 import { brand, Mark, starPath } from './brand';
-import {
-  DELAY,
-  OVERSHOOT_LIMIT,
-  TARGET,
-  TORQUE_LIMIT,
-  fmt,
-  measured,
-  measuredMetrics as M,
-} from './lab-data';
 import { examples } from './nav';
 import { plainText } from './parse-markdown';
 import { site } from './site';
@@ -116,111 +107,91 @@ function Command({ text }: { text: string }) {
   );
 }
 
-/**
- * R-0412's step response, drawn from the same simulated trace as the run review: the first 400 ms, the 13.2 N·m
- * limit and the 17.6 % peak are where the numbers put them, so the card can't show more overshoot than it states.
- */
-/** 0 N·m at y = 250 and the 12 N·m command at y = 108, with room above for the peak. */
-const y = (v: number) => 250 - (v / TARGET) * 142;
+const mono = { fontFamily: 'monospace' } as const;
 
-function Trace() {
-  const w = 430;
-  const h = 300;
-  const x = (t: number) => (t / 400) * w;
-  const limitY = y(TORQUE_LIMIT);
-  const samples = measured.t.filter((t) => t <= 400 && t % 2 === 0);
-  const path = samples
-    .map((t, k) => `${k ? 'L' : 'M'} ${x(t).toFixed(1)} ${y(measured.torque[t]!).toFixed(1)}`)
-    .join(' ');
-  // The part of the trace past the limit, closed along the limit line.
-  const over = samples.filter((t) => measured.torque[t]! > TORQUE_LIMIT);
-  const shade = over.length
-    ? `M ${x(over[0]!).toFixed(1)} ${limitY.toFixed(1)} ${over
-        .map((t) => `L ${x(t).toFixed(1)} ${y(measured.torque[t]!).toFixed(1)}`)
-        .join(' ')} L ${x(over.at(-1)!).toFixed(1)} ${limitY.toFixed(1)} Z`
-    : '';
+/** Lucide's circle-x, circle-check and arrow-right, drawn inline: the card's font has none of these glyphs. */
+const icon = (d: React.ReactNode) => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    style={{ marginRight: 12 }}
+  >
+    {d}
+  </svg>
+);
+const failIcon = icon(
+  <>
+    <circle cx="12" cy="12" r="10" />
+    <path d="m15 9-6 6M9 9l6 6" />
+  </>,
+);
+const passIcon = icon(
+  <>
+    <circle cx="12" cy="12" r="10" />
+    <path d="m9 12 2 2 4-4" />
+  </>,
+);
+const arrowIcon = icon(<path d="M5 12h14M12 5l7 7-7 7" />);
+
+/** One line of the check output. */
+const line = (children: React.ReactNode, color: string, extra?: React.CSSProperties) => (
+  <span style={{ display: 'flex', alignItems: 'center', fontSize: 20, color, ...mono, ...extra }}>
+    {children}
+  </span>
+);
+
+/** The loop the home page promises, as the agent sees it: one finding with its fix, then a clean check. */
+function CheckCard() {
   return (
     <div
       style={{
-        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        width: w + 48,
-        padding: 24,
+        gap: 10,
+        width: 500,
+        padding: '26px 28px',
         borderRadius: 18,
         border: `1px solid ${c['border-strong']}`,
         backgroundColor: alpha(c.card, 0.82),
         boxShadow: `0 30px 80px ${alpha(c.background, 0.8)}`,
       }}
     >
-      <div
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}
-      >
-        <div style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
-          <span style={{ fontSize: 18, fontFamily: 'monospace', color: c['muted-foreground'] }}>R-0412</span>
-          <span style={{ fontSize: 22, fontWeight: 600, color: c.foreground }}>High-gain step</span>
-        </div>
-        <span
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            padding: '4px 12px',
-            borderRadius: 999,
-            fontSize: 16,
-            fontWeight: 600,
-            color: c['destructive-foreground'],
-            backgroundColor: alpha(c['destructive-foreground'], 0.14),
-          }}
-        >
-          {/* Status is an icon and a word, never color alone: the circled cross of a failed check. */}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-            <circle cx="12" cy="12" r="10" />
-            <path d="m15 9-6 6M9 9l6 6" />
-          </svg>
-          {`Overshoot ${fmt.n1.format(M.overshoot)} %`}
-        </span>
-      </div>
-      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-        {[60, 120, 180, 240].map((gy) => (
-          <line key={gy} x1="0" x2={w} y1={gy} y2={gy} stroke={alpha(c.foreground, 0.06)} />
-        ))}
-        <line x1="0" x2={w} y1={limitY} y2={limitY} stroke={alpha(c.foreground, 0.4)} strokeDasharray="6 6" />
-        <path
-          d={`M 0 ${y(0)} L ${x(DELAY)} ${y(0)} L ${x(DELAY)} ${y(TARGET)} L ${w} ${y(TARGET)}`}
-          fill="none"
-          stroke={alpha(c.foreground, 0.35)}
-          strokeWidth="2"
-        />
-        <path
-          d={path}
-          fill="none"
-          stroke={alpha(c['chart-1'], 0.35)}
-          strokeWidth="12"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path
-          d={path}
-          fill="none"
-          stroke={c['chart-1']}
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {shade ? <path d={shade} fill={alpha(c['destructive-foreground'], 0.28)} /> : null}
-        <circle
-          cx={x(M.peakAt)}
-          cy={y(M.peak)}
-          r="8"
-          fill={c['destructive-foreground']}
-          stroke={c.card}
-          strokeWidth="3"
-        />
-      </svg>
-      <span style={{ marginTop: 10, fontSize: 16, color: c['subtle-foreground'] }}>
-        {`Limit ${OVERSHOOT_LIMIT} % · synthetic data`}
-      </span>
+      {line(
+        <>
+          <span style={{ color: c['subtle-foreground'], marginRight: 12 }}>$</span>
+          <span>npx dtheo check</span>
+        </>,
+        c.foreground,
+      )}
+      {line(
+        <>
+          {failIcon}
+          <span>notifications.tsx:21</span>
+        </>,
+        c['destructive-foreground'],
+        { marginTop: 10 },
+      )}
+      {line('icon-button-label', c['muted-foreground'], { paddingLeft: 34 })}
+      {line(
+        <>
+          {arrowIcon}
+          <span>aria-label="Send a test message"</span>
+        </>,
+        c['muted-foreground'],
+        { paddingLeft: 34 },
+      )}
+      {line(
+        <>
+          {passIcon}
+          <span>0 errors in 12 files</span>
+        </>,
+        c['success-foreground'],
+        { marginTop: 10 },
+      )}
     </div>
   );
 }
@@ -241,7 +212,7 @@ export function HomeCard() {
                 color: c.foreground,
               }}
             >
-              A design system for engineering tools.
+              Build clean UIs with your coding agent.
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 22 }}>
@@ -252,7 +223,7 @@ export function HomeCard() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Trace />
+          <CheckCard />
         </div>
       </div>
     </Surface>
