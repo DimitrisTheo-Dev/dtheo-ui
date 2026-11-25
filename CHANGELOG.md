@@ -5,7 +5,7 @@ and have no versions; their history is the merged pull requests.
 
 ## dtheo (the CLI)
 
-### 0.1.2 (unreleased)
+### 0.1.2 (2026-11-25)
 
 - `dtheo check` with no path skips build output and test reports (`out`, `coverage`, `.vercel`, `.turbo`,
   `playwright-report`, `test-results`, `storybook-static`) as well as `node_modules`, `.next`, `dist` and `build`.
