@@ -328,6 +328,22 @@ test('Tab brings a run history header into view with its whole focus ring @phone
   expect(button!.x + button!.width + 4).toBeLessThanOrEqual(edge!.x + edge!.width);
 });
 
+test('run history shows every result badge whole, without an ellipsis', async ({ page }) => {
+  await page.goto('/examples/run-history');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const cut = await page.locator('[data-slot="data-table"] td [data-slot="badge"]').evaluateAll((badges) =>
+    badges
+      .filter((badge) => {
+        // A cell clips its content with an ellipsis, so the badge must fit inside the cell's padding.
+        const cell = badge.closest('td')!;
+        const room = cell.getBoundingClientRect().right - parseFloat(getComputedStyle(cell).paddingRight);
+        return badge.getBoundingClientRect().right > room + 0.5;
+      })
+      .map((badge) => badge.textContent),
+  );
+  expect(cut).toEqual([]);
+});
+
 test('run history compares checked runs side by side', async ({ page }) => {
   await page.goto('/examples/run-history');
   await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
