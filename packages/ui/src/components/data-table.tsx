@@ -298,6 +298,12 @@ export function DataTable<Row>({
               'inline-flex rounded-control py-1 hover:text-foreground [--focus-offset:2px]',
               col.numeric && 'justify-end',
             )}
+            // Chrome does not scroll a control in a sticky header into view when Tab reaches it, so a header past
+            // the edge keeps its ring cut off. Scroll it in here; the scroll margin leaves room for the ring.
+            onFocus={(e) => {
+              if (e.currentTarget.matches(':focus-visible'))
+                e.currentTarget.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+            }}
             // Numbers sort largest first: the worst run is usually the one you came for.
             onClick={() =>
               setSort({
