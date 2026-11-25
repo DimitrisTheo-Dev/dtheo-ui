@@ -81,6 +81,9 @@ for (const theme of ['dark', 'light'] as const) {
         animations: 'disabled',
         caret: 'hide',
         maxDiffPixelRatio: 0.002,
+        // How far a pixel's color may move before it counts as changed. At Playwright's default of 0.2, a 10 %
+        // limit shading and a reworded axis label both passed unseen. Antialiasing is detected separately.
+        threshold: 0.05,
       });
     });
   }
