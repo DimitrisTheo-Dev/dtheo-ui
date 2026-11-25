@@ -135,6 +135,12 @@ export default function Home() {
           eyebrow="Why dtheo/ui"
           title="Built for you and your agent"
           text="Your agent looks the system up, uses it and checks its own work. You review less."
+          action={
+            <Button variant="ghost" render={<Link href="/docs/loop" />}>
+              How the three tools fit
+              <ArrowRightIcon aria-hidden="true" />
+            </Button>
+          }
         />
         <AgentDemo />
         <Bento />
