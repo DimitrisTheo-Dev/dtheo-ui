@@ -9,7 +9,7 @@
  *   dtheo mcp                      print MCP client config for your editor or agent
  *
  * Options: --registry <url> (default https://ui.dtheo.dev or $DTHEO_REGISTRY), --cwd <dir>,
- *          --overwrite, --dry-run, --json, --help (-h), --version (-v)
+ *          --overwrite, --remove-overrides (init), --dry-run, --json, --help (-h), --version (-v)
  */
 import { existsSync, globSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
@@ -196,20 +196,59 @@ const tailwindImport = /^@import\s+["']tailwindcss["'][^\n]*$/m;
  * @theme, an Arial body).
  */
 function overridingRules(css) {
-  const found = [];
-  for (const m of css.matchAll(/^([^\s{}][^{}\n]*?)\s*\{([\s\S]*?)^\}/gm)) {
-    const [, selector, body] = m;
-    const overrides =
+  return topLevelRules(css).filter(
+    ({ selector, body }) =>
       (/^(:root|html|@media\b)/.test(selector) && /--(background|foreground)\s*:/.test(body)) ||
       (/^@theme\b/.test(selector) && /--(font|color)-[\w-]+\s*:/.test(body)) ||
-      (/^body\b/.test(selector) && /^\s*(background|color|font-family)\s*:/m.test(body));
-    if (overrides) found.push({ selector, line: css.slice(0, m.index).split('\n').length });
-  }
-  return found;
+      (/^body\b/.test(selector) && /^\s*(background|color|font-family)\s*:/m.test(body)),
+  );
 }
 
-/** Import the stylesheet once, right after Tailwind, with a path relative to the global CSS file. */
-function importStyles(stylesheet) {
+/**
+ * Each top-level block with its exact extent, found by matching braces, so a one-line rule or a nested
+ * block cannot make a deletion run into the next rule. Skips comments and strings.
+ */
+function topLevelRules(css) {
+  const rules = [];
+  let depth = 0;
+  let from = 0;
+  let open = -1;
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i];
+    if (ch === '/' && css[i + 1] === '*') {
+      i = css.indexOf('*/', i + 2);
+      if (i < 0) break;
+      i++;
+    } else if (ch === '"' || ch === "'") {
+      i = css.indexOf(ch, i + 1);
+      if (i < 0) break;
+    } else if (ch === ';' && depth === 0) from = i + 1;
+    else if (ch === '{' && depth++ === 0) open = i;
+    else if (ch === '}' && depth > 0 && --depth === 0) {
+      const lead = css.slice(from, open).match(/^(?:\s|\/\*[\s\S]*?\*\/)*/)[0].length;
+      const start = from + lead;
+      rules.push({
+        selector: css.slice(start, open).trim().replace(/\s+/g, ' '),
+        body: css.slice(open + 1, i),
+        line: css.slice(0, start).split('\n').length,
+        start,
+        end: i + 1,
+      });
+      from = i + 1;
+    }
+  }
+  return rules;
+}
+
+/** The CSS without the given rules and the blank lines they leave behind. */
+function withoutRules(css, rules) {
+  let next = css;
+  for (const r of rules.toReversed()) next = next.slice(0, r.start) + next.slice(r.end);
+  return `${next.replace(/\n{3,}/g, '\n\n').trimEnd()}\n`;
+}
+
+/** The global CSS file with the stylesheet imported once, right after Tailwind, relative to that file. */
+function planStyles(stylesheet) {
   const file = globalCssFiles
     .map((p) => join(cwd, p))
     .find((p) => existsSync(p) && tailwindImport.test(readFileSync(p, 'utf8')));
@@ -219,15 +258,37 @@ function importStyles(stylesheet) {
   if (!specifier.startsWith('.')) specifier = `./${specifier}`;
   const imported = !/@import\s+["'][^"']*dtheo\.css["']/.test(css);
   const next = imported ? css.replace(tailwindImport, (line) => `${line}\n@import "${specifier}";`) : css;
-  if (imported && !flags.has('--dry-run')) writeFileSync(file, next);
-  // Line numbers refer to the file as it now reads (or would read, on a dry run).
-  return { file: relative(cwd, file), specifier, imported, overrides: overridingRules(next) };
+  // Line numbers refer to the file with the import added.
+  return {
+    path: file,
+    before: css,
+    next,
+    file: relative(cwd, file),
+    specifier,
+    imported,
+    overrides: overridingRules(next),
+  };
+}
+
+/**
+ * Ask a yes/no question when a person runs init in a terminal. Scripts and agents get no prompt: they pass
+ * --remove-overrides, or read the list and decide.
+ */
+async function confirm(lines, question) {
+  if (json || flags.has('--dry-run') || !process.stdin.isTTY || !process.stdout.isTTY) return false;
+  console.log(lines.splice(0).join('\n'));
+  const { createInterface } = await import('node:readline/promises');
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const answer = await rl.question(question);
+  rl.close();
+  return /^(y|yes)?$/i.test(answer.trim());
 }
 
 async function init() {
   const { items, result, lines } = await copyItems(['styles', 'utils', 'theme']);
   const sheet = items.find((i) => i.name === 'styles')?.files[0];
-  const css = importStyles(sheet ? targetFor(sheet) : join(cwd, 'styles/dtheo.css'));
+  const plan = planStyles(sheet ? targetFor(sheet) : join(cwd, 'styles/dtheo.css'));
+  const { path, before, next, ...css } = plan;
   const dry = flags.has('--dry-run');
   if (!css.file)
     lines.push(
@@ -242,15 +303,26 @@ async function init() {
       `${c.green('✓')} ${dry ? 'Would import' : 'Imported'} ${css.specifier} in ${c.bold(css.file)}`,
     );
   else lines.push('', `${c.dim('=')} ${css.file} already imports dtheo.css`);
+  let after = next;
+  css.removed = false;
   if (css.overrides.length) {
     const width = String(Math.max(...css.overrides.map((o) => o.line))).length;
     lines.push(
       '',
       `${c.yellow('!')} ${css.file} has rules that override the dtheo/ui theme. The Next.js starter adds them:`,
       ...css.overrides.map((o) => `    ${c.dim(`line ${String(o.line).padStart(width)}`)}  ${o.selector}`),
-      '  Delete these rules and keep the two @import lines.',
     );
+    css.removed = flags.has('--remove-overrides') || (await confirm(lines, '  Delete them? (Y/n) '));
+    if (css.removed) {
+      after = withoutRules(next, css.overrides);
+      lines.push(`${c.green('✓')} ${dry ? 'Would delete' : 'Deleted'} them from ${c.bold(css.file)}`);
+    } else
+      lines.push(
+        `  Delete them and keep the two @import lines, or run ${c.bold('dtheo init --remove-overrides')}.`,
+      );
   }
+  if (path && after !== before && !dry) writeFileSync(path, after);
+  css.overrides = css.overrides.map(({ selector, line }) => ({ selector, line }));
   out({ ...result, css }, lines.join('\n'));
 }
 
@@ -420,6 +492,7 @@ const help = `${c.bold('dtheo')} ${c.dim('· add components and check UI code ag
   dtheo mcp                   print MCP config for Claude Code, VS Code, Cursor and others
 
 Options: --registry <url>  --cwd <dir>  --overwrite  --dry-run  --json  --help (-h)  --version (-v)
+         --remove-overrides   init: delete global CSS rules that override the theme, without asking
 Docs: ${registry}/docs/cli`;
 
 const version = () => JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;

@@ -33,9 +33,9 @@ npx dtheo add button table line-chart
 npx dtheo check
 ```
 
-`init` lists the starter styles to delete and `add` prints the packages to install; the
-[installation guide](https://ui.dtheo.dev/docs/installation) has every step. Components are copied
-into your project, so you own the code. Every item also installs with the shadcn CLI.
+`init` offers to delete the starter styles that override the theme, and `add` prints the packages to
+install; the [installation guide](https://ui.dtheo.dev/docs/installation) has every step. Components
+are copied into your project, so you own the code. Every item also installs with the shadcn CLI.
 
 ## With a coding agent
 
