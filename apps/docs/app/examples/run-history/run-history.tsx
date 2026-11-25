@@ -170,7 +170,8 @@ const allColumns: Array<DataTableColumn<Row>> = [
   {
     id: 'result',
     header: 'Result',
-    width: 96,
+    // Fits the widest badge, Review, inside the cell's padding; a narrower cell cuts it to an ellipsis.
+    width: 104,
     // Sorted by severity, not by name: the first click puts failures on top.
     value: (r) => resultRank[r.result],
     cell: (r) => {
