@@ -92,7 +92,9 @@ export const loopTools: LoopTool[] = [
   {
     name: 'dtheo plugin',
     href: skills,
-    is: '13 agent skills for product and UI work, for Claude Code and Codex.',
+    is:
+      '5 agent skills for Claude Code and Codex: plan, design and build, review, landing pages ' +
+      'and launch.',
     when: 'Before the code, and after the screen renders.',
     does:
       'Plans the screen, then checks the render at phone and desktop widths and has a second ' +
