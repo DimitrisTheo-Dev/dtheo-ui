@@ -68,6 +68,22 @@ export const getStarted: NavItem[] = [
     ],
   },
   {
+    title: 'The loop',
+    href: '/docs/loop',
+    description: 'The three tools, when each one runs and what each one catches.',
+    keywords: [
+      'workflow',
+      'plugin',
+      'agent skills',
+      'quality gate',
+      'GitHub Actions',
+      'CI',
+      'review',
+      'why',
+      'compare',
+    ],
+  },
+  {
     title: 'CLI',
     href: '/docs/cli',
     description: 'Add components and check UI code.',

@@ -7,6 +7,7 @@ const pages = [
   '/docs',
   '/docs/components',
   '/docs/agents',
+  '/docs/loop',
   '/docs/components/button',
   '/docs/components/field',
   '/docs/components/table',

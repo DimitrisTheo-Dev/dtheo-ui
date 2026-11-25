@@ -1,6 +1,7 @@
 // dtheo-check-disable-file raw-color, transition-all, scale-zero, ease-in -- documentation that quotes the rules and token values; no UI styling here.
 import { site } from './site';
 import { agentsMarkdown } from './agents';
+import { loopMarkdown } from './loop';
 import { chartCount, componentCount } from './counts';
 
 /**
@@ -183,6 +184,7 @@ const accent = oklch.graphite.dark.primary; // "oklch(…)", for Skia or the web
 `,
 
   agents: agentsMarkdown(),
+  loop: loopMarkdown(),
 
   cli: `# CLI
 

@@ -15,7 +15,7 @@ export function generateStaticParams() {
   return [
     { path: ['index'] },
     { path: ['components'] },
-    ...['installation', 'theming', 'agents', 'cli', 'atomic-design'].map((s) => ({ path: [s] })),
+    ...['installation', 'theming', 'agents', 'loop', 'cli', 'atomic-design'].map((s) => ({ path: [s] })),
     ...['color', 'typography', 'geometry', 'motion', 'engineering-data'].map((s) => ({
       path: ['foundations', s],
     })),

@@ -71,7 +71,7 @@ packages/charts   SVG via React, canvas for live and dense data, d3 for the math
 packages/cli      dtheo: copies components from the registry and runs the design check
 packages/figma    A Figma plugin that builds the library from the token build
 apps/docs         ui.dtheo.dev: docs, examples, registry, MCP server, llms.txt
-e2e               Playwright: every route at two widths, axe on 19 routes, pixels
+e2e               Playwright: every route at two widths, axe on 20 routes, pixels
 ```
 
 Every pull request runs through
