@@ -30,11 +30,12 @@ const channels = [
 
 /**
  * What the agent in the demo builds: an ordinary settings card, made only from the system's components. It works:
- * the switches and the channel picker respond, and saving confirms in place.
+ * the switches and the channel picker respond, and sending a test or saving confirms in place.
  */
 export function HeroPreview() {
-  const [saved, setSaved] = React.useState(false);
-  const changed = () => setSaved(false);
+  const [channel, setChannel] = React.useState('releases');
+  const [status, setStatus] = React.useState<string | null>(null);
+  const changed = () => setStatus(null);
   return (
     <Card className="min-w-0 overflow-hidden shadow-raised">
       <CardHeader>
@@ -44,7 +45,14 @@ export function HeroPreview() {
           <CardDescription>Choose what reaches your team, and where.</CardDescription>
         </div>
         <CardAction>
-          <Button variant="ghost" size="icon-sm" aria-label="Send a test message">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Send a test message"
+            onClick={() =>
+              setStatus(`Test message sent to ${channels.find((c) => c.value === channel)!.label}`)
+            }
+          >
             <SendIcon aria-hidden="true" />
           </Button>
         </CardAction>
@@ -61,7 +69,14 @@ export function HeroPreview() {
         ))}
         <Field>
           <FieldLabel>Channel</FieldLabel>
-          <Select items={channels} defaultValue="releases" onValueChange={changed}>
+          <Select
+            items={channels}
+            value={channel}
+            onValueChange={(v) => {
+              setChannel(v as string);
+              changed();
+            }}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -77,14 +92,14 @@ export function HeroPreview() {
       </CardContent>
       <CardFooter className="justify-end gap-2">
         <span role="status" className="mr-auto flex items-center gap-1.5 text-label text-success-foreground">
-          {saved ? (
+          {status ? (
             <>
-              <CircleCheckIcon className="size-3.5" aria-hidden="true" />
-              Saved
+              <CircleCheckIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              {status}
             </>
           ) : null}
         </span>
-        <Button variant="primary" onClick={() => setSaved(true)}>
+        <Button variant="primary" onClick={() => setStatus('Saved')}>
           Save changes
         </Button>
       </CardFooter>

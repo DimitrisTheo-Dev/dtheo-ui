@@ -88,8 +88,8 @@ export default function Home() {
         <div className="flex flex-col gap-5">
           <h1 className="max-w-[16ch] text-hero text-balance">Build clean UIs with your coding agent.</h1>
           <p className="max-w-[56ch] text-prose text-muted-foreground text-pretty">
-            Components, tokens and a design check your agent can use. It looks each component up, builds the
-            screen and fixes what the check finds, before you review it.
+            Free, open source React components and tokens, plus a design check that names each mistake and its
+            fix. Your agent looks components up, builds the screen and runs the check before you review it.
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="lg" render={<Link href="/docs" />}>
@@ -111,7 +111,7 @@ export default function Home() {
           text="Your agent looks the system up, uses it and checks its own work. You review less."
           action={
             <Button variant="ghost" render={<Link href="/docs/loop" />}>
-              How the three tools fit
+              The plugin and quality gate
               <ArrowRightIcon aria-hidden="true" />
             </Button>
           }

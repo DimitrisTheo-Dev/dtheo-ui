@@ -7,9 +7,6 @@ import contrast from '@dtheo/tokens/contrast.json';
 import { ruleList } from 'dtheo/check';
 
 const passing = contrast.filter((r) => r.ok).length;
-// The report has one row per pair per theme (preset and mode): checks, not pairs.
-const pairs = new Set(contrast.map((r) => r.index)).size;
-const themes = new Set(contrast.map((r) => `${r.preset}/${r.mode}`)).size;
 
 /** A setting as the mock screens show it: a label and a switch, drawn by the real components. */
 function SettingRow({ label, on }: { label: string; on?: boolean }) {
@@ -86,7 +83,7 @@ export function Bento() {
 
       <Tile
         title="Contrast, proven"
-        text={`${pairs} text and UI color pairs in ${themes} themes, checked on every build.`}
+        text="Every text and UI color pair, in each theme it appears in, checked on every build."
       >
         <p className="flex items-baseline gap-2">
           <span className="text-hero tabular-nums">

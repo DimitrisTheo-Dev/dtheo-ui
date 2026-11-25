@@ -407,13 +407,15 @@ for (const [path, state, text] of [
 }
 
 // The landing hero shows the agent's result working, not a picture of it.
-test('the landing demo card saves, and its icon-only button has a name', async ({ page }) => {
+test('the landing demo card sends a test, saves, and names its icon-only button', async ({ page }) => {
   await page.goto('/');
   await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
   const hero = page.locator('main > section').first();
   await expect(hero.getByRole('heading', { level: 1 })).toHaveText('Build clean UIs with your coding agent.');
-  await expect(hero.getByRole('button', { name: 'Send a test message' })).toBeVisible();
+  await hero.getByRole('button', { name: 'Send a test message' }).click();
+  await expect(hero.getByRole('status')).toHaveText('Test message sent to #releases');
   await hero.getByRole('switch', { name: 'Weekly summary' }).click();
+  await expect(hero.getByRole('status')).toHaveText('');
   await hero.getByRole('button', { name: 'Save changes' }).click();
   await expect(hero.getByRole('status')).toHaveText('Saved');
 });

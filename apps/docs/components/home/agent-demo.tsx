@@ -52,7 +52,7 @@ export function AgentDemo() {
   const [run, setRun] = React.useState(0);
   return (
     <figure
-      aria-label="An agent building a run card with dtheo/ui"
+      aria-label="An agent building a notifications settings card with dtheo/ui"
       className="overflow-hidden rounded-dialog border border-border bg-card/70 shadow-dialog backdrop-blur-material"
     >
       <div className="flex h-10 items-center gap-3 border-b border-border px-3.5">
@@ -126,7 +126,8 @@ export function AgentDemo() {
             ))}
           </dl>
         </div>
-        <div className="preview-grid min-w-0 p-3 sm:p-5">
+        {/* On a phone the result comes first, so it is on the first screen; the log follows. */}
+        <div className="preview-grid min-w-0 p-3 max-lg:order-first sm:p-5">
           <HeroPreview />
         </div>
       </div>
