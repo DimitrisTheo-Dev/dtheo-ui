@@ -309,6 +309,25 @@ test('run history moves through rows with the keyboard and opens the reviewed ru
   await expect(page).toHaveURL(/\/examples\/run-review$/);
 });
 
+test('Tab brings a run history header into view with its whole focus ring @phone', async ({ page }, info) => {
+  test.skip(info.project.name !== 'phone', 'the table scrolls sideways only on a phone');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/examples/run-history');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const area = page.locator('[data-slot="data-table"]');
+  const rise = area.getByRole('button', { name: /^Rise/ });
+  // Arrive the way a keyboard user does: Tab across the header from the first sort button.
+  await area.getByRole('button', { name: /^Run/ }).focus();
+  await area.evaluate((el) => el.scrollTo({ left: 0 }));
+  for (let i = 0; i < 8 && !(await rise.evaluate((el) => el === document.activeElement)); i++)
+    await page.keyboard.press('Tab');
+  await expect(rise).toBeFocused();
+  const [button, edge] = await Promise.all([rise.boundingBox(), area.boundingBox()]);
+  // The ring is a 2px line 2px out from the button.
+  expect(button!.x - 4).toBeGreaterThanOrEqual(edge!.x);
+  expect(button!.x + button!.width + 4).toBeLessThanOrEqual(edge!.x + edge!.width);
+});
+
 test('run history compares checked runs side by side', async ({ page }) => {
   await page.goto('/examples/run-history');
   await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });

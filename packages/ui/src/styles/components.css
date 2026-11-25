@@ -83,6 +83,11 @@
 .dtheo-data-table {
   --data-table-surface: var(--card);
 }
+/* Room for the focus ring at the scroll area's edge: scrolling a control into view stops when its box fits, and the
+   margin counts as part of the box, so the ring is not cut off. */
+.dtheo-data-table :is(button, a, [tabindex]) {
+  scroll-margin-inline: 0.5rem;
+}
 .dtheo-data-table tr[data-index] > td {
   background-image:
     linear-gradient(var(--row-hover, transparent), var(--row-hover, transparent)),
