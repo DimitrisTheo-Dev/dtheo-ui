@@ -40,7 +40,7 @@ First release: `init`, `add`, `list`, `check` (17 rules), `rules` and `mcp`.
 
 ## @dtheo/tokens
 
-### 0.2.0 (unreleased)
+### 0.2.0 (2026-11-25)
 
 - **Breaking:** the `flight-deck` and `deep-space` presets are removed. `carbon` replaces them, in light and dark:
   neutral surfaces with no hue, an ink primary, 4 to 10 px radii and no glass, so the only colors left are status,
