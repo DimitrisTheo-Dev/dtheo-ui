@@ -42,7 +42,10 @@ export interface HistogramProps {
    * of consecutive groups of this many values. Ppk always uses the overall σ.
    */
   subgroupSize?: number;
-  /** Specification limits. Values past them count as out of spec, and Cpk and Ppk are computed from them. */
+  /**
+   * Specification limits. Values past them count as out of spec and draw critical, the side past each limit is
+   * shaded, and Cpk and Ppk are computed from them.
+   */
   lower?: number;
   upper?: number;
   /** Where the process should sit. */
@@ -51,6 +54,12 @@ export interface HistogramProps {
   marker?: { value: number; label: string };
   /** Overlay the normal curve with the sample's mean and standard deviation. */
   normal?: boolean;
+  /**
+   * Show Cpk and Ppk. Turn it off when a limit is a budget rather than a process specification, such as test
+   * durations: the lines then read "Limit" instead of LSL and USL, and the readout says "over limit". Values past a
+   * limit still draw critical.
+   */
+  capability?: boolean;
   xLabel: string;
   unit?: string;
   digits?: number;
@@ -395,7 +404,8 @@ function Axes({
 
 /**
  * A distribution of measurements against specification limits, for test results and quality data. Values past a
- * limit draw in the critical color; the summary states n, mean, standard deviation, Cpk with a word, and Ppk.
+ * limit draw in the critical color over a shaded side; the summary states n, mean, standard deviation, Cpk with a
+ * word, and Ppk (without the last two when `capability` is off).
  */
 export function Histogram({
   values,
@@ -406,6 +416,7 @@ export function Histogram({
   target,
   marker,
   normal = false,
+  capability: showCapability = true,
   subgroupSize,
   xLabel,
   unit = '',
@@ -442,8 +453,10 @@ export function Histogram({
   );
   const stats = React.useMemo<Stats>(() => {
     const c = capability(values, lower, upper, subgroupSize);
-    return { n: c.n, mu: c.mean, sigma: c.n > 1 ? c.sigmaOverall : Number.NaN, cpk: c.cpk, ppk: c.ppk };
-  }, [values, lower, upper, subgroupSize]);
+    const sigma = c.n > 1 ? c.sigmaOverall : Number.NaN;
+    if (!showCapability) return { n: c.n, mu: c.mean, sigma };
+    return { n: c.n, mu: c.mean, sigma, cpk: c.cpk, ppk: c.ppk };
+  }, [values, lower, upper, subgroupSize, showCapability]);
 
   let tallest = 1;
   for (const b of bins) tallest = Math.max(tallest, b.count);
@@ -469,7 +482,8 @@ export function Histogram({
     Number.isFinite(v) ? `${formatNumber(v, digits)}${unit ? ` ${unit}` : ''}` : '–';
   const describe = (i: number) => {
     const b = bins[i]!;
-    const spec = !b.out ? '' : b.out === b.count ? ', out of spec' : `, ${b.out} out of spec`;
+    const past = showCapability ? 'out of spec' : 'over limit';
+    const spec = !b.out ? '' : b.out === b.count ? `, ${past}` : `, ${b.out} ${past}`;
     return `${formatNumber(b.x0, digits)} to ${fmt(b.x1)}: ${b.count} ${b.count === 1 ? 'value' : 'values'}${spec}`;
   };
 
@@ -493,8 +507,12 @@ export function Histogram({
   const lines = labelRows(
     [
       ...[
-        ...(lower !== undefined ? [{ value: lower, label: `LSL ${fmt(lower)}`, dash: '3 3' }] : []),
-        ...(upper !== undefined ? [{ value: upper, label: `USL ${fmt(upper)}`, dash: '3 3' }] : []),
+        ...(lower !== undefined
+          ? [{ value: lower, label: `${showCapability ? 'LSL' : 'Limit'} ${fmt(lower)}`, dash: '3 3' }]
+          : []),
+        ...(upper !== undefined
+          ? [{ value: upper, label: `${showCapability ? 'USL' : 'Limit'} ${fmt(upper)}`, dash: '3 3' }]
+          : []),
         ...(target !== undefined ? [{ value: target, label: `Target ${fmt(target)}`, dash: '1 3' }] : []),
       ].sort((a, b) => a.value - b.value),
       ...(marker
@@ -549,6 +567,27 @@ export function Histogram({
               xTitle={`${xLabel}${unit ? ` (${unit})` : ''}`}
               height={height}
             />
+            {/* The side past each limit is shaded, so a single value out there still reads. */}
+            <g clipPath={`url(#${clipId})`} aria-hidden="true">
+              {lower !== undefined ? (
+                <rect
+                  x={left}
+                  width={Math.max(0, f.sx(lower) - left)}
+                  y={M.top}
+                  height={f.plotB - M.top}
+                  className={`${toneFill.critical} opacity-10`}
+                />
+              ) : null}
+              {upper !== undefined ? (
+                <rect
+                  x={f.sx(upper)}
+                  width={Math.max(0, left + plotW - f.sx(upper))}
+                  y={M.top}
+                  height={f.plotB - M.top}
+                  className={`${toneFill.critical} opacity-10`}
+                />
+              ) : null}
+            </g>
             <BinBars bins={bins} f={f} active={active} animate={!byKeys} onEnter={onPointerBin} />
             {curve ? (
               <path

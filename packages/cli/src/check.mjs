@@ -575,15 +575,24 @@ const importedNames = (source) =>
     ),
   );
 
-/** True when `inner` is nothing but icons: one or more <svg>…</svg> or self-closing icon components. */
+/**
+ * True when `inner` is nothing but icons: one or more inline <svg> (self-closing or with its shapes) or self-closing
+ * icon components. An <svg> with a <title> or its own aria-label names the button, so it is not an icon here.
+ */
 function iconOnly(inner, known) {
   let rest = stripJsxComments(inner).trim();
   let icons = 0;
   while (rest) {
-    if (rest.startsWith('<svg')) {
-      const e = rest.indexOf('</svg>');
-      if (e === -1) return false;
-      rest = rest.slice(e + 6).trim();
+    if (/^<svg[\s/>]/.test(rest)) {
+      const open = tagEnd(rest, 1);
+      if (open === -1 || /\baria-label(?:ledby)?=/.test(topLevel(rest.slice(0, open + 1)).top)) return false;
+      if (rest[open - 1] === '/') {
+        rest = rest.slice(open + 1).trim();
+      } else {
+        const e = rest.indexOf('</svg>');
+        if (e === -1 || /<title[\s>]/.test(rest.slice(open, e))) return false;
+        rest = rest.slice(e + 6).trim();
+      }
     } else {
       const m = /^<([A-Z][\w.]*)/.exec(rest);
       if (!m) return false;

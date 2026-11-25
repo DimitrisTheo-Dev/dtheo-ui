@@ -5,6 +5,11 @@ and have no versions; their history is the merged pull requests.
 
 ## dtheo (the CLI)
 
+### 0.1.3 (unreleased)
+
+- `icon-button-label` catches a button whose only content is an inline `<svg>`, self-closing or with its shapes,
+  such as `<button><svg /></button>`. An `<svg>` with a `<title>` or its own `aria-label` still names the button.
+
 ### 0.1.2 (2026-11-25)
 
 - `dtheo check` with no path skips build output and test reports (`out`, `coverage`, `.vercel`, `.turbo`,
