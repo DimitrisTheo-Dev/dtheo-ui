@@ -1531,6 +1531,39 @@ export const components: ComponentMeta[] = [
         description: 'Add values from other charts to the tooltip.',
       },
       {
+        name: 'xDomain',
+        type: '[number, number]',
+        description: 'The x range. Defaults to the first and last x.',
+      },
+      {
+        name: 'xTicks',
+        type: 'number[]',
+        description: 'x tick values. Defaults to round values that fit the width.',
+      },
+      {
+        name: 'yTicks',
+        type: 'number[]',
+        description: 'y tick values. Defaults to round values in `yDomain`.',
+      },
+      {
+        name: 'xUnit',
+        type: 'string',
+        description: 'The x unit (ms, s, rpm), written at the end of the x-axis and in the readout.',
+      },
+      {
+        name: 'formatX',
+        type: '(x: number) => string',
+        description:
+          'How the readout writes x. Defaults to the digits the sample spacing needs, with `xUnit`.',
+      },
+      {
+        name: 'verticals',
+        type: 'VerticalMarker[]',
+        description:
+          'Labeled vertical lines, such as the step command. `shortLabel` replaces the label on a chart narrower than 520 px.',
+      },
+      { name: 'height', type: 'number', default: '260', description: 'Height in pixels.' },
+      {
         name: 'ariaLabel',
         type: 'string',
         required: true,
@@ -1571,6 +1604,7 @@ export const components: ComponentMeta[] = [
         description:
           '`{ id, label, value, tone?, current? }` per bar; `current` bolds the label of the one under review.',
       },
+      { name: 'height', type: 'number', default: '200', description: 'Height in pixels.' },
       {
         name: 'ariaLabel',
         type: 'string',
@@ -1631,6 +1665,24 @@ export const components: ComponentMeta[] = [
         required: true,
         description: 'What a cell measures (Efficiency), shown with the color scale.',
       },
+      {
+        name: 'digits',
+        type: 'number',
+        default: '1',
+        description: 'Decimals for values in the readout and the legend.',
+      },
+      {
+        name: 'xTicks',
+        type: 'number[]',
+        description:
+          'x tick values; any value inside the axis range, such as round numbers between grid points.',
+      },
+      {
+        name: 'yTicks',
+        type: 'number[]',
+        description: "y tick values. Defaults to about five of the grid's y values.",
+      },
+      { name: 'height', type: 'number', default: '300', description: 'Height in pixels.' },
       {
         name: 'ariaLabel',
         type: 'string',
@@ -1697,6 +1749,8 @@ export const components: ComponentMeta[] = [
         description:
           'Line and endpoint color. The sparkline knows nothing about limits: pass critical yourself when the latest value breaks one.',
       },
+      { name: 'area', type: 'boolean', default: 'true', description: 'Fill the area under the line.' },
+      { name: 'height', type: 'number', default: '28', description: 'Height in pixels.' },
       {
         name: 'ariaLabel',
         type: 'string',
@@ -1776,6 +1830,12 @@ export const components: ComponentMeta[] = [
         description:
           'Freeze the view at the moment it pauses, across theme changes, resizes and scrolling; samples keep buffering, and resuming goes live.',
       },
+      {
+        name: 'yTicks',
+        type: 'number[]',
+        description: 'y tick values. Defaults to round values in `yDomain`.',
+      },
+      { name: 'height', type: 'number', default: '220', description: 'Height in pixels.' },
       {
         name: 'ariaLabel',
         type: 'string',
@@ -1863,6 +1923,28 @@ export const components: ComponentMeta[] = [
         description: 'Dashed reference lines, such as 0 dB and −180°.',
       },
       {
+        name: 'magnitudeTicks',
+        type: 'number[]',
+        description: 'Tick values for the magnitude axis. Defaults to round values in `magnitudeDomain`.',
+      },
+      {
+        name: 'magnitudeUnit',
+        type: 'string',
+        default: "'dB'",
+        description: 'The magnitude unit, on the axis and in the readout.',
+      },
+      {
+        name: 'phaseTicks',
+        type: 'number[]',
+        description: 'Tick values for the phase axis. Defaults to round values in `phaseDomain`.',
+      },
+      {
+        name: 'markers',
+        type: 'Array<{ frequency: number; label: string }>',
+        description: 'Vertical lines across both panes, such as a crossover or the −3 dB bandwidth.',
+      },
+      { name: 'paneHeight', type: 'number', default: '180', description: 'Height of each pane in pixels.' },
+      {
         name: 'ariaLabel',
         type: 'string',
         required: true,
@@ -1946,6 +2028,21 @@ export const components: ComponentMeta[] = [
         description: 'Draw a least-squares line and its r².',
       },
       {
+        name: 'xTicks',
+        type: 'number[]',
+        description: 'x tick values. Defaults to round values that fit the width.',
+      },
+      {
+        name: 'yTicks',
+        type: 'number[]',
+        description: 'y tick values. Defaults to round values in `yDomain`.',
+      },
+      { name: 'xUnit', type: 'string', description: 'The x unit, in the axis title and the readout.' },
+      { name: 'yUnit', type: 'string', description: 'The y unit, in the axis title and the readout.' },
+      { name: 'xDigits', type: 'number', default: '2', description: 'Decimals for x in the readout.' },
+      { name: 'yDigits', type: 'number', default: '1', description: 'Decimals for y in the readout.' },
+      { name: 'height', type: 'number', default: '280', description: 'Height in pixels.' },
+      {
         name: 'ariaLabel',
         type: 'string',
         required: true,
@@ -2011,12 +2108,14 @@ export const components: ComponentMeta[] = [
       {
         name: 'lower',
         type: 'number',
-        description: 'Lower specification limit. Values below it draw critical; Cpk and Ppk use it.',
+        description:
+          'Lower specification limit. Values below it draw critical over a shaded side; Cpk and Ppk use it.',
       },
       {
         name: 'upper',
         type: 'number',
-        description: 'Upper specification limit. Values above it draw critical; Cpk and Ppk use it.',
+        description:
+          'Upper specification limit. Values above it draw critical over a shaded side; Cpk and Ppk use it.',
       },
       {
         name: 'marker',
@@ -2030,6 +2129,31 @@ export const components: ComponentMeta[] = [
         description: 'Overlay the normal curve with the sample mean and standard deviation.',
       },
       { name: 'target', type: 'number', description: 'Where the process should sit, drawn as a line.' },
+      {
+        name: 'domain',
+        type: '[number, number]',
+        description:
+          'The x range. Defaults to the data and the limit, target and marker lines, widened to whole bins.',
+      },
+      {
+        name: 'unit',
+        type: 'string',
+        description: 'The values’ unit, in the axis title, the summary, the line labels and the readout.',
+      },
+      {
+        name: 'digits',
+        type: 'number',
+        default: '1',
+        description: 'Decimals for values in the summary, the line labels and the readout.',
+      },
+      {
+        name: 'capability',
+        type: 'boolean',
+        default: 'true',
+        description:
+          'Show Cpk and Ppk. Set it to false when the limit is a budget rather than a process specification, such as test durations: the lines then read Limit instead of LSL and USL, and the readout says over limit.',
+      },
+      { name: 'height', type: 'number', default: '240', description: 'Height in pixels.' },
       {
         name: 'ariaLabel',
         type: 'string',

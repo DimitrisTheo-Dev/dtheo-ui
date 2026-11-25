@@ -266,6 +266,26 @@ describe('design check rules', () => {
     ).toBe(0);
   });
 
+  it('catches a button whose only content is an inline <svg>, self-closing or not', () => {
+    const bad = [
+      '<button className="transition-colors"><svg /></button>',
+      '<button><svg viewBox="0 0 16 16" aria-hidden="true" /></button>',
+      '<button onClick={close}><svg viewBox="0 0 16 16"><path d="M4 4l8 8" /></svg></button>',
+      '<Button variant="ghost"><svg className="size-4" /><svg className="size-4" /></Button>',
+    ];
+    for (const src of bad) expect(count(src, 'icon-button-label'), src).toBe(1);
+    const named = [
+      '<button aria-label="Close"><svg /></button>',
+      '<button title="Close"><svg /></button>',
+      '<button aria-labelledby="close-label"><svg /></button>',
+      '<button><svg /><span className="sr-only">Close</span></button>',
+      '<button><svg /> Close</button>',
+      '<button><svg aria-label="Close" role="img" /></button>',
+      '<button><svg viewBox="0 0 16 16"><title>Close</title><path d="M4 4l8 8" /></svg></button>',
+    ];
+    for (const src of named) expect(count(src, 'icon-button-label'), src).toBe(0);
+  });
+
   it('catches the mistakes agents make most', () => {
     const planted = [
       ['<p className="text-sm">Small print</p>', 'text-size-token'],

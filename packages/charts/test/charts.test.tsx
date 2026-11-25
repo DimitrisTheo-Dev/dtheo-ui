@@ -312,6 +312,7 @@ describe('capability', () => {
 });
 
 const critical = (c: HTMLElement) => c.querySelectorAll('path.fill-destructive-foreground').length;
+const shades = (c: HTMLElement) => c.querySelectorAll('rect.fill-destructive-foreground');
 
 describe('Histogram against a limit', () => {
   it('counts a value on the limit as in spec, so the red bars hold exactly the values past it', () => {
@@ -387,6 +388,37 @@ describe('Histogram against a limit', () => {
     const { container } = render(<Histogram values={[1, 2, 3, 4, 5]} upper={7} xLabel="x" ariaLabel="x" />);
     expect(container.textContent).toContain(`Cpk${formatNumber(4 / (3 / 1.128), 2)} · capable`);
     expect(container.textContent).toContain(`Ppk${formatNumber(4 / (3 * Math.sqrt(2.5)), 2)}`);
+    expect(container.textContent).toContain('USL 7.0');
+  });
+
+  it('drops Cpk and Ppk for a budget, and names the line and the readout after the limit', () => {
+    const { container, getByRole } = render(
+      <Histogram
+        values={[0.2, 0.4, 2.6]}
+        domain={[0, 3]}
+        binWidth={1}
+        upper={2}
+        capability={false}
+        xLabel="Duration"
+        unit="s"
+        ariaLabel="x"
+      />,
+    );
+    expect(container.textContent).not.toMatch(/Cpk|Ppk|USL/);
+    expect(container.textContent).toContain('Limit 2.0 s');
+    const chart = getByRole('group');
+    fireEvent.keyDown(chart, { key: 'End' });
+    expect(chart.textContent).toContain('2.0 to 3.0 s: 1 value, over limit');
+  });
+
+  it('shades the side past each limit, under the bars', () => {
+    const none = render(<Histogram values={[1, 2, 3]} xLabel="x" ariaLabel="x" />);
+    expect(shades(none.container)).toHaveLength(0);
+    const both = render(<Histogram values={[1, 2, 3]} lower={1.5} upper={2.5} xLabel="x" ariaLabel="x" />);
+    expect(shades(both.container)).toHaveLength(2);
+    const svg = both.container.querySelector('[data-slot="histogram"] svg')!;
+    const order = [...svg.querySelectorAll('rect.fill-destructive-foreground, path.fill-chart-1')];
+    expect(order[0]!.tagName).toBe('rect');
   });
 });
 
