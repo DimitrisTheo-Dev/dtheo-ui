@@ -1,7 +1,7 @@
 # dtheo
 
-The CLI for [dtheo/ui](https://ui.dtheo.dev): add components to any React project, and check UI code against the
-system. Built for people and coding agents.
+The CLI for [dtheo/ui](https://ui.dtheo.dev): add components to any React project, and check UI
+code against the system. Built for people and coding agents.
 
 ```bash
 npx dtheo init                      # utils, theme scope and the stylesheet
@@ -18,7 +18,7 @@ npx dtheo check                     # 22 rules, each with the fix; exits 1 on er
 | `dtheo rules` | Explains every check rule |
 | `dtheo mcp` | Prints the MCP server config for Claude Code, VS Code (`servers`), Cursor, Windsurf and others (`mcpServers`) |
 
-Options: `--registry <url>`, `--cwd <dir>`, `--overwrite`, `--dry-run`, `--json`, `--help` (`-h`), `--version` (`-v`). It
-never writes outside your project.
+Options: `--registry <url>`, `--cwd <dir>`, `--overwrite`, `--dry-run`, `--json`, `--help` (`-h`),
+`--version` (`-v`). It never writes outside your project.
 
 Docs: [ui.dtheo.dev/docs/cli](https://ui.dtheo.dev/docs/cli) · MIT
