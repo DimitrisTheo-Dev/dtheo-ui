@@ -86,7 +86,7 @@ export function MotionDemos() {
         <span className="text-label">Press</span>
         <Button variant="primary">Hold me</Button>
         <span className="text-caption text-subtle-foreground">
-          scale(0.97) in 150 ms, ease-out, on pointer-down.
+          scale(0.97) in 120 ms, ease-out, on pointer-down.
         </span>
       </div>
       <div className="flex flex-col items-start gap-3 rounded-card border border-border bg-card p-4">
