@@ -137,8 +137,8 @@ export const loopReasons: Array<[string, string]> = [
   ],
   [
     'Names your agent already knows',
-    'shadcn color roles and registry format, Tailwind CSS v4 and Base UI. Components are copied ' +
-      'into your project, so you own the code.',
+    'shadcn color roles and registry format, with Base UI underneath. Components are copied into ' +
+      'your project, so you own the code.',
   ],
 ];
 
