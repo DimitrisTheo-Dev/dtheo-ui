@@ -46,7 +46,7 @@ It adds three things: \`lib/utils.ts\` (the \`cn\` helper), \`lib/theme.tsx\` (\
 
 ## 2. Clear the starter styles
 
-A new Next.js app's \`app/globals.css\` sets its own colors, font and body styles, and they override the theme. \`init\` lists them with their line numbers. Delete them and keep the two imports:
+A new Next.js app's \`app/globals.css\` sets its own colors, font and body styles, and they override the theme. \`init\` lists them with their line numbers and asks to delete them. Scripts and agents get no prompt: add \`--remove-overrides\` to delete them, or delete them yourself. Keep the two imports:
 
 \`\`\`css
 @import "tailwindcss";
@@ -206,6 +206,7 @@ npx ${site.cli} mcp                  # MCP config for your editor or agent
 | \`--registry <url>\` | Use another registry (default ${site.url}, or \`$DTHEO_REGISTRY\`) |
 | \`--cwd <dir>\` | Run against another project directory |
 | \`--overwrite\` | Replace files that already exist (skipped by default) |
+| \`--remove-overrides\` | \`init\`: delete the global CSS rules that override the theme, without asking |
 | \`--dry-run\` | Show what would be written |
 | \`--json\` | Machine-readable output |
 

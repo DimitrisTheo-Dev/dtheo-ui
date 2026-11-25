@@ -715,6 +715,38 @@ describe('dtheo CLI', () => {
 
     expect(JSON.parse((await init()).stdout).css.imported).toBe(false);
     expect(css().match(/dtheo\.css/g)).toHaveLength(1);
+    // Without the flag, and with no person at a terminal to ask, init only lists them.
+    expect(report.css.removed).toBe(false);
+    expect(css()).toContain('font-family: Arial');
+  });
+
+  it('deletes the overriding rules with --remove-overrides and keeps the rest of the file', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'dtheo-init-'));
+    mkdirSync(join(dir, 'app'));
+    const own =
+      '.prose { max-width: 65ch; }\n\n/* braces in a comment { */\n.note::before { content: "}"; }\n';
+    // A one-line rule ahead of the starter: deletion must stop at each rule's own closing brace.
+    writeFileSync(join(dir, 'app/globals.css'), nextStarterCss.replace('\n:root', `\n${own}\n:root`));
+    const init = (...flags) =>
+      withRegistry((url) =>
+        runCli(process.execPath, [bin, 'init', '--json', ...flags, '--registry', url, '--cwd', dir]),
+      );
+    const css = () => readFileSync(join(dir, 'app/globals.css'), 'utf8');
+
+    const dry = JSON.parse((await init('--remove-overrides', '--dry-run')).stdout);
+    expect(dry.css.removed).toBe(true);
+    expect(css()).toContain('font-family: Arial');
+
+    const report = JSON.parse((await init('--remove-overrides')).stdout);
+    expect(report.css.removed).toBe(true);
+    expect(report.css.overrides.map((o) => o.selector)).toEqual([
+      ':root',
+      '@theme inline',
+      '@media (prefers-color-scheme: dark)',
+      'body',
+    ]);
+    expect(css()).toBe(`@import "tailwindcss";\n@import "../styles/dtheo.css";\n\n${own}`);
+    expect(JSON.parse((await init('--remove-overrides')).stdout).css.overrides).toEqual([]);
   });
 
   it('prints the type packages a TypeScript build needs', async () => {

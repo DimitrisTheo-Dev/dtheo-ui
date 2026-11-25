@@ -5,7 +5,14 @@ and have no versions; their history is the merged pull requests.
 
 ## dtheo (the CLI)
 
-### 0.1.3 (unreleased)
+### 0.1.4 (unreleased)
+
+- `dtheo init` offers to delete the starter rules that override the theme, such as the ones create-next-app
+  writes. In a terminal it asks; scripts and agents pass `--remove-overrides`. The rest of the file stays.
+- `dtheo init` finds those rules by matching braces, so a one-line rule or a brace in a comment or string no
+  longer shifts what it reports.
+
+### 0.1.3 (2026-11-25)
 
 - `icon-button-label` catches a button whose only content is an inline `<svg>`, self-closing or with its shapes,
   such as `<button><svg /></button>`. An `<svg>` with a `<title>` or its own `aria-label` still names the button.
