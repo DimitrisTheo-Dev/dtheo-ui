@@ -70,18 +70,6 @@ function Tile({ meta, height = 240 }: { meta: ComponentMeta; height?: number }) 
   );
 }
 
-/** A fixed handful of tiles, for the landing page. */
-export function ComponentTeaser({ slugs }: { slugs: string[] }) {
-  const items = slugs.map((s) => components.find((c) => c.slug === s)).filter((c) => c !== undefined);
-  return (
-    <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-      {items.map((c) => (
-        <Tile key={c.slug} meta={c} height={200} />
-      ))}
-    </ul>
-  );
-}
-
 /** Every component, live, grouped by the job it does, with a filter. */
 export function ComponentGallery() {
   const [query, setQuery] = React.useState('');

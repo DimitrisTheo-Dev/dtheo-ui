@@ -13,7 +13,7 @@ export const pagesMarkdown: Record<string, string> = {
 
 > ${site.description}
 
-${site.name} is built for the tools engineers use every day: run reviews, dashboards, trackers and assistants. The interfaces are dense where the data needs it and calm everywhere else, so a first-time user can find the problem and the next step without asking.
+${site.name} gives you and your coding agent the same components and tokens, so the screens it builds come out clean and consistent: dashboards, settings, tables and forms. The agent looks each component up, builds with it and runs the design check before you review.
 
 ## Principles
 

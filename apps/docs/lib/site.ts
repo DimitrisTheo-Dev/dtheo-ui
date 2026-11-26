@@ -1,10 +1,10 @@
 /** One place to rename the library. Everything user-facing reads from here. */
 export const site = {
   name: 'dtheo/ui',
-  tagline: 'A design system for engineering tools.',
+  tagline: 'Build clean UIs with your coding agent.',
   /** Also the share and search snippet, so it stays under 155 characters. */
   description:
-    'A React design system for data-dense engineering tools: components, charts and OKLCH tokens, plus an MCP server and a linter so agents build it right.',
+    'A React design system your coding agent can look up, build with and check: components, tokens, an MCP server and a design linter.',
   url: process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ui.dtheo.dev',
   repo: 'https://github.com/DimitrisTheo-Dev/dtheo-ui',
   /** Who made it: credited in the footer, and linked back from the author's own site. */

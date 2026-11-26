@@ -406,34 +406,18 @@ for (const [path, state, text] of [
   });
 }
 
-// The landing hero is the system at work, not a picture of it: the failing run can be fixed in place.
-test('the landing hero re-runs the checks as the gain moves, and resets to the measured run', async ({
-  page,
-}) => {
-  const errors = watchErrors(page);
+// The landing hero shows the agent's result working, not a picture of it.
+test('the landing demo card sends a test, saves, and names its icon-only button', async ({ page }) => {
   await page.goto('/');
   await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
   const hero = page.locator('main > section').first();
-  // The limit is written with a no-break space before its unit, which \s matches and a typed space does not.
-  const asMeasured = /Overshoot is 7\.6 points over its 10\s% limit\./;
-  await expect(hero.getByText(asMeasured)).toBeVisible();
-  const kp = hero.getByRole('slider', { name: 'Proportional gain, Kp' });
-  await kp.focus();
-  // 4.20 down to 3.60 in steps of 0.05: the gain the run review recommends.
-  for (let i = 0; i < 12; i++) await page.keyboard.press('ArrowLeft');
-  await expect(hero.getByText('All four checks pass at Kp 3.60.')).toBeVisible();
-  const checks = hero.getByRole('group', { name: 'Acceptance checks' });
-  await expect(checks.getByText('Fail')).toHaveCount(0);
-  await expect(checks.getByText('Pass')).toHaveCount(4);
-  // More gain than measured fails more than one check, and says so.
-  for (let i = 0; i < 20; i++) await page.keyboard.press('ArrowRight');
-  await expect(
-    hero.getByText(/Overshoot is .* points over its 10\s% limit, and 2 more checks fail\./),
-  ).toBeVisible();
-  await hero.getByRole('button', { name: 'Reset' }).click();
-  await expect(hero.getByText(asMeasured)).toBeVisible();
-  await expect(hero.getByText('as measured in R-0412')).toBeVisible();
-  expect(errors).toEqual([]);
+  await expect(hero.getByRole('heading', { level: 1 })).toHaveText('Build clean UIs with your coding agent.');
+  await hero.getByRole('button', { name: 'Send a test message' }).click();
+  await expect(hero.getByRole('status')).toHaveText('Test message sent to #releases');
+  await hero.getByRole('switch', { name: 'Weekly summary' }).click();
+  await expect(hero.getByRole('status')).toHaveText('');
+  await hero.getByRole('button', { name: 'Save changes' }).click();
+  await expect(hero.getByRole('status')).toHaveText('Saved');
 });
 
 // The generated stylesheet decides which colors a preset scope gets from the mode classes around it. These are the

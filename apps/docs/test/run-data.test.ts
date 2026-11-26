@@ -15,9 +15,7 @@ import { Assistant } from '@/app/examples/assistant/assistant';
 import { RunHistory } from '@/app/examples/run-history/run-history';
 import { RunReview } from '@/app/examples/run-review/run-review';
 import { Tuning } from '@/app/examples/tuning/tuning';
-import { A11yDemo } from '@/components/home/a11y-demo';
 import { Bento } from '@/components/home/bento';
-import { HeroInstrument } from '@/components/home/hero-instrument';
 import { HeroPreview } from '@/components/home/hero-preview';
 import { DataTableDemo } from '@/components/patterns/data-table-demo';
 import {
@@ -184,9 +182,7 @@ const render = (C: React.ComponentType) =>
 
 const surfaces: Array<[string, React.ComponentType]> = [
   ...Object.entries(examples).map(([id, C]) => [`examples/${id}`, C] as [string, React.ComponentType]),
-  ['landing hero', HeroInstrument],
   ['landing agent demo card', HeroPreview],
-  ['landing accessibility demo', A11yDemo],
   ['landing tiles', Bento],
   ['run history', RunHistory],
   ['run review', RunReview],
@@ -294,7 +290,7 @@ const r0412Checks = [
   { label: /rise/i, unit: 'ms', value: fmt.n0.format(M.rise), limit: RISE_LIMIT },
   { label: /temp/i, unit: '°C', value: fmt.n1.format(WINDING_TEMP), limit: TEMP_LIMIT },
 ];
-const r0412Surfaces = ['landing hero', 'run review', 'lab assistant', 'examples/metric'];
+const r0412Surfaces = ['run review', 'lab assistant', 'examples/metric'];
 
 describe('every surface that shows R-0412', () => {
   it('states its settling time, peak, step, current, overshoot and limits as the model does', () => {

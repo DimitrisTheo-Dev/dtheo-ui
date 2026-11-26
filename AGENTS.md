@@ -16,7 +16,6 @@ The docs app runs Next.js 16; read `apps/docs/AGENTS.md` before writing Next cod
 | Rebuild tokens | `pnpm tokens` |
 | Regenerate example index / usage graph | `pnpm examples` / `pnpm usage` |
 | Rebuild the Figma plugin after a token or plugin change | `pnpm figma` |
-| Recapture the example screenshots on the landing page | `pnpm screens` (dev server running) |
 | Check UI code against the system | `node packages/cli/src/bin.mjs check <paths or globs>` |
 | See what a release would publish | `pnpm release --dry-run` |
 

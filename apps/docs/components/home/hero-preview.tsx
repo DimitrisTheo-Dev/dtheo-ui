@@ -1,129 +1,108 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
-import { CircleXIcon, RotateCcwIcon } from 'lucide-react';
-import { Card, CardContent } from '@dtheo/ui/components/card';
-import { Metric, MetricGroup } from '@dtheo/ui/components/metric';
-import { Button } from '@dtheo/ui/components/button';
-import { Badge } from '@dtheo/ui/components/badge';
-import { ChartLegend, LineChart } from '@dtheo/charts';
+import { CircleCheckIcon, SendIcon } from 'lucide-react';
 import {
-  CURRENT_LIMIT,
-  DELAY,
-  OVERSHOOT_LIMIT,
-  SETTLE_LIMIT,
-  TARGET,
-  TORQUE_LIMIT,
-  checkStatus,
-  command,
-  fmt,
-  measured,
-  measuredMetrics as M,
-  reference,
-} from '@/lib/lab-data';
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@dtheo/ui/components/card';
+import { Field, FieldDescription, FieldLabel } from '@dtheo/ui/components/field';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@dtheo/ui/components/select';
+import { Switch } from '@dtheo/ui/components/switch';
+import { Button } from '@dtheo/ui/components/button';
+
+const events = [
+  { id: 'deploy', label: 'A deploy fails', text: 'Right away, with the step that failed.', on: true },
+  { id: 'review', label: 'A review is requested', text: 'Once per pull request, not per commit.', on: true },
+  { id: 'summary', label: 'Weekly summary', text: 'Mondays at 09:00, in your time zone.', on: false },
+];
+
+const channels = [
+  { value: 'releases', label: '#releases' },
+  { value: 'engineering', label: '#engineering' },
+  { value: 'alerts', label: '#alerts' },
+];
 
 /**
- * The hero shows the product, not decoration: the live checks and trace from the run review example. The run is
- * synthetic and says so.
+ * What the agent in the demo builds: an ordinary settings card, made only from the system's components. It works:
+ * the switches and the channel picker respond, and sending a test or saving confirms in place.
  */
 export function HeroPreview() {
+  const [channel, setChannel] = React.useState('releases');
+  const [status, setStatus] = React.useState<string | null>(null);
+  const changed = () => setStatus(null);
   return (
     <Card className="min-w-0 overflow-hidden shadow-raised">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
-        <span className="flex min-w-0 items-baseline gap-2">
-          <span className="font-mono text-label text-muted-foreground">R-0412</span>
-          <span className="truncate text-headline">High-gain step</span>
-        </span>
-        <Badge variant="destructive">
-          <CircleXIcon aria-hidden="true" />
-          Needs retune
-        </Badge>
-      </div>
-      <CardContent className="flex flex-col gap-4">
-        <MetricGroup aria-label="Acceptance checks" className="grid-cols-3">
-          <Metric
-            label="Overshoot"
-            value={fmt.n1.format(M.overshoot)}
-            unit="%"
-            status={checkStatus(M.overshoot, OVERSHOOT_LIMIT)}
-            progress={M.overshoot / (OVERSHOOT_LIMIT * 1.5)}
-            limit={1 / 1.5}
-          />
-          <Metric
-            label="Current"
-            hint="Peak phase current"
-            value={fmt.n1.format(M.peakCurrent)}
-            unit="A"
-            status={checkStatus(M.peakCurrent, CURRENT_LIMIT)}
-            progress={M.peakCurrent / (CURRENT_LIMIT * 1.25)}
-            limit={1 / 1.25}
-          />
-          <Metric
-            label="Settling"
-            hint="Time after the step until torque stays inside ±2 %"
-            value={fmt.n0.format(M.settle)}
-            unit="ms"
-            status={checkStatus(M.settle, SETTLE_LIMIT)}
-            progress={M.settle / (SETTLE_LIMIT * 1.5)}
-            limit={1 / 1.5}
-          />
-        </MetricGroup>
-        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
-          <ChartLegend
-            items={[
-              { label: 'R-0412', tone: 'primary' },
-              { label: 'R-0409 reference', tone: 'muted' },
-              { label: 'Over limit', tone: 'critical', kind: 'area' },
-            ]}
-          />
-          <span className="text-caption text-subtle-foreground">Synthetic data</span>
+      <CardHeader>
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {/* Under the page's h1, so the card takes the next level and the outline never skips one. */}
+          <CardTitle level={2}>Notifications</CardTitle>
+          <CardDescription>Choose what reaches your team, and where.</CardDescription>
         </div>
-        <LineChart
-          ariaLabel={`Output torque: R-0412 overshoots ${fmt.n1.format(M.overshoot)} %, above the ${OVERSHOOT_LIMIT} % limit. Phase current peaks at ${fmt.n1.format(M.peakCurrent)} A of ${CURRENT_LIMIT} A.`}
-          x={measured.t}
-          xDomain={[0, 400]}
-          xUnit="ms"
-          yDomain={[0, 16]}
-          yTicks={[0, 4, 8, 12, 16]}
-          height={210}
-          syncId="hero"
-          series={[
-            {
-              id: 'cmd',
-              label: 'Command',
-              values: command,
-              tone: 'faint',
-              width: 1,
-              unit: 'N·m',
-              dot: false,
-            },
-            { id: 'ref', label: 'R-0409', values: reference.torque, tone: 'muted', width: 1.5, unit: 'N·m' },
-            { id: 'meas', label: 'R-0412', values: measured.torque, tone: 'primary', width: 2, unit: 'N·m' },
-          ]}
-          bands={[{ from: TARGET * 0.98, to: TARGET * 1.02, fromX: DELAY }]}
-          thresholds={[
-            { value: TORQUE_LIMIT, label: 'Overshoot limit', shortLabel: 'Limit', shadeSeries: 'meas' },
-          ]}
-          markers={[
-            {
-              x: M.peakAt,
-              y: M.peak,
-              label: `${fmt.n1.format(M.peak)} N·m`,
-              sublabel: `+${fmt.n1.format(M.overshoot)} %`,
-            },
-          ]}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
-          <span className="text-label font-normal text-muted-foreground">
-            Lower Kp or raise Kd, then rerun on Bench 3.
-          </span>
-          <Button variant="primary" size="sm" render={<Link href="/examples/run-review" />}>
-            <RotateCcwIcon aria-hidden="true" />
-            Review the run
+        <CardAction>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Send a test message"
+            onClick={() =>
+              setStatus(`Test message sent to ${channels.find((c) => c.value === channel)!.label}`)
+            }
+          >
+            <SendIcon aria-hidden="true" />
           </Button>
-        </div>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {events.map((e) => (
+          <Field key={e.id}>
+            <FieldLabel className="w-full items-center justify-between gap-4">
+              {e.label}
+              <Switch defaultChecked={e.on} onCheckedChange={changed} />
+            </FieldLabel>
+            <FieldDescription>{e.text}</FieldDescription>
+          </Field>
+        ))}
+        <Field>
+          <FieldLabel>Channel</FieldLabel>
+          <Select
+            items={channels}
+            value={channel}
+            onValueChange={(v) => {
+              setChannel(v as string);
+              changed();
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {channels.map((c) => (
+                <SelectItem key={c.value} value={c.value}>
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
       </CardContent>
+      <CardFooter className="justify-end gap-2">
+        <span role="status" className="mr-auto flex items-center gap-1.5 text-label text-success-foreground">
+          {status ? (
+            <>
+              <CircleCheckIcon className="size-3.5 shrink-0" aria-hidden="true" />
+              {status}
+            </>
+          ) : null}
+        </span>
+        <Button variant="primary" onClick={() => setStatus('Saved')}>
+          Save changes
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

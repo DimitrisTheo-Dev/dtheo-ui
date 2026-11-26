@@ -23,7 +23,6 @@ import { allPages } from '@/lib/nav';
 const top = [
   { title: 'Docs', href: '/docs' },
   { title: 'Components', href: '/docs/components' },
-  { title: 'Examples', href: '/examples/run-review' },
   { title: 'Agents', href: '/docs/agents' },
 ];
 

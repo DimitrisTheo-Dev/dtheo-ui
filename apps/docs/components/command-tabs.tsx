@@ -50,7 +50,7 @@ export function CommandTabs({
                 {w.text}
               </p>
             ) : (
-              <code className="min-w-0 flex-1 overflow-x-auto font-mono text-label font-normal whitespace-nowrap text-foreground [scrollbar-width:none]">
+              <code className="min-w-0 flex-1 font-mono text-label font-normal break-all text-foreground sm:overflow-x-auto sm:break-normal sm:whitespace-nowrap sm:[scrollbar-width:none]">
                 <span aria-hidden="true" className="text-subtle-foreground select-none">
                   ${' '}
                 </span>

@@ -1,11 +1,11 @@
 <p align="center">
-  <a href="https://ui.dtheo.dev"><img src=".github/assets/hero.png" alt="dtheo/ui: a design system for engineering tools. A step response overshooting its limit." width="100%" /></a>
+  <a href="https://ui.dtheo.dev"><img src=".github/assets/hero.png" alt="dtheo/ui: build clean UIs with your coding agent. dtheo check finds an icon button with no name, and the next run reports 0 errors." width="100%" /></a>
 </p>
 
 <h1 align="center">dtheo/ui</h1>
 
 <p align="center">
-  React components and engineering charts for data-dense tools,<br />
+  Build clean UIs with your coding agent: React components and tokens,<br />
   with an MCP server and a design linter built in.
 </p>
 
@@ -57,9 +57,9 @@ server plus skills that plan, design and review the screen:
 ## What is inside
 
 - **38 components** on Base UI and Tailwind CSS v4, including a virtualized data table.
-- **8 charts** that draw limits and mark what crosses them; the histogram states Cpk.
 - **22 design checks** in `dtheo check`, each with the line and the fix. It exits 1 in CI.
 - **Contrast measured on every build:** 43 color pairs in Graphite and Carbon, light and dark.
+- **8 charts** for dashboards. They draw limits and read with the arrow keys.
 - A **Figma library** built from the tokens, and **5 example apps** on synthetic data.
 
 ## How it is built
