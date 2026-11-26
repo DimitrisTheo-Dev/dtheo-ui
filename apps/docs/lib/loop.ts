@@ -114,7 +114,7 @@ export const loopTools: LoopTool[] = [
       'Runs the project’s own scripts (format, lint, types, tests, design check, build) and ' +
       'reports each one.',
     found:
-      'Its first run on dtheo/ui: 31 files the formatter had never checked. ' +
+      'Its first run on dtheo/ui: 30 files the formatter had never checked. ' +
       `[The pull request](${repo}/dtheo-ui/pull/20).`,
     with: 'Any JavaScript or TypeScript repository with a lockfile.',
     start: `[Adopt it](${gate}#adopt-it) with one onboarding script.`,
