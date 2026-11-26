@@ -4,6 +4,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ArrowRightIcon, BotIcon, CheckIcon, SparklesIcon, TerminalIcon } from 'lucide-react';
+import { Button } from '@dtheo/ui/components/button';
 import { Checkbox } from '@dtheo/ui/components/checkbox';
 import { Radio, RadioGroup } from '@dtheo/ui/components/radio-group';
 import { getComponent } from '@dtheo/ui/meta';
@@ -66,65 +67,19 @@ function FormsArt() {
   );
 }
 
-function LiveArt() {
-  return (
-    <svg viewBox="0 0 120 56" className="h-full w-full" preserveAspectRatio="none">
-      <line x1="0" x2="120" y1="16" y2="16" strokeDasharray="3 3" className="stroke-subtle-foreground/70" />
-      <path
-        d="M0 46 H28 V18 Q30 10 33 18 H70 V46 H92 V18 Q94 10 97 18 H112"
-        fill="none"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        className="stroke-chart-1"
-      />
-      <path
-        d="M30 16 Q30.8 10 32 16"
-        fill="none"
-        strokeWidth="2.5"
-        className="stroke-destructive-foreground"
-      />
-      <path
-        d="M94 16 Q94.8 10 96 16"
-        fill="none"
-        strokeWidth="2.5"
-        className="stroke-destructive-foreground"
-      />
-      <circle cx="112" cy="18" r="3.5" className="fill-chart-1 stroke-card" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function LabArt() {
-  const bars = [3, 6, 10, 13, 11, 7, 4, 2, 1.5];
-  return (
-    <div className="relative flex h-full items-end gap-1 px-1">
-      {bars.map((h, i) => (
-        <span
-          key={i}
-          className={`flex-1 rounded-t-[2px] ${i >= 7 ? 'bg-destructive-foreground' : 'bg-chart-1'}`}
-          style={{ height: `${h * 7}%` }}
-        />
-      ))}
-      <span className="absolute inset-y-0 left-[76%] border-l border-dashed border-subtle-foreground" />
-    </div>
-  );
-}
-
-function AssistantArt() {
+function SettingsArt() {
   return (
     <div className="flex h-full flex-col justify-center gap-1.5">
-      <span className="h-3 w-3/5 self-end rounded-full bg-primary" />
-      <div className="flex w-4/5 flex-col gap-1 rounded-[6px] bg-secondary p-1.5">
-        <span className={`h-1 w-3/4 ${bar}`} />
-        <svg viewBox="0 0 60 14" className="h-3.5 w-full" preserveAspectRatio="none">
-          <path
-            d="M0 12 C10 12 12 3 20 4 S34 9 40 7 S52 2 60 3"
-            fill="none"
-            strokeWidth="1.5"
-            className="stroke-chart-1"
-          />
-        </svg>
-      </div>
+      {[true, false, true].map((on, i) => (
+        <div key={i} className="flex items-center justify-between gap-2 px-1">
+          <span className={`h-1 w-12 ${bar}`} />
+          <span
+            className={`flex h-2.5 w-4.5 items-center rounded-full p-px ${on ? 'justify-end bg-primary' : 'bg-foreground/20'}`}
+          >
+            <span className="size-2 rounded-full bg-background" />
+          </span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -139,7 +94,7 @@ const builds = [
     text: 'Metrics and charts',
     art: DashboardArt,
     components: ['app-shell', 'metric', 'card', 'line-chart', 'bar-chart', 'badge'],
-    start: { title: 'Run review', href: '/examples/run-review' },
+    next: { title: 'Charts', href: '/docs/components#cat-charts' },
   },
   {
     id: 'table',
@@ -148,7 +103,7 @@ const builds = [
     text: 'Search, sort, select',
     art: TableArt,
     components: ['table', 'input-group', 'select', 'checkbox', 'menu', 'empty'],
-    start: { title: 'Data table pattern', href: '/docs/patterns/data-table' },
+    next: { title: 'Data table pattern', href: '/docs/patterns/data-table' },
   },
   {
     id: 'forms',
@@ -157,34 +112,16 @@ const builds = [
     text: 'Fields that explain',
     art: FormsArt,
     components: ['field', 'input', 'number-field', 'select', 'switch', 'toast'],
-    start: { title: 'Forms pattern', href: '/docs/patterns/forms' },
+    next: { title: 'Forms pattern', href: '/docs/patterns/forms' },
   },
   {
-    id: 'live',
-    phrase: 'a live monitor',
-    title: 'Live monitor',
-    text: 'Telemetry at 1 kHz',
-    art: LiveArt,
-    components: ['stream-chart', 'metric', 'badge', 'alert'],
-    start: { title: 'Loop tuning', href: '/examples/tuning' },
-  },
-  {
-    id: 'lab',
-    phrase: 'a lab analysis view',
-    title: 'Lab analysis',
-    text: 'Bode, scatter, Cpk',
-    art: LabArt,
-    components: ['frequency-chart', 'scatter-chart', 'histogram', 'line-chart'],
-    start: { title: 'Loop tuning', href: '/examples/tuning' },
-  },
-  {
-    id: 'assistant',
-    phrase: 'an AI assistant',
-    title: 'AI assistant',
-    text: 'Answers with charts',
-    art: AssistantArt,
-    components: ['textarea', 'button', 'card', 'line-chart', 'table', 'tabs'],
-    start: { title: 'Lab assistant', href: '/examples/assistant' },
+    id: 'settings',
+    phrase: 'a settings page',
+    title: 'Settings',
+    text: 'Switches and choices',
+    art: SettingsArt,
+    components: ['card', 'field', 'switch', 'select', 'button', 'toast'],
+    next: { title: 'Forms pattern', href: '/docs/patterns/forms' },
   },
 ];
 
@@ -270,13 +207,13 @@ export function Onboarding() {
 
   const chosen = builds.filter((b) => picked.includes(b.id));
   const slugs = [...new Set(chosen.flatMap((b) => b.components))];
-  const starts = [...new Map(chosen.map((b) => [b.start.href, b.start])).values()];
+  const nexts = [...new Map(chosen.map((b) => [b.next.href, b.next])).values()];
   const phrases = chosen.map((b) => b.phrase);
   const what = phrases.length
     ? phrases.length === 1
       ? phrases[0]!
       : `${phrases.slice(0, -1).join(', ')} and ${phrases.at(-1)}`
-    : 'an engineering tool';
+    : 'a screen';
 
   const command = [
     `npx ${site.cli}@latest init`,
@@ -291,7 +228,7 @@ export function Onboarding() {
   return (
     <div className="flex flex-col gap-12">
       <Step n={1} done={picked.length > 0} title="What are you building?">
-        <ul className="grid grid-cols-2 gap-3 md:grid-cols-3" aria-label="Pick one or more">
+        <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Pick one or more">
           {builds.map((b) => {
             const Art = b.art;
             const on = picked.includes(b.id);
@@ -369,22 +306,15 @@ export function Onboarding() {
           {who !== 'you' ? <Block label="Connect your agent" text={mcp} /> : null}
           {who !== 'you' ? <Block label="Prompt" text={prompt} prose /> : null}
         </div>
-        {starts.length ? (
+        {nexts.length ? (
           <div className="flex flex-col gap-2.5">
-            <p className="text-label font-normal text-muted-foreground">Start from</p>
+            <p className="text-label font-normal text-muted-foreground">Read next</p>
             <div className="flex flex-wrap gap-2">
-              {starts.map((s) => (
-                <Link
-                  key={s.href}
-                  href={s.href}
-                  className="group relative inline-flex h-9 items-center gap-1.5 rounded-control bg-primary px-3.5 text-body font-medium text-primary-foreground shadow-raised transition-[background-color,scale] duration-150 ease-out after:absolute after:inset-0 hover:bg-primary-hover active:scale-[0.97] active:after:-inset-2"
-                >
+              {nexts.map((s) => (
+                <Button key={s.href} render={<Link href={s.href} />}>
                   {s.title}
-                  <ArrowRightIcon
-                    aria-hidden="true"
-                    className="size-4 transition-transform duration-150 group-hover:translate-x-0.5"
-                  />
-                </Link>
+                  <ArrowRightIcon aria-hidden="true" />
+                </Button>
               ))}
             </div>
             <p className="pt-2 text-label font-normal text-muted-foreground">{slugs.length} components</p>
