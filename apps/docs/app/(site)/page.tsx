@@ -19,7 +19,7 @@ const faqs: Array<[string, React.ReactNode]> = [
     <>
       Connect the MCP server or point it at <code className="inline-code">/llms.txt</code>. It looks
       components up, copies the source and checks its own code before handing it back.{' '}
-      <Link className="docs-link" href="/docs/loop">
+      <Link className="docs-link" href="/docs/how-it-works">
         How the three tools fit
       </Link>
       .
@@ -110,7 +110,7 @@ export default function Home() {
           title="The same parts for you and your agent"
           text="Your agent looks the system up, uses it and checks its own work. You review less."
           action={
-            <Button variant="ghost" render={<Link href="/docs/loop" />}>
+            <Button variant="ghost" render={<Link href="/docs/how-it-works" />}>
               The plugin and quality gate
               <ArrowRightIcon aria-hidden="true" />
             </Button>

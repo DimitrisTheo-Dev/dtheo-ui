@@ -20,8 +20,8 @@ import { pageMetadata } from '@/lib/metadata';
 export const metadata: Metadata = pageMetadata({
   title: loopTitle,
   description: loopDescription,
-  path: '/docs/loop',
-  markdown: '/docs/loop.md',
+  path: '/docs/how-it-works',
+  markdown: '/docs/how-it-works.md',
 });
 
 function ToolName({ tool }: { tool: LoopTool }) {
@@ -47,7 +47,7 @@ export default function LoopPage() {
       eyebrow="Get started"
       title={loopTitle}
       description={loopDescription}
-      markdownHref="/docs/loop.md"
+      markdownHref="/docs/how-it-works.md"
     >
       <DocSection title="The problem">
         <p className="docs-prose">{loopProblem}</p>

@@ -184,7 +184,7 @@ const accent = oklch.graphite.dark.primary; // "oklch(…)", for Skia or the web
 `,
 
   agents: agentsMarkdown(),
-  loop: loopMarkdown(),
+  'how-it-works': loopMarkdown(),
 
   cli: `# CLI
 

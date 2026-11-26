@@ -94,3 +94,14 @@ test('unknown routes return a real 404', async ({ page }) => {
   expect(res?.status()).toBe(404);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 });
+
+test('the old loop address lands on How it works, page and Markdown', async ({ request }) => {
+  for (const [from, to] of [
+    ['/docs/loop', '/docs/how-it-works'],
+    ['/docs/loop.md', '/docs/how-it-works.md'],
+  ]) {
+    const res = await request.get(from, { maxRedirects: 0 });
+    expect(res.status()).toBe(308);
+    expect(res.headers().location).toBe(to);
+  }
+});

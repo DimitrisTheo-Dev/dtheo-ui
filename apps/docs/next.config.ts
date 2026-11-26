@@ -63,6 +63,9 @@ const config: NextConfig = {
       { source: '/docs/patterns', destination: '/docs/patterns/data-table', permanent: false },
       // Charts have no page of their own: the component index shows every chart, live, in its Charts section.
       { source: '/docs/charts', destination: '/docs/components#cat-charts', permanent: false },
+      // The page was called The loop until it became How it works; links to the old address keep working.
+      { source: '/docs/loop', destination: '/docs/how-it-works', permanent: true },
+      { source: '/docs/loop.md', destination: '/docs/how-it-works.md', permanent: true },
     ];
   },
   async rewrites() {
