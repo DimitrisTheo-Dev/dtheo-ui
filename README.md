@@ -13,7 +13,7 @@
   <a href="https://ui.dtheo.dev"><strong>ui.dtheo.dev</strong></a> ·
   <a href="https://ui.dtheo.dev/docs/components">Components</a> ·
   <a href="https://ui.dtheo.dev/docs/agents">For agents</a> ·
-  <a href="https://ui.dtheo.dev/examples/tuning">Live example</a>
+  <a href="https://ui.dtheo.dev/docs/loop">How it works</a>
 </p>
 
 <p align="center">

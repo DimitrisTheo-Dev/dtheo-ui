@@ -171,6 +171,17 @@ test('get started turns two choices into one command', async ({ page }) => {
   await expect(main.getByRole('link', { name: 'Data table pattern' })).toBeVisible();
 });
 
+test('get started points to docs pages, never to an example app', async ({ page }) => {
+  await page.goto('/docs');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const main = page.getByRole('main');
+  for (const name of ['Dashboard', 'Data table', 'Forms', 'Settings']) {
+    await main.getByText(name, { exact: true }).click();
+  }
+  await expect(main.getByRole('link', { name: 'Charts' })).toBeVisible();
+  await expect(main.locator('a[href^="/examples"]')).toHaveCount(0);
+});
+
 test('a card pressed at its very edge still selects', async ({ page }) => {
   await page.goto('/docs');
   await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
