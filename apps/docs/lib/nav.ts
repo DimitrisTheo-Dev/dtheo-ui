@@ -68,10 +68,11 @@ export const getStarted: NavItem[] = [
     ],
   },
   {
-    title: 'The loop',
+    title: 'How it works',
     href: '/docs/loop',
-    description: 'The three tools, when each one runs and what each one catches.',
+    description: 'One screen from your request to your review, and the three tools that check it.',
     keywords: [
+      'the loop',
       'workflow',
       'plugin',
       'agent skills',
