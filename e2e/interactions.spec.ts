@@ -182,6 +182,17 @@ test('get started points to docs pages, never to an example app', async ({ page 
   await expect(main.locator('a[href^="/examples"]')).toHaveCount(0);
 });
 
+test('the sidebar filter stays at the top while the list scrolls', async ({ page }) => {
+  await page.goto('/docs/components/button');
+  await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });
+  const aside = page.getByRole('complementary', { name: 'Docs sidebar' });
+  await aside.evaluate((el) => (el.scrollTop = el.scrollHeight));
+  await expect(aside.getByRole('searchbox', { name: 'Filter the docs' })).toBeInViewport();
+  await page.keyboard.press('/');
+  await page.keyboard.type('tooltip');
+  await expect(aside.getByRole('link', { name: 'Tooltip' })).toBeVisible();
+});
+
 test('a card pressed at its very edge still selects', async ({ page }) => {
   await page.goto('/docs');
   await page.locator('html[data-hydrated]').waitFor({ state: 'attached' });

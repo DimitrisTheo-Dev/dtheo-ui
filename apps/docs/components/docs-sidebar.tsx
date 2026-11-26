@@ -126,7 +126,14 @@ function Folder({
  * The docs index. Six sections, each with its own colored tile so you can tell at a glance where you are; the long
  * component list folds into its categories, and `/` filters everything.
  */
-export function DocsSidebar({ onNavigate }: { onNavigate?: () => void }) {
+export function DocsSidebar({
+  onNavigate,
+  filterClassName = '',
+}: {
+  onNavigate?: () => void;
+  /** The filter stays at the top while the list scrolls under it. Each surface gives it an opaque background, so rows never show through. */
+  filterClassName?: string;
+}) {
   const pathname = usePathname();
   const [query, setQuery] = React.useState('');
   const [toggled, setToggled] = React.useState<Record<string, boolean>>({});
@@ -160,31 +167,35 @@ export function DocsSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex flex-col gap-4 pb-10">
-      <InputGroup className="bg-background/60">
-        <InputGroupAddon>
-          <SearchIcon aria-hidden="true" />
-        </InputGroupAddon>
-        <Input
-          ref={filterRef}
-          type="search"
-          value={query}
-          onValueChange={setQuery}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') setQuery('');
-          }}
-          placeholder="Filter"
-          aria-label="Filter the docs"
-        />
-        {query ? (
-          <Button variant="ghost" size="icon-xs" aria-label="Clear filter" onClick={() => setQuery('')}>
-            <XIcon aria-hidden="true" />
-          </Button>
-        ) : (
-          <InputGroupAddon className="pointer-coarse:hidden">
-            <Kbd>/</Kbd>
+      <div className={`sticky top-0 z-10 ${filterClassName}`}>
+        <InputGroup className="bg-background/60">
+          <InputGroupAddon>
+            <SearchIcon aria-hidden="true" />
           </InputGroupAddon>
-        )}
-      </InputGroup>
+          <Input
+            ref={filterRef}
+            type="search"
+            value={query}
+            onValueChange={setQuery}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setQuery('');
+            }}
+            placeholder="Filter"
+            aria-label="Filter the docs"
+            // One clear button, ours: hide the one WebKit draws inside search fields.
+            className="[&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {query ? (
+            <Button variant="ghost" size="icon-xs" aria-label="Clear filter" onClick={() => setQuery('')}>
+              <XIcon aria-hidden="true" />
+            </Button>
+          ) : (
+            <InputGroupAddon className="pointer-coarse:hidden">
+              <Kbd>/</Kbd>
+            </InputGroupAddon>
+          )}
+        </InputGroup>
+      </div>
 
       <nav ref={navRef} aria-label="Documentation" className="flex flex-col gap-5">
         {groups.map((g) => {
