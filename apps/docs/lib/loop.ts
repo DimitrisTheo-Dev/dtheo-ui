@@ -1,174 +1,156 @@
-import { contrastPairs } from '@dtheo/tokens';
 import { ruleList } from 'dtheo/check';
 import { site } from './site';
 
 /**
- * One source for the loop page and its Markdown mirror: the three tools, the moment each runs and a
- * real finding from each. Text uses inline Markdown (code, bold, links).
+ * One source for the "How it works" page and its Markdown mirror: the problem, one screen from
+ * request to review, the three tools and which one to pick. Text uses inline Markdown (code, links).
  */
 const repo = 'https://github.com/DimitrisTheo-Dev';
 const skills = `${repo}/agent-skills`;
 const gate = `${repo}/product-engineering-quality-gate`;
 
+export const loopTitle = 'How it works';
+
 export const loopDescription =
-  'Three open source tools check the UI your agent builds: while it writes, when the screen ' +
-  'renders and on every pull request. Use one or all three.';
+  'You ask your coding agent for a screen. Three free tools check its work, so the screen is ' +
+  'already clean when you review it.';
+
+export const loopProblem =
+  'Coding agents write UI that works but drifts from your design: a new shade of blue, an icon ' +
+  'button with no name, a placeholder used as a label. Without checks, you leave the same ' +
+  'review comments on every screen.';
 
 export interface LoopStep {
-  step: string;
-  tool: string;
+  title: string;
   text: string;
-  /** Where a failure sends the work. */
-  again?: string;
+  /** The tool doing the work, or none for the person. */
+  tool?: string;
 }
 
 export const loopSteps: LoopStep[] = [
   {
-    step: 'Plan',
-    tool: 'dtheo plugin',
-    text: 'Decide who the screen is for, what it must show and the smallest flow that works.',
+    title: 'You ask for a screen',
+    text: '“Build a notifications settings card.”',
   },
   {
-    step: 'Write',
-    tool: 'dtheo/ui',
-    text: 'The agent reads each component’s contract over MCP and copies its source.',
+    title: 'The agent looks up the parts',
+    tool: site.name,
+    text: 'It reads when to use Card, Switch and Select, then copies their code into your project.',
   },
   {
-    step: 'Check',
-    tool: 'dtheo/ui',
-    text: `\`${site.cli} check\` runs ${ruleList.length} rules. Each finding has the line and the fix.`,
-    again: 'Fix, check again',
+    title: 'It checks its own code',
+    tool: site.name,
+    text:
+      `\`${site.cli} check\` runs ${ruleList.length} rules and finds an icon button with no name at ` +
+      '`notifications.tsx:21`. The agent names it and checks again.',
   },
   {
-    step: 'Review',
+    title: 'It looks at the screen',
     tool: 'dtheo plugin',
     text:
-      'Render the screen at phone and desktop widths, light and dark. A second agent, not the ' +
-      'one that built it, reviews it.',
-    again: 'Fix, review again',
+      'It opens the screen at phone and desktop sizes. A second agent, new to the code, tries ' +
+      'it and reports what breaks.',
   },
   {
-    step: 'Merge',
+    title: 'The pull request is checked',
     tool: 'Quality gate',
-    text: 'The pull request runs the project’s own checks and reports each one.',
-    again: 'Fix, push again',
+    text:
+      'Format, lint, types, tests, the design check and the build run on every pull request. ' +
+      'One failure fails the check.',
+  },
+  {
+    title: 'You review',
+    text: 'The screen already passed all of that, so your review is about the product.',
   },
 ];
 
 export interface LoopTool {
   name: string;
   href: string;
-  /** Rows of the comparison, in the order of loopRows. */
-  is: string;
+  what: string;
   when: string;
-  does: string;
+  /** A real finding, with a link to the fix. */
   found: string;
-  with: string;
   start: string;
 }
-
-export const loopRows: Array<[keyof Omit<LoopTool, 'name' | 'href'>, string]> = [
-  ['is', 'What it is'],
-  ['when', 'When it runs'],
-  ['does', 'What it does'],
-  ['found', 'What it finds'],
-  ['with', 'Works with'],
-  ['start', 'Start'],
-];
 
 export const loopTools: LoopTool[] = [
   {
     name: site.name,
     href: '/docs',
-    is: 'React components, charts and tokens, with an MCP server and a CLI.',
-    when: 'While your agent writes the code.',
-    does: 'Gives the agent each component’s contract and source, then checks the code it wrote.',
-    found:
-      '`run-card.tsx:5 palette-color`: `bg-blue-600` has no effect in the theme. ' +
-      'Pick the role: `bg-primary`.',
-    with: 'Any agent that speaks MCP, or none: the CLI runs the same checks.',
+    what: 'React components and design tokens, plus a design check your agent can run.',
+    when: 'While the agent writes the code.',
+    found: '`run-card.tsx:5`: `bg-blue-600` does nothing in the theme. Use `bg-primary`.',
     start: `\`npx ${site.cli} init\`, then [connect your agent](/docs/agents).`,
   },
   {
     name: 'dtheo plugin',
     href: skills,
-    is:
-      '5 agent skills for Claude Code and Codex: plan, design and build, review, landing pages ' +
-      'and launch.',
+    what: '5 skills for Claude Code and Codex that plan a screen and review it once it renders.',
     when: 'Before the code, and after the screen renders.',
-    does:
-      'Plans the screen, then checks the render at phone and desktop widths and has a second ' +
-      'agent review it.',
     found:
-      'On this site, at phone width, Tab moved focus to a table header whose focus ring was cut ' +
-      `off. [Fixed](${repo}/dtheo-ui/pull/26).`,
-    with: 'Any web project. In Claude Code it adds the dtheo/ui MCP server too.',
+      'On this site at phone width, a table header’s focus ring was cut off. ' +
+      `[The fix](${repo}/dtheo-ui/pull/26).`,
     start: `\`/plugin install dtheo@dtheo\` ([setup](${skills}#install)).`,
   },
   {
     name: 'Quality gate',
     href: gate,
-    is: 'A reusable GitHub Actions workflow.',
+    what: 'A GitHub Actions workflow that runs your project’s own checks and reports each one.',
     when: 'On every pull request.',
-    does:
-      'Runs the project’s own scripts (format, lint, types, tests, design check, build) and ' +
-      'reports each one.',
     found:
-      'Its first run on dtheo/ui: 31 files the formatter had never checked. ' +
-      `[The pull request](${repo}/dtheo-ui/pull/20).`,
-    with: 'Any JavaScript or TypeScript repository with a lockfile.',
-    start: `[Adopt it](${gate}#adopt-it) with one onboarding script.`,
+      'Its first run on this repo: 30 files the formatter had never checked. ' +
+      `[The fix](${repo}/dtheo-ui/pull/20).`,
+    start: `[Adopt it](${gate}#adopt-it) with one script.`,
   },
 ];
 
-export const loopReasons: Array<[string, string]> = [
-  [
-    'Your agent checks its own work',
-    `${ruleList.length} rules for mistakes agents often make, each with the line and the fix. ` +
-      'The agent runs them over MCP or the CLI, and CI runs them on every pull request.',
-  ],
-  [
-    'Charts that know what a limit is',
-    'Line, bar, stream, scatter and histogram charts draw limits and mark the readings past ' +
-      'them. The histogram shows process capability (Cpk).',
-  ],
-  [
-    'Contrast is a build step',
-    `${contrastPairs.length} color pairs are measured in Graphite and Carbon, light and dark. ` +
-      'The build fails below WCAG AA.',
-  ],
-  [
-    'Names your agent already knows',
-    'shadcn color roles and registry format, with Base UI underneath. Components are copied into ' +
-      'your project, so you own the code.',
-  ],
+export const loopToolRows: Array<[keyof Omit<LoopTool, 'name' | 'href'>, string]> = [
+  ['what', 'What it is'],
+  ['when', 'When it runs'],
+  ['found', 'A real catch'],
+  ['start', 'Start'],
 ];
 
-const cell = (text: string) => text.replace(/\|/g, '\\|');
+/** Which tool to pick: the need, then the tool's name as in loopTools. */
+export const loopChoices: Array<[string, string]> = [
+  ['Ready components, and an agent that checks its own code', site.name],
+  ['A second look at the rendered screen, with any UI kit', 'dtheo plugin'],
+  ['Every pull request checked, in any JavaScript or TypeScript repo', 'Quality gate'],
+];
+
+export const loopChoiceNote = 'Each one works alone. Together, a mistake gets three chances to be caught.';
+
 const absolute = (href: string) => (href.startsWith('/') ? site.url + href : href);
 
-/** The Markdown mirror of the loop page. */
+/** The Markdown mirror of the page. */
 export function loopMarkdown() {
   return [
-    '# The loop',
+    `# ${loopTitle}`,
     '',
     `> ${loopDescription}`,
     '',
-    '## How a screen gets built',
+    '## The problem',
     '',
-    ...loopSteps.map(
-      (s, i) => `${i + 1}. **${s.step}** (${s.tool}). ${s.text}${s.again ? ` ${s.again}.` : ''}`,
-    ),
+    loopProblem,
     '',
-    '## Which tool does what',
+    '## One screen, from request to review',
     '',
-    `| | ${loopTools.map((t) => `[${t.name}](${absolute(t.href)})`).join(' | ')} |`,
-    `| --- | ${loopTools.map(() => '---').join(' | ')} |`,
-    ...loopRows.map(([key, label]) => `| ${label} | ${loopTools.map((t) => cell(t[key])).join(' | ')} |`),
+    ...loopSteps.map((s, i) => `${i + 1}. **${s.title}**${s.tool ? ` (${s.tool})` : ''}. ${s.text}`),
     '',
-    `## Why ${site.name}`,
+    '## The three tools',
     '',
-    ...loopReasons.map(([title, text]) => `- **${title}.** ${text}`),
+    ...loopTools.flatMap((t) => [
+      `### [${t.name}](${absolute(t.href)})`,
+      '',
+      ...loopToolRows.map(([key, label]) => `- **${label}:** ${t[key]}`),
+      '',
+    ]),
+    '## Which one do you need?',
+    '',
+    ...loopChoices.map(([need, tool]) => `- ${need}: **${tool}**`),
+    '',
+    loopChoiceNote,
     '',
   ]
     .join('\n')
