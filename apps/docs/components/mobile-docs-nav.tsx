@@ -23,8 +23,11 @@ export function MobileDocsNav() {
         </SheetTrigger>
         <SheetContent>
           <SheetTitle className="sr-only">Documentation</SheetTitle>
-          <div className="overflow-y-auto px-4 pt-3">
-            <DocsSidebar onNavigate={() => setOpen(false)} />
+          <div className="scroll-pt-16 overflow-y-auto px-4">
+            <DocsSidebar
+              onNavigate={() => setOpen(false)}
+              filterClassName="-mx-4 border-b border-border bg-card px-4 pt-3 pb-3"
+            />
           </div>
         </SheetContent>
       </Sheet>

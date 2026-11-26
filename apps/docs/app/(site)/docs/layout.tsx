@@ -7,9 +7,9 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     <div className="flex w-full flex-1">
       <aside
         aria-label="Docs sidebar"
-        className="sticky top-12 hidden h-[calc(100dvh-3rem)] w-64 shrink-0 overflow-y-auto overscroll-contain border-r border-border bg-sidebar px-3 pt-4 backdrop-blur-material lg:block"
+        className="sticky top-12 hidden h-[calc(100dvh-3rem)] w-64 shrink-0 scroll-pt-16 overflow-y-auto overscroll-contain border-r border-border bg-sidebar px-3 backdrop-blur-material lg:block"
       >
-        <DocsSidebar />
+        <DocsSidebar filterClassName="-mx-3 border-b border-border bg-background px-3 pt-4 pb-3 before:absolute before:inset-0 before:-z-10 before:bg-sidebar" />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col px-[max(1rem,env(safe-area-inset-left,0px))] pt-6 pb-24 sm:px-8 lg:px-10 lg:pt-10">
         <MobileDocsNav />
